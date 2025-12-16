@@ -24,6 +24,7 @@ const sampleLeads: Lead[] = [
     entryDate: '05/12/2024',
     notes: 'T3 em Braga Centro',
     columnId: 'new',
+    temperature: 'warm',
   },
   {
     id: '2',
@@ -36,6 +37,7 @@ const sampleLeads: Lead[] = [
     entryDate: '04/12/2024',
     notes: 'Moradia V4',
     columnId: 'first-contact',
+    temperature: 'hot',
   },
   {
     id: '3',
@@ -48,6 +50,7 @@ const sampleLeads: Lead[] = [
     entryDate: '03/12/2024',
     notes: 'Apartamento T2',
     columnId: 'meeting',
+    temperature: 'cold',
   },
   {
     id: '4',
@@ -60,6 +63,7 @@ const sampleLeads: Lead[] = [
     entryDate: '02/12/2024',
     notes: 'Quinta com terreno',
     columnId: 'evaluation',
+    temperature: 'hot',
   },
   {
     id: '5',
@@ -72,6 +76,7 @@ const sampleLeads: Lead[] = [
     entryDate: '01/12/2024',
     notes: 'Loja comercial',
     columnId: 'proposal-sent',
+    temperature: 'warm',
   },
   {
     id: '6',
@@ -84,6 +89,7 @@ const sampleLeads: Lead[] = [
     entryDate: '30/11/2024',
     notes: 'Moradia geminada',
     columnId: 'decision',
+    temperature: 'hot',
   },
   {
     id: '7',
@@ -96,6 +102,7 @@ const sampleLeads: Lead[] = [
     entryDate: '28/11/2024',
     notes: 'T4 Duplex',
     columnId: 'signed',
+    temperature: 'undefined',
   },
 ];
 

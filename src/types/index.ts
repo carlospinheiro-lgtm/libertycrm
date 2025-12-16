@@ -13,6 +13,9 @@ export interface Client {
   updatedAt: Date;
 }
 
+// Temperature for leads
+export type LeadTemperature = 'hot' | 'warm' | 'cold' | 'undefined';
+
 // Lead Types
 export interface BuyerLead {
   id: string;
@@ -26,6 +29,9 @@ export interface BuyerLead {
   status: string;
   notes: string;
   columnId: string;
+  temperature: LeadTemperature;
+  nextActivityDate?: string;
+  nextActivityDescription?: string;
 }
 
 export interface SellerLead {
@@ -43,6 +49,9 @@ export interface SellerLead {
   status: string;
   notes: string;
   columnId: string;
+  temperature: LeadTemperature;
+  nextActivityDate?: string;
+  nextActivityDescription?: string;
 }
 
 // Kanban Column
@@ -51,6 +60,17 @@ export interface KanbanColumn {
   title: string;
   color: string;
   order: number;
+}
+
+// Calendar Activity
+export interface CalendarActivity {
+  id: string;
+  leadId: string;
+  title: string;
+  description: string;
+  date: string;
+  googleEventId?: string;
+  createdAt: Date;
 }
 
 // User Profile
@@ -90,6 +110,9 @@ export interface RecruitmentCandidate {
   entryDate?: Date;
   notes: string;
   columnId: string;
+  temperature: LeadTemperature;
+  nextActivityDate?: string;
+  nextActivityDescription?: string;
 }
 
 // Process / Credit

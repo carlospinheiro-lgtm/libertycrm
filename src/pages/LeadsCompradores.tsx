@@ -23,6 +23,7 @@ const sampleLeads: Lead[] = [
     source: 'Portal Imobiliário',
     entryDate: '05/12/2024',
     columnId: 'new',
+    temperature: 'hot',
   },
   {
     id: '2',
@@ -34,6 +35,7 @@ const sampleLeads: Lead[] = [
     source: 'Referência',
     entryDate: '04/12/2024',
     columnId: 'new',
+    temperature: 'warm',
   },
   {
     id: '3',
@@ -45,6 +47,7 @@ const sampleLeads: Lead[] = [
     source: 'Facebook',
     entryDate: '03/12/2024',
     columnId: 'first-contact',
+    temperature: 'cold',
   },
   {
     id: '4',
@@ -56,6 +59,7 @@ const sampleLeads: Lead[] = [
     source: 'Site RE/MAX',
     entryDate: '02/12/2024',
     columnId: 'qualifying',
+    temperature: 'hot',
   },
   {
     id: '5',
@@ -67,6 +71,7 @@ const sampleLeads: Lead[] = [
     source: 'Campanha Google',
     entryDate: '01/12/2024',
     columnId: 'visits',
+    temperature: 'warm',
   },
   {
     id: '6',
@@ -78,6 +83,7 @@ const sampleLeads: Lead[] = [
     source: 'Portal Imobiliário',
     entryDate: '30/11/2024',
     columnId: 'proposal',
+    temperature: 'hot',
   },
   {
     id: '7',
@@ -89,6 +95,7 @@ const sampleLeads: Lead[] = [
     source: 'Referência',
     entryDate: '28/11/2024',
     columnId: 'negotiation',
+    temperature: 'hot',
   },
   {
     id: '8',
@@ -100,6 +107,7 @@ const sampleLeads: Lead[] = [
     source: 'Facebook',
     entryDate: '25/11/2024',
     columnId: 'won',
+    temperature: 'undefined',
   },
 ];
 
