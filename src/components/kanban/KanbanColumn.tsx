@@ -1,10 +1,16 @@
+import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
+import { ColumnHeader } from './ColumnHeader';
 
 interface KanbanColumnProps {
+  id: string;
   title: string;
   color: string;
   count: number;
   children: React.ReactNode;
+  onEditTitle: (newTitle: string) => void;
+  onDelete: () => void;
+  canDelete?: boolean;
 }
 
 const columnColors: Record<string, string> = {
@@ -16,22 +22,36 @@ const columnColors: Record<string, string> = {
   gray: 'bg-muted border-t-muted-foreground',
 };
 
-export function KanbanColumn({ title, color, count, children }: KanbanColumnProps) {
+export function KanbanColumn({
+  id,
+  title,
+  color,
+  count,
+  children,
+  onEditTitle,
+  onDelete,
+  canDelete,
+}: KanbanColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
   return (
     <div className="flex-shrink-0 w-72">
       <div
+        ref={setNodeRef}
         className={cn(
-          'rounded-lg border-t-4 p-4 min-h-[500px]',
-          columnColors[color] || columnColors.gray
+          'rounded-lg border-t-4 p-4 min-h-[500px] transition-all duration-200',
+          columnColors[color] || columnColors.gray,
+          isOver && 'kanban-column-over'
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-sm">{title}</h3>
-          <span className="bg-card text-foreground text-xs font-medium px-2 py-1 rounded-full">
-            {count}
-          </span>
-        </div>
+        <ColumnHeader
+          title={title}
+          count={count}
+          onEdit={onEditTitle}
+          onDelete={onDelete}
+          canDelete={canDelete}
+        />
 
         {/* Cards */}
         <div className="space-y-3">{children}</div>

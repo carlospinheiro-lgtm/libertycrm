@@ -23,6 +23,7 @@ const sampleCandidates: Lead[] = [
     source: 'LinkedIn',
     entryDate: '06/12/2024',
     columnId: 'new',
+    temperature: 'warm',
   },
   {
     id: '2',
@@ -34,6 +35,7 @@ const sampleCandidates: Lead[] = [
     source: 'Facebook Jobs',
     entryDate: '05/12/2024',
     columnId: 'first-contact',
+    temperature: 'hot',
   },
   {
     id: '3',
@@ -45,6 +47,7 @@ const sampleCandidates: Lead[] = [
     source: 'Referência Interna',
     entryDate: '04/12/2024',
     columnId: 'interview-scheduled',
+    temperature: 'hot',
   },
   {
     id: '4',
@@ -56,6 +59,7 @@ const sampleCandidates: Lead[] = [
     source: 'Indeed',
     entryDate: '03/12/2024',
     columnId: 'interview-done',
+    temperature: 'warm',
   },
   {
     id: '5',
@@ -67,6 +71,7 @@ const sampleCandidates: Lead[] = [
     source: 'LinkedIn',
     entryDate: '02/12/2024',
     columnId: 'decision',
+    temperature: 'hot',
   },
   {
     id: '6',
@@ -78,6 +83,7 @@ const sampleCandidates: Lead[] = [
     source: 'Candidatura Espontânea',
     entryDate: '28/11/2024',
     columnId: 'training',
+    temperature: 'undefined',
   },
   {
     id: '7',
@@ -89,6 +95,7 @@ const sampleCandidates: Lead[] = [
     source: 'Referência Interna',
     entryDate: '15/11/2024',
     columnId: 'active',
+    temperature: 'undefined',
   },
 ];
 
