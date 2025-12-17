@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Phone, Mail, Calendar, Building2, MoveHorizontal, Flame, Sun, Snowflake, Circle, GripVertical } from 'lucide-react';
+import { Phone, Mail, Calendar, MoveHorizontal, GripVertical, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KanbanLead, KanbanColumn } from '@/hooks/useKanbanState';
 
@@ -22,11 +22,11 @@ interface KanbanCardProps {
   onMove: (targetColumnId: string) => void;
 }
 
-const temperatureIcons: Record<string, React.ReactNode> = {
-  hot: <Flame className="h-3 w-3 text-destructive" />,
-  warm: <Sun className="h-3 w-3 text-warning" />,
-  cold: <Snowflake className="h-3 w-3 text-info" />,
-  undefined: <Circle className="h-3 w-3 text-muted-foreground" />,
+const temperatureConfig: Record<string, { label: string; className: string }> = {
+  hot: { label: 'Quente', className: 'bg-destructive text-destructive-foreground' },
+  warm: { label: 'Morno', className: 'bg-warning text-warning-foreground' },
+  cold: { label: 'Frio', className: 'bg-info text-info-foreground' },
+  undefined: { label: 'Indefinido', className: 'bg-muted text-muted-foreground' },
 };
 
 const temperatureClasses: Record<string, string> = {
@@ -55,10 +55,16 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
   const availableColumns = columns.filter(c => c.id !== lead.columnId);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't open details if clicking on action buttons
-    if ((e.target as HTMLElement).closest('button')) return;
+    if ((e.target as HTMLElement).closest('button, a')) return;
     onClick();
   };
+
+  const formatPhoneForWhatsApp = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.startsWith('351') ? cleaned : `351${cleaned}`;
+  };
+
+  const temp = temperatureConfig[lead.temperature || 'undefined'];
 
   return (
     <Card
@@ -71,38 +77,74 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="p-4 space-y-3">
-        {/* Drag Handle + Client */}
-        <div className="flex items-start gap-2">
+      <CardContent className="p-3 space-y-2">
+        {/* Next Activity - Prominent at top */}
+        {lead.nextActivityDate && (
+          <div className="flex items-center gap-2 bg-warning/20 text-warning-foreground rounded-md px-2 py-1.5 text-xs font-medium">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>Próximo: {new Date(lead.nextActivityDate).toLocaleDateString('pt-PT')}</span>
+          </div>
+        )}
+
+        {/* Header: Drag + Avatar + Name + Temperature Badge */}
+        <div className="flex items-center gap-2">
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground"
+            className="cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground hover:text-foreground"
           >
             <GripVertical className="h-4 w-4" />
           </div>
           
-          <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+          <Avatar className="h-9 w-9">
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
               {initials}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-sm truncate">{lead.clientName}</p>
-              {temperatureIcons[lead.temperature || 'undefined']}
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Building2 className="h-3 w-3" />
-              <span>{lead.agency}</span>
-            </div>
+            <p className="font-semibold text-sm truncate">{lead.clientName}</p>
           </div>
 
-          {/* Move Button */}
+          <Badge className={cn('text-xs font-medium', temp.className)}>
+            {temp.label}
+          </Badge>
+        </div>
+
+        {/* Contact Buttons + Move */}
+        <div className="flex items-center gap-1">
+          <a
+            href={`tel:${lead.phone}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            title="Ligar"
+          >
+            <Phone className="h-4 w-4" />
+          </a>
+          <a
+            href={`https://wa.me/${formatPhoneForWhatsApp(lead.phone)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
+            title="WhatsApp"
+          >
+            <MessageCircle className="h-4 w-4" />
+          </a>
+          <a
+            href={`mailto:${lead.email}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors"
+            title="Email"
+          >
+            <Mail className="h-4 w-4" />
+          </a>
+
+          <div className="flex-1" />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <MoveHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -123,7 +165,7 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
         </div>
 
         {/* Contact Info */}
-        <div className="space-y-1.5 text-xs text-muted-foreground">
+        <div className="space-y-1 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <Phone className="h-3 w-3" />
             <span>{lead.phone}</span>
@@ -135,11 +177,9 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t border-border">
-          <Badge variant="outline" className="text-xs">
-            {lead.source}
-          </Badge>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between pt-2 border-t border-border text-xs">
+          <Badge variant="outline">{lead.source}</Badge>
+          <div className="flex items-center gap-1 text-muted-foreground">
             <Calendar className="h-3 w-3" />
             <span>{lead.entryDate}</span>
           </div>
@@ -150,16 +190,6 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
           <span className="text-muted-foreground">Agente: </span>
           <span className="font-medium">{lead.agentName}</span>
         </div>
-
-        {/* Next Activity */}
-        {lead.nextActivityDate && (
-          <div className="text-xs bg-muted/50 rounded p-2">
-            <span className="text-muted-foreground">Próxima: </span>
-            <span className="font-medium">
-              {new Date(lead.nextActivityDate).toLocaleDateString('pt-PT')}
-            </span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
