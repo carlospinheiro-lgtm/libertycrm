@@ -15,6 +15,7 @@ export interface KanbanLead {
   temperature: LeadTemperature;
   nextActivityDate?: string;
   nextActivityDescription?: string;
+  cvUrl?: string;
 }
 
 export interface KanbanColumn {

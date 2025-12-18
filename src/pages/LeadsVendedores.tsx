@@ -114,7 +114,6 @@ export default function LeadsVendedores() {
           title="Leads Vendedores"
           columns={sellerColumns}
           leads={sampleLeads}
-          onAddLead={() => console.log('Add new seller lead')}
         />
       </div>
     </DashboardLayout>

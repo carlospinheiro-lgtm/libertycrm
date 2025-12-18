@@ -2,7 +2,6 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -45,13 +44,6 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
     transform: CSS.Translate.toString(transform),
   } : undefined;
 
-  const initials = lead.clientName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
   const availableColumns = columns.filter(c => c.id !== lead.columnId);
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -86,7 +78,7 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
           </div>
         )}
 
-        {/* Header: Drag + Avatar + Name + Temperature Badge */}
+        {/* Header: Drag + Name + Temperature Badge */}
         <div className="flex items-center gap-2">
           <div
             {...attributes}
@@ -95,12 +87,6 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
           >
             <GripVertical className="h-4 w-4" />
           </div>
-          
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
           
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm truncate">{lead.clientName}</p>

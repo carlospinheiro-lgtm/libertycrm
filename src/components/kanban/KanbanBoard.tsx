@@ -15,6 +15,7 @@ import { KanbanCard } from './KanbanCard';
 import { MoveLeadDialog } from './MoveLeadDialog';
 import { LeadDetailsSheet } from './LeadDetailsSheet';
 import { AddColumnDialog } from './AddColumnDialog';
+import { AddLeadDialog } from './AddLeadDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Download } from 'lucide-react';
 import {
@@ -55,6 +56,7 @@ interface KanbanBoardProps {
   columns: Column[];
   leads: Lead[];
   onAddLead?: () => void;
+  isRecruitment?: boolean;
 }
 
 export function KanbanBoard({
@@ -62,6 +64,7 @@ export function KanbanBoard({
   columns: initialColumns,
   leads: initialLeads,
   onAddLead,
+  isRecruitment = false,
 }: KanbanBoardProps) {
   const [agentFilter, setAgentFilter] = useState('all');
   const [agencyFilter, setAgencyFilter] = useState('all');
@@ -77,6 +80,7 @@ export function KanbanBoard({
     leads,
     moveLead,
     updateLead,
+    addLead,
     deleteLead,
     addColumn,
     editColumn,
@@ -98,6 +102,7 @@ export function KanbanBoard({
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<KanbanLead | null>(null);
   const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false);
+  const [addLeadDialogOpen, setAddLeadDialogOpen] = useState(false);
 
   // Sensors for drag and drop
   const sensors = useSensors(
@@ -173,8 +178,12 @@ export function KanbanBoard({
     setMoveDialogOpen(true);
   };
 
-  const handleAddColumn = (title: string, color: string) => {
-    addColumn({ id: crypto.randomUUID(), title, color });
+  const handleAddColumn = (newTitle: string, color: string) => {
+    addColumn({ id: crypto.randomUUID(), title: newTitle, color });
+  };
+
+  const handleAddLead = (lead: KanbanLead) => {
+    addLead(lead);
   };
 
   return (
@@ -218,9 +227,9 @@ export function KanbanBoard({
               <Download className="h-4 w-4" />
             </Button>
 
-            <Button onClick={onAddLead} className="gap-2">
+            <Button onClick={() => setAddLeadDialogOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              Nova Lead
+              {isRecruitment ? 'Novo Candidato' : 'Nova Lead'}
             </Button>
           </div>
         </div>
@@ -304,6 +313,7 @@ export function KanbanBoard({
         lead={selectedLead}
         onSave={updateLead}
         onDelete={deleteLead}
+        isRecruitment={isRecruitment}
       />
 
       {/* Add Column Dialog */}
@@ -311,6 +321,15 @@ export function KanbanBoard({
         open={addColumnDialogOpen}
         onOpenChange={setAddColumnDialogOpen}
         onAdd={handleAddColumn}
+      />
+
+      {/* Add Lead Dialog */}
+      <AddLeadDialog
+        open={addLeadDialogOpen}
+        onOpenChange={setAddLeadDialogOpen}
+        columns={columns}
+        onAdd={handleAddLead}
+        isRecruitment={isRecruitment}
       />
     </DndContext>
   );

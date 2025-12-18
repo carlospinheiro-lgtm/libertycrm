@@ -12,7 +12,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Flame, Sun, Snowflake, Circle, Trash2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Flame, Sun, Snowflake, Circle, Trash2, CalendarIcon, Download } from 'lucide-react';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 import type { KanbanLead } from '@/hooks/useKanbanState';
 import type { LeadTemperature } from '@/types';
 import { cn } from '@/lib/utils';
@@ -23,6 +31,7 @@ interface LeadDetailsSheetProps {
   lead: KanbanLead | null;
   onSave: (leadId: string, updates: Partial<KanbanLead>) => void;
   onDelete: (leadId: string) => void;
+  isRecruitment?: boolean;
 }
 
 const temperatureOptions: { value: LeadTemperature; label: string; icon: React.ReactNode; color: string }[] = [
@@ -38,6 +47,7 @@ export function LeadDetailsSheet({
   lead,
   onSave,
   onDelete,
+  isRecruitment = false,
 }: LeadDetailsSheetProps) {
   const [formData, setFormData] = useState<Partial<KanbanLead>>({});
 
@@ -160,15 +170,63 @@ export function LeadDetailsSheet({
             />
           </div>
 
-          {/* Next Activity Info */}
-          {formData.nextActivityDate && (
-            <div className="rounded-lg border border-border p-3 bg-muted/50">
-              <Label className="text-sm font-medium">Próxima Atividade</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                {new Date(formData.nextActivityDate).toLocaleString('pt-PT')}
-              </p>
-              {formData.nextActivityDescription && (
-                <p className="text-sm mt-1">{formData.nextActivityDescription}</p>
+          {/* Next Activity - Editable */}
+          <div className="grid gap-2">
+            <Label>Próximo Agendamento</Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'justify-start text-left font-normal flex-1',
+                      !formData.nextActivityDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.nextActivityDate
+                      ? format(new Date(formData.nextActivityDate), 'PPP', { locale: pt })
+                      : 'Selecionar data'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.nextActivityDate ? new Date(formData.nextActivityDate) : undefined}
+                    onSelect={(date) => setFormData({ ...formData, nextActivityDate: date?.toISOString() })}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Input
+              placeholder="Descrição da atividade"
+              value={formData.nextActivityDescription || ''}
+              onChange={(e) => setFormData({ ...formData, nextActivityDescription: e.target.value })}
+            />
+          </div>
+
+          {/* CV Download for Recruitment */}
+          {isRecruitment && (
+            <div className="grid gap-2">
+              <Label htmlFor="cvUrl">URL do Currículo</Label>
+              <Input
+                id="cvUrl"
+                type="url"
+                value={formData.cvUrl || ''}
+                onChange={(e) => setFormData({ ...formData, cvUrl: e.target.value })}
+                placeholder="https://..."
+              />
+              {formData.cvUrl && (
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => window.open(formData.cvUrl, '_blank')}
+                >
+                  <Download className="h-4 w-4" />
+                  Download Currículo
+                </Button>
               )}
             </div>
           )}
