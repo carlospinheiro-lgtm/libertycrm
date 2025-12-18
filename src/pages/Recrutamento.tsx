@@ -107,7 +107,7 @@ export default function Recrutamento() {
           title="Recrutamento de Agentes"
           columns={recruitmentColumns}
           leads={sampleCandidates}
-          onAddLead={() => console.log('Add new candidate')}
+          isRecruitment={true}
         />
       </div>
     </DashboardLayout>

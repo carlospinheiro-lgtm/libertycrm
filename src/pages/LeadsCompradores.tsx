@@ -119,7 +119,6 @@ export default function LeadsCompradores() {
           title="Leads Compradores"
           columns={buyerColumns}
           leads={sampleLeads}
-          onAddLead={() => console.log('Add new lead')}
         />
       </div>
     </DashboardLayout>
