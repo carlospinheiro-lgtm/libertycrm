@@ -2,7 +2,8 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
-import { ObjectivesProgress } from '@/components/dashboard/ObjectivesProgress';
+import { ObjectivesSummary } from '@/components/dashboard/ObjectivesSummary';
+import { ObjectivesTracking } from '@/components/dashboard/ObjectivesTracking';
 import {
   Users,
   Home,
@@ -97,8 +98,8 @@ export default function Index() {
 
         {/* Objectives */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ObjectivesProgress />
-          <ObjectivesProgress />
+          <ObjectivesSummary />
+          <ObjectivesTracking />
         </div>
       </div>
     </DashboardLayout>
