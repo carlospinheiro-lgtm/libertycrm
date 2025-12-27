@@ -36,9 +36,9 @@ const updatesMock = [
     type: 'lead' as const,
     flow: 'vendedores' as ObjectiveFlow,
     objectiveCategory: 'activity' as ObjectiveCategory,
-    description: 'Posicionamento registado',
+    description: 'Prospeção de Clientes registada',
     value: '+5',
-    objectiveName: 'Posicionamento',
+    objectiveName: 'Prospeção de Clientes',
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
   },
   {

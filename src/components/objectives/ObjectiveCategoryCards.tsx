@@ -64,7 +64,7 @@ export function ObjectiveCategoryCards({
           <div className="mb-4">
             <p className="text-xs text-muted-foreground mb-1.5">Inclui:</p>
             <div className="flex flex-wrap gap-1">
-              {['Posicionamento', 'Leads', 'Contactos', 'Visitas', 'Chamadas'].map(ex => (
+              {['Prospeção', 'Leads', 'Contactos', 'Visitas', 'Chamadas'].map(ex => (
                 <span 
                   key={ex}
                   className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded"

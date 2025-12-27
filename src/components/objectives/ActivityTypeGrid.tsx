@@ -18,14 +18,14 @@ const activityTypeConfigs: {
   flows: ObjectiveFlow[];
 }[] = [
   // Vendedores
-  { type: 'posicionamento_vendedores', label: 'Posicionamento', icon: '📍', flows: ['vendedores'] },
+  { type: 'posicionamento_vendedores', label: 'Prospeção de Clientes', icon: '🔍', flows: ['vendedores'] },
   { type: 'leads_vendedores', label: 'Leads Obtidas', icon: '👤', flows: ['vendedores'] },
   { type: 'chamadas_vendedores', label: 'Chamadas', icon: '📞', flows: ['vendedores'] },
   { type: 'contactos_efetivos_vendedores', label: 'Contactos Efetivos', icon: '🤝', flows: ['vendedores'] },
   { type: 'apresentacoes_servicos', label: 'Apresentações Serviços', icon: '🎯', flows: ['vendedores'] },
   { type: 'seguimentos_vendedores', label: 'Seguimentos', icon: '🔄', flows: ['vendedores'] },
   // Compradores
-  { type: 'posicionamento_compradores', label: 'Posicionamento', icon: '📍', flows: ['compradores'] },
+  { type: 'posicionamento_compradores', label: 'Prospeção de Clientes', icon: '🔍', flows: ['compradores'] },
   { type: 'leads_compradores', label: 'Leads Obtidas', icon: '👤', flows: ['compradores'] },
   { type: 'qualificacao', label: 'Qualificação', icon: '📋', flows: ['compradores'] },
   { type: 'visitas', label: 'Visitas', icon: '👁️', flows: ['compradores'] },
@@ -106,7 +106,7 @@ export function ActivityTypeGrid({ objectives, flowFilter = 'all' }: ActivityTyp
           </div>
           <div>
             <h2 className="text-lg font-bold text-blue-700">Objetivos de Atividade</h2>
-            <p className="text-sm text-blue-600/70">Esforço e execução diária: Posicionamento, Leads, Contactos, Visitas</p>
+            <p className="text-sm text-blue-600/70">Esforço e execução diária: Prospeção, Leads, Contactos, Visitas</p>
           </div>
         </div>
         
