@@ -8,18 +8,22 @@ interface ResultsChartProps {
   objectives: Objective[];
 }
 
-// Result type configurations for chart
+// Result type configurations for chart - UPDATED: Removed transações
 const resultTypeConfigs: {
   type: ResultObjectiveType;
   label: string;
   shortLabel: string;
   isCurrency?: boolean;
 }[] = [
-  { type: 'reserva_comprador', label: 'Reservas', shortLabel: 'Reserv.' },
-  { type: 'angariacao_reservada', label: 'Angariações', shortLabel: 'Angar.' },
-  { type: 'transacao_venda', label: 'Trans. Venda', shortLabel: 'Venda' },
-  { type: 'transacao_arrendamento', label: 'Trans. Arrend.', shortLabel: 'Arrend.' },
+  // Vendedores
+  { type: 'angariacao_exclusiva', label: 'Angar. Exclusivo', shortLabel: 'Excl.' },
+  { type: 'angariacao_exclusiva_rede', label: 'Angar. Excl. Rede', shortLabel: 'ExclR.' },
+  { type: 'angariacao_reservada', label: 'Angar. Reservadas', shortLabel: 'Reserv.' },
   { type: 'faturacao_vendas', label: 'Fat. Vendas', shortLabel: 'Fat.V', isCurrency: true },
+  { type: 'faturacao_arrendamentos', label: 'Fat. Arrend.', shortLabel: 'Fat.A', isCurrency: true },
+  // Compradores
+  { type: 'reserva_comprador', label: 'Reservas', shortLabel: 'Reserv.' },
+  // Outros
   { type: 'creditos_formalizados', label: 'Créditos', shortLabel: 'Créd.' },
   { type: 'consultores_integrados', label: 'Agentes', shortLabel: 'Agent.' },
 ];

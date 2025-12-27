@@ -10,7 +10,7 @@ interface ResultTypeGridProps {
   flowFilter?: ObjectiveFlow | 'all';
 }
 
-// Define result types configuration
+// Define result types configuration - UPDATED: Removed transações, added new vendedores types
 const resultTypeConfigs: {
   type: ResultObjectiveType;
   label: string;
@@ -18,13 +18,18 @@ const resultTypeConfigs: {
   isCurrency?: boolean;
   flows: ObjectiveFlow[];
 }[] = [
+  // Vendedores - Angariações
+  { type: 'angariacao_exclusiva', label: 'Angariações (Exclusivo)', icon: '🏠', flows: ['vendedores'] },
+  { type: 'angariacao_exclusiva_rede', label: 'Angariações (Exclusivo Rede)', icon: '🏘️', flows: ['vendedores'] },
+  { type: 'angariacao_reservada', label: 'Angariações Reservadas', icon: '✅', flows: ['vendedores'] },
+  // Vendedores - Faturação (derivada de reservas/angariações)
+  { type: 'faturacao_vendas', label: 'Faturação (Vendas)', icon: '💶', isCurrency: true, flows: ['vendedores'] },
+  { type: 'faturacao_arrendamentos', label: 'Faturação (Arrendamentos)', icon: '💷', isCurrency: true, flows: ['vendedores'] },
+  // Compradores
   { type: 'reserva_comprador', label: 'Reservas', icon: '🛒', flows: ['compradores'] },
-  { type: 'angariacao_reservada', label: 'Angariações Reservadas', icon: '🏠', flows: ['vendedores'] },
-  { type: 'transacao_venda', label: 'Transações – Venda', icon: '💰', flows: ['geral'] },
-  { type: 'transacao_arrendamento', label: 'Transações – Arrendamento', icon: '🔑', flows: ['geral'] },
-  { type: 'faturacao_vendas', label: 'Faturação (Vendas)', icon: '💶', isCurrency: true, flows: ['geral'] },
-  { type: 'faturacao_arrendamentos', label: 'Faturação (Arrend.)', icon: '💷', isCurrency: true, flows: ['geral'] },
+  // Intermediação de Crédito
   { type: 'creditos_formalizados', label: 'Créditos Escriturados', icon: '💳', flows: ['intermediacao_credito'] },
+  // Recrutamento
   { type: 'consultores_integrados', label: 'Agentes Integrados', icon: '👥', flows: ['recrutamento'] },
 ];
 
@@ -33,34 +38,38 @@ export function ResultTypeGrid({ objectives, flowFilter = 'all' }: ResultTypeGri
   
   const resultObjectives = objectives.filter(o => o.objectiveCategory === 'result');
   
-  // Group objectives by result type
-  const groupedByType: ResultTypeData[] = resultTypeConfigs.map(config => {
-    // Filter objectives by this result type
-    let typeObjectives = resultObjectives.filter(o => o.resultType === config.type);
-    
-    // Apply flow filter if not 'all'
-    if (flowFilter !== 'all') {
-      typeObjectives = typeObjectives.filter(o => o.flow === flowFilter || config.flows.includes(flowFilter));
-    }
-    
-    const definido = typeObjectives.reduce((sum, o) => sum + o.targetValue, 0);
-    const realizado = typeObjectives.reduce((sum, o) => sum + o.currentValue, 0);
-    const falta = Math.max(0, definido - realizado);
-    const taxa = definido > 0 ? (realizado / definido) * 100 : 0;
-    
-    return {
-      type: config.type,
-      label: config.label,
-      icon: config.icon,
-      isCurrency: config.isCurrency,
-      flows: config.flows,
-      definido,
-      realizado,
-      falta,
-      taxa,
-      count: typeObjectives.length,
-    };
-  }).filter(d => d.count > 0); // Only show types with objectives
+  // Group objectives by result type with simplified filter logic
+  const groupedByType: ResultTypeData[] = resultTypeConfigs
+    // First filter configs by flow - when flowFilter is set, only show cards that belong to that flow
+    .filter(config => {
+      if (flowFilter === 'all') return true;
+      // Simple check: card.flows includes the selected flow
+      return config.flows.includes(flowFilter);
+    })
+    .map(config => {
+      // Get objectives for this result type
+      const typeObjectives = resultObjectives.filter(o => o.resultType === config.type);
+      
+      const definido = typeObjectives.reduce((sum, o) => sum + o.targetValue, 0);
+      const realizado = typeObjectives.reduce((sum, o) => sum + o.currentValue, 0);
+      const falta = Math.max(0, definido - realizado);
+      const taxa = definido > 0 ? (realizado / definido) * 100 : 0;
+      
+      return {
+        type: config.type,
+        label: config.label,
+        icon: config.icon,
+        isCurrency: config.isCurrency,
+        flows: config.flows,
+        definido,
+        realizado,
+        falta,
+        taxa,
+        count: typeObjectives.length,
+      };
+    })
+    // Show cards even with count 0 when a specific flow is selected (so user sees all available card types)
+    .filter(d => flowFilter !== 'all' || d.count > 0);
 
   // Calculate totals
   const totals = {

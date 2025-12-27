@@ -241,12 +241,15 @@ export type ActivityObjectiveType =
   | 'aprovacoes_obtidas';
 
 export type ResultObjectiveType =
+  // Vendedores - Angariações
+  | 'angariacao_exclusiva'
+  | 'angariacao_exclusiva_rede'
   | 'angariacao_reservada'
-  | 'reserva_comprador'
-  | 'transacao_venda'
-  | 'transacao_arrendamento'
+  // Vendedores - Faturação
   | 'faturacao_vendas'
   | 'faturacao_arrendamentos'
+  // Compradores
+  | 'reserva_comprador'
   // Recrutamento
   | 'consultores_integrados'
   // Intermediação de Crédito
@@ -285,7 +288,11 @@ export const activityTypesIntermediacao = [
 ] as const;
 
 export const resultTypesVendedores = [
+  { value: 'angariacao_exclusiva', label: 'Angariações (Exclusivo)' },
+  { value: 'angariacao_exclusiva_rede', label: 'Angariações (Exclusivo de Rede)' },
   { value: 'angariacao_reservada', label: 'Angariações Reservadas' },
+  { value: 'faturacao_vendas', label: 'Faturação (Vendas)' },
+  { value: 'faturacao_arrendamentos', label: 'Faturação (Arrendamentos)' },
 ] as const;
 
 export const resultTypesCompradores = [
@@ -299,13 +306,6 @@ export const resultTypesRecrutamento = [
 export const resultTypesIntermediacao = [
   { value: 'creditos_formalizados', label: 'Créditos Formalizados' },
   { value: 'comissoes_credito', label: 'Comissões de Crédito' },
-] as const;
-
-export const resultTypesGerais = [
-  { value: 'transacao_venda', label: 'Transações – Venda' },
-  { value: 'transacao_arrendamento', label: 'Transações – Arrendamento' },
-  { value: 'faturacao_vendas', label: 'Faturação – Vendas' },
-  { value: 'faturacao_arrendamentos', label: 'Faturação – Arrendamentos' },
 ] as const;
 
 // Unidades disponíveis
@@ -356,8 +356,6 @@ export function getObjectiveTypeName(objective: Objective): string {
     if (recrutamentoType) return recrutamentoType.label;
     const intermediacaoType = resultTypesIntermediacao.find(t => t.value === objective.resultType);
     if (intermediacaoType) return intermediacaoType.label;
-    const geralType = resultTypesGerais.find(t => t.value === objective.resultType);
-    if (geralType) return geralType.label;
   }
   return 'Objetivo';
 }
