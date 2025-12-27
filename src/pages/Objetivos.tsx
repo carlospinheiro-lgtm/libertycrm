@@ -7,119 +7,170 @@ import { ObjectiveDetailsSheet } from '@/components/objectives/ObjectiveDetailsS
 import { AddResultDialog } from '@/components/dashboard/AddResultDialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Target } from 'lucide-react';
-import { Objective } from '@/types';
+import { Objective, ObjectiveFlow } from '@/types';
 
 // Mock data - TODO: Connect to database
 const objectivesMock: Objective[] = [
+  // Vendedores - Atividade
   {
     id: '1',
-    name: 'Faturação Trimestral Q4',
-    flow: 'geral',
-    objectiveType: 'result',
-    resultType: 'transacao_venda',
-    currentValue: 125000,
-    targetValue: 150000,
-    unit: '€',
-    type: 'currency',
-    startDate: new Date('2024-10-01'),
+    flow: 'vendedores',
+    objectiveCategory: 'activity',
+    activityType: 'posicionamento_vendedores',
+    currentValue: 45,
+    targetValue: 60,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-12-01'),
     endDate: new Date('2024-12-31'),
-    sourceFilter: 'all',
+    targetType: 'agent',
+    targetId: 'agent-1',
+    targetName: 'João Silva',
+    sourceFilter: ['2', '3'],
   },
   {
     id: '2',
-    name: 'Novas Angariações',
     flow: 'vendedores',
-    objectiveType: 'result',
-    resultType: 'angariacao_reservada',
+    objectiveCategory: 'activity',
+    activityType: 'leads_vendedores',
     currentValue: 18,
-    targetValue: 20,
-    unit: '',
-    type: 'number',
+    targetValue: 25,
+    unit: 'number',
+    unitSymbol: '',
     startDate: new Date('2024-12-01'),
     endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Braga',
     sourceFilter: 'all',
   },
   {
     id: '3',
-    name: 'Leads Qualificadas',
+    flow: 'vendedores',
+    objectiveCategory: 'activity',
+    activityType: 'chamadas_vendedores',
+    currentValue: 120,
+    targetValue: 150,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-12-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agent',
+    targetId: 'agent-1',
+    targetName: 'João Silva',
+    sourceFilter: 'all',
+  },
+  // Vendedores - Resultado
+  {
+    id: '4',
+    flow: 'vendedores',
+    objectiveCategory: 'result',
+    resultType: 'angariacao_reservada',
+    currentValue: 8,
+    targetValue: 10,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-12-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agent',
+    targetId: 'agent-1',
+    targetName: 'João Silva',
+    sourceFilter: 'all',
+  },
+  // Compradores - Atividade
+  {
+    id: '5',
     flow: 'compradores',
-    objectiveType: 'activity',
+    objectiveCategory: 'activity',
     activityType: 'qualificacao',
     currentValue: 42,
     targetValue: 60,
-    unit: '',
-    type: 'number',
+    unit: 'number',
+    unitSymbol: '',
     startDate: new Date('2024-10-01'),
     endDate: new Date('2024-12-31'),
-    sourceFilter: 'all',
-  },
-  {
-    id: '4',
-    name: 'Pontos de Equipa',
-    flow: 'geral',
-    objectiveType: 'activity',
-    currentValue: 8500,
-    targetValue: 10000,
-    unit: 'pts',
-    type: 'points',
-    startDate: new Date('2024-01-01'),
-    endDate: new Date('2024-12-31'),
-    sourceFilter: 'all',
-  },
-  {
-    id: '5',
-    name: 'Taxa de Conversão',
-    flow: 'geral',
-    objectiveType: 'result',
-    currentValue: 28,
-    targetValue: 35,
-    unit: '%',
-    type: 'percentage',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Braga',
     sourceFilter: 'all',
   },
   {
     id: '6',
-    name: 'Reservas Mensais',
     flow: 'compradores',
-    objectiveType: 'result',
-    resultType: 'reserva_comprador',
-    currentValue: 5,
-    targetValue: 8,
-    unit: '',
-    type: 'number',
+    objectiveCategory: 'activity',
+    activityType: 'visitas',
+    currentValue: 32,
+    targetValue: 50,
+    unit: 'number',
+    unitSymbol: '',
     startDate: new Date('2024-12-01'),
     endDate: new Date('2024-12-31'),
+    targetType: 'agent',
+    targetId: 'agent-2',
+    targetName: 'Maria Santos',
     sourceFilter: 'all',
   },
   {
     id: '7',
-    name: 'Posicionamento Vendedores',
-    flow: 'vendedores',
-    objectiveType: 'activity',
-    activityType: 'posicionamento_vendedores',
-    currentValue: 45,
-    targetValue: 60,
-    unit: '',
-    type: 'number',
+    flow: 'compradores',
+    objectiveCategory: 'activity',
+    activityType: 'propostas',
+    currentValue: 12,
+    targetValue: 20,
+    unit: 'number',
+    unitSymbol: '',
     startDate: new Date('2024-12-01'),
     endDate: new Date('2024-12-31'),
-    sourceFilter: ['2', '3'], // Posicionamento, Porta-a-Porta
+    targetType: 'agency',
+    targetName: 'Barcelos',
+    sourceFilter: 'all',
   },
+  // Compradores - Resultado
   {
     id: '8',
-    name: 'Visitas Compradores',
     flow: 'compradores',
-    objectiveType: 'activity',
-    activityType: 'visitas',
-    currentValue: 32,
-    targetValue: 50,
-    unit: '',
-    type: 'number',
+    objectiveCategory: 'result',
+    resultType: 'reserva_comprador',
+    currentValue: 5,
+    targetValue: 8,
+    unit: 'number',
+    unitSymbol: '',
     startDate: new Date('2024-12-01'),
     endDate: new Date('2024-12-31'),
+    targetType: 'agent',
+    targetId: 'agent-2',
+    targetName: 'Maria Santos',
+    sourceFilter: 'all',
+  },
+  // Geral - Resultado
+  {
+    id: '9',
+    flow: 'geral',
+    objectiveCategory: 'result',
+    resultType: 'transacao_venda',
+    currentValue: 6,
+    targetValue: 10,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-10-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Todas',
+    sourceFilter: 'all',
+  },
+  {
+    id: '10',
+    flow: 'geral',
+    objectiveCategory: 'result',
+    resultType: 'faturacao_vendas',
+    currentValue: 125000,
+    targetValue: 150000,
+    unit: 'currency',
+    unitSymbol: '€',
+    startDate: new Date('2024-10-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Todas',
     sourceFilter: 'all',
   },
 ];
@@ -131,11 +182,17 @@ export default function Objetivos() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [agencyFilter, setAgencyFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<string>('current');
+  const [flowFilter, setFlowFilter] = useState<ObjectiveFlow | 'all'>('all');
 
   const handleViewDetails = (objective: Objective) => {
     setSelectedObjective(objective);
     setDetailsOpen(true);
   };
+
+  const filteredObjectives = objectivesMock.filter(obj => {
+    if (flowFilter !== 'all' && obj.flow !== flowFilter) return false;
+    return true;
+  });
 
   return (
     <DashboardLayout>
@@ -160,8 +217,7 @@ export default function Objetivos() {
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="braga">Braga</SelectItem>
-                <SelectItem value="porto">Porto</SelectItem>
-                <SelectItem value="lisboa">Lisboa</SelectItem>
+                <SelectItem value="barcelos">Barcelos</SelectItem>
               </SelectContent>
             </Select>
             
@@ -189,14 +245,26 @@ export default function Objetivos() {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <ObjectivesStats objectives={objectivesMock} />
+        {/* Tabs by Flow */}
+        <Tabs value={flowFilter} onValueChange={(v) => setFlowFilter(v as ObjectiveFlow | 'all')}>
+          <TabsList>
+            <TabsTrigger value="all">Todos</TabsTrigger>
+            <TabsTrigger value="vendedores">Vendedores</TabsTrigger>
+            <TabsTrigger value="compradores">Compradores</TabsTrigger>
+            <TabsTrigger value="geral">Geral</TabsTrigger>
+          </TabsList>
 
-        {/* Objectives Table */}
-        <ObjectivesTable 
-          objectives={objectivesMock} 
-          onViewDetails={handleViewDetails}
-        />
+          <TabsContent value={flowFilter} className="mt-6 space-y-6">
+            {/* Stats Grid */}
+            <ObjectivesStats objectives={filteredObjectives} />
+
+            {/* Objectives Table */}
+            <ObjectivesTable 
+              objectives={filteredObjectives} 
+              onViewDetails={handleViewDetails}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Dialogs */}

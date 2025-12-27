@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -23,97 +25,218 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+  ObjectiveFlow,
+  ObjectiveCategory,
+  ActivityObjectiveType,
+  ResultObjectiveType,
+  ObjectiveUnit,
+  activityTypesVendedores,
+  activityTypesCompradores,
+  resultTypesVendedores,
+  resultTypesCompradores,
+  resultTypesGerais,
+  objectiveUnits,
+  defaultSources,
+} from '@/types';
 
 interface AddObjectiveDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Mock agents - TODO: Connect to database
+const mockAgents = [
+  { id: 'agent-1', name: 'João Silva', agency: 'braga' },
+  { id: 'agent-2', name: 'Maria Santos', agency: 'barcelos' },
+  { id: 'agent-3', name: 'Pedro Costa', agency: 'braga' },
+];
+
+const mockAgencies = [
+  { id: 'braga', name: 'Braga' },
+  { id: 'barcelos', name: 'Barcelos' },
+];
+
 export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogProps) {
-  const [name, setName] = useState('');
-  const [type, setType] = useState<string>('');
+  const [flow, setFlow] = useState<ObjectiveFlow | ''>('');
+  const [objectiveCategory, setObjectiveCategory] = useState<ObjectiveCategory | ''>('');
+  const [objectiveType, setObjectiveType] = useState<string>('');
   const [targetValue, setTargetValue] = useState('');
-  const [unit, setUnit] = useState('');
+  const [unit, setUnit] = useState<ObjectiveUnit>('number');
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
-  const [assignment, setAssignment] = useState<string>('');
+  const [targetType, setTargetType] = useState<'agent' | 'agency' | ''>('');
+  const [targetId, setTargetId] = useState<string>('');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+
+  // Get available objective types based on flow and category
+  const availableTypes = useMemo(() => {
+    if (!flow || !objectiveCategory) return [];
+    
+    if (objectiveCategory === 'activity') {
+      if (flow === 'vendedores') return activityTypesVendedores;
+      if (flow === 'compradores') return activityTypesCompradores;
+      return [];
+    }
+    
+    if (objectiveCategory === 'result') {
+      if (flow === 'vendedores') return resultTypesVendedores;
+      if (flow === 'compradores') return resultTypesCompradores;
+      if (flow === 'geral') return resultTypesGerais;
+      return [];
+    }
+    
+    return [];
+  }, [flow, objectiveCategory]);
+
+  // Get available sources for filter
+  const availableSources = useMemo(() => {
+    if (!flow || flow === 'geral') return defaultSources;
+    return defaultSources.filter(s => s.flow === flow || s.flow === 'ambos');
+  }, [flow]);
 
   const handleSubmit = () => {
-    if (!name || !type || !targetValue) {
+    if (!flow || !objectiveCategory || !objectiveType || !targetValue || !unit || !startDate || !endDate || !targetType) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
+    if (targetType === 'agent' && !targetId) {
+      toast.error('Selecione um agente');
+      return;
+    }
+
+    if (targetType === 'agency' && !targetId) {
+      toast.error('Selecione uma agência');
+      return;
+    }
+
+    const selectedUnit = objectiveUnits.find(u => u.value === unit);
+    const targetName = targetType === 'agent' 
+      ? mockAgents.find(a => a.id === targetId)?.name 
+      : mockAgencies.find(a => a.id === targetId)?.name;
+
     // TODO: Connect to database
     const newObjective = {
-      name,
-      type,
+      flow,
+      objectiveCategory,
+      activityType: objectiveCategory === 'activity' ? objectiveType as ActivityObjectiveType : undefined,
+      resultType: objectiveCategory === 'result' ? objectiveType as ResultObjectiveType : undefined,
       targetValue: parseFloat(targetValue),
+      currentValue: 0,
       unit,
+      unitSymbol: selectedUnit?.symbol || '',
       startDate,
       endDate,
-      assignment,
+      targetType,
+      targetId,
+      targetName,
+      sourceFilter: sourceFilter === 'all' ? 'all' : [sourceFilter],
     };
 
     console.log('New objective:', newObjective);
     toast.success('Objetivo criado com sucesso');
     
-    // Reset form
-    setName('');
-    setType('');
-    setTargetValue('');
-    setUnit('');
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setAssignment('');
+    resetForm();
     onOpenChange(false);
   };
 
-  const handleCancel = () => {
-    setName('');
-    setType('');
+  const resetForm = () => {
+    setFlow('');
+    setObjectiveCategory('');
+    setObjectiveType('');
     setTargetValue('');
-    setUnit('');
+    setUnit('number');
     setStartDate(undefined);
     setEndDate(undefined);
-    setAssignment('');
+    setTargetType('');
+    setTargetId('');
+    setSourceFilter('all');
+  };
+
+  const handleCancel = () => {
+    resetForm();
     onOpenChange(false);
+  };
+
+  // Reset objective type when flow or category changes
+  const handleFlowChange = (value: ObjectiveFlow) => {
+    setFlow(value);
+    setObjectiveType('');
+  };
+
+  const handleCategoryChange = (value: ObjectiveCategory) => {
+    setObjectiveCategory(value);
+    setObjectiveType('');
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">Novo Objetivo</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">Nome do Objetivo *</Label>
-            <Input
-              id="name"
-              placeholder="Ex: Faturação Trimestral Q1"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-
+          {/* Flow and Category */}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>Tipo *</Label>
-              <Select value={type} onValueChange={setType}>
+              <Label>Fluxo *</Label>
+              <Select value={flow} onValueChange={handleFlowChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="currency">Monetário</SelectItem>
-                  <SelectItem value="number">Número</SelectItem>
-                  <SelectItem value="percentage">Percentagem</SelectItem>
-                  <SelectItem value="points">Pontos</SelectItem>
+                  <SelectItem value="vendedores">Vendedores</SelectItem>
+                  <SelectItem value="compradores">Compradores</SelectItem>
+                  <SelectItem value="geral">Geral</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            <div className="grid gap-2">
+              <Label>Categoria *</Label>
+              <Select 
+                value={objectiveCategory} 
+                onValueChange={handleCategoryChange}
+                disabled={!flow || (flow === 'geral' && objectiveCategory !== 'result')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {flow !== 'geral' && (
+                    <SelectItem value="activity">Atividade</SelectItem>
+                  )}
+                  <SelectItem value="result">Resultado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Objective Type (controlled list) */}
+          <div className="grid gap-2">
+            <Label>Tipo *</Label>
+            <Select 
+              value={objectiveType} 
+              onValueChange={setObjectiveType}
+              disabled={availableTypes.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={availableTypes.length > 0 ? "Selecionar tipo" : "Selecione fluxo e categoria primeiro"} />
+              </SelectTrigger>
+              <SelectContent>
+                {availableTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Target Value and Unit */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="targetValue">Valor Alvo *</Label>
               <Input
@@ -124,37 +247,69 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
                 onChange={(e) => setTargetValue(e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="unit">Unidade</Label>
-              <Input
-                id="unit"
-                placeholder="€, pts, %"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-              />
-            </div>
 
             <div className="grid gap-2">
-              <Label>Atribuição</Label>
-              <Select value={assignment} onValueChange={setAssignment}>
+              <Label>Unidade *</Label>
+              <Select value={unit} onValueChange={(v) => setUnit(v as ObjectiveUnit)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="agency">Agência</SelectItem>
-                  <SelectItem value="director">Diretor</SelectItem>
-                  <SelectItem value="agent">Agente</SelectItem>
+                  {objectiveUnits.map((u) => (
+                    <SelectItem key={u.value} value={u.value}>
+                      {u.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
+          {/* Assignment Type and Target */}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>Data Início</Label>
+              <Label>Atribuição *</Label>
+              <Select value={targetType} onValueChange={(v) => { setTargetType(v as 'agent' | 'agency'); setTargetId(''); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="agent">Agente</SelectItem>
+                  <SelectItem value="agency">Agência</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{targetType === 'agent' ? 'Agente *' : targetType === 'agency' ? 'Agência *' : 'Pessoa/Agência'}</Label>
+              <Select 
+                value={targetId} 
+                onValueChange={setTargetId}
+                disabled={!targetType}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={targetType ? "Selecionar" : "Escolha atribuição primeiro"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {targetType === 'agent' && mockAgents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </SelectItem>
+                  ))}
+                  {targetType === 'agency' && mockAgencies.map((agency) => (
+                    <SelectItem key={agency.id} value={agency.id}>
+                      {agency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Data Início *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -181,7 +336,7 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
             </div>
 
             <div className="grid gap-2">
-              <Label>Data Fim</Label>
+              <Label>Data Fim *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -206,6 +361,27 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
+
+          {/* Source Filter (Optional) */}
+          <div className="grid gap-2">
+            <Label>Origem (opcional)</Label>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as origens" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as origens</SelectItem>
+                <SelectGroup>
+                  <SelectLabel>Origens disponíveis</SelectLabel>
+                  {availableSources.map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      {source.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

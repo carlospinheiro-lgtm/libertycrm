@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Eye, Pencil, Trash2, ClipboardList } from 'lucide-react';
-import { Objective } from '@/types';
+import { Objective, getObjectiveTypeName, objectiveFlowLabels, objectiveCategoryLabels } from '@/types';
 import { toast } from 'sonner';
 
 interface ObjectivesTableProps {
@@ -19,15 +19,12 @@ interface ObjectivesTableProps {
   onViewDetails: (objective: Objective) => void;
 }
 
-function formatValue(value: number, type: string, unit: string): string {
-  if (type === 'currency') {
-    return `${unit}${value.toLocaleString('pt-PT')}`;
+function formatValue(value: number, unit: string, unitSymbol: string): string {
+  if (unit === 'currency') {
+    return `${unitSymbol}${value.toLocaleString('pt-PT')}`;
   }
-  if (type === 'percentage') {
-    return `${value}${unit}`;
-  }
-  if (unit) {
-    return `${value.toLocaleString('pt-PT')} ${unit}`;
+  if (unitSymbol) {
+    return `${value.toLocaleString('pt-PT')} ${unitSymbol}`;
   }
   return value.toLocaleString('pt-PT');
 }
@@ -46,6 +43,25 @@ function getProgressColor(percentage: number): string {
   if (percentage >= 90) return '[&>div]:bg-success';
   if (percentage >= 70) return '[&>div]:bg-warning';
   return '[&>div]:bg-destructive';
+}
+
+function getFlowBadgeColor(flow: string): string {
+  switch (flow) {
+    case 'vendedores':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+    case 'compradores':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+    case 'geral':
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+    default:
+      return '';
+  }
+}
+
+function getCategoryBadgeColor(category: string): string {
+  return category === 'activity' 
+    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
 }
 
 export function ObjectivesTable({ objectives, onViewDetails }: ObjectivesTableProps) {
@@ -70,10 +86,13 @@ export function ObjectivesTable({ objectives, onViewDetails }: ObjectivesTablePr
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Objetivo</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Fluxo</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Atribuição</TableHead>
                 <TableHead className="text-right">Alvo</TableHead>
                 <TableHead className="text-right">Atual</TableHead>
-                <TableHead className="w-[180px]">Progresso</TableHead>
+                <TableHead className="w-[140px]">Progresso</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -82,6 +101,7 @@ export function ObjectivesTable({ objectives, onViewDetails }: ObjectivesTablePr
               {objectives.map((objective) => {
                 const percentage = Math.round((objective.currentValue / objective.targetValue) * 100);
                 const status = getStatusBadge(percentage);
+                const typeName = getObjectiveTypeName(objective);
                 
                 return (
                   <TableRow 
@@ -89,12 +109,25 @@ export function ObjectivesTable({ objectives, onViewDetails }: ObjectivesTablePr
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => onViewDetails(objective)}
                   >
-                    <TableCell className="font-medium">{objective.name}</TableCell>
+                    <TableCell className="font-medium">{typeName}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getFlowBadgeColor(objective.flow)}>
+                        {objectiveFlowLabels[objective.flow]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getCategoryBadgeColor(objective.objectiveCategory)}>
+                        {objectiveCategoryLabels[objective.objectiveCategory]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {objective.targetName || '-'}
+                    </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {formatValue(objective.targetValue, objective.type, objective.unit)}
+                      {formatValue(objective.targetValue, objective.unit, objective.unitSymbol)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatValue(objective.currentValue, objective.type, objective.unit)}
+                      {formatValue(objective.currentValue, objective.unit, objective.unitSymbol)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -102,7 +135,7 @@ export function ObjectivesTable({ objectives, onViewDetails }: ObjectivesTablePr
                           value={Math.min(percentage, 100)} 
                           className={`h-2 flex-1 ${getProgressColor(percentage)}`} 
                         />
-                        <span className="text-sm font-medium w-12 text-right">{percentage}%</span>
+                        <span className="text-sm font-medium w-10 text-right">{percentage}%</span>
                       </div>
                     </TableCell>
                     <TableCell>

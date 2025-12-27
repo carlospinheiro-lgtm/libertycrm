@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { formatDistanceToNow } from 'date-fns';
 import { Target, Calendar, TrendingUp, Home, Wallet, Star, User, ClipboardList } from 'lucide-react';
-import { Objective } from '@/types';
+import { Objective, getObjectiveTypeName, objectiveFlowLabels, objectiveCategoryLabels } from '@/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ObjectiveDetailsSheetProps {
@@ -62,15 +62,12 @@ const typeIcons = {
   outro: ClipboardList,
 };
 
-function formatValue(value: number, type: string, unit: string): string {
-  if (type === 'currency') {
-    return `${unit}${value.toLocaleString('pt-PT')}`;
+function formatValue(value: number, unit: string, unitSymbol: string): string {
+  if (unit === 'currency') {
+    return `${unitSymbol}${value.toLocaleString('pt-PT')}`;
   }
-  if (type === 'percentage') {
-    return `${value}${unit}`;
-  }
-  if (unit) {
-    return `${value.toLocaleString('pt-PT')} ${unit}`;
+  if (unitSymbol) {
+    return `${value.toLocaleString('pt-PT')} ${unitSymbol}`;
   }
   return value.toLocaleString('pt-PT');
 }
@@ -96,6 +93,7 @@ export function ObjectiveDetailsSheet({ open, onOpenChange, objective }: Objecti
 
   const percentage = Math.round((objective.currentValue / objective.targetValue) * 100);
   const status = getStatusBadge(percentage);
+  const typeName = getObjectiveTypeName(objective);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -103,11 +101,21 @@ export function ObjectiveDetailsSheet({ open, onOpenChange, objective }: Objecti
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 font-heading">
             <Target className="h-5 w-5 text-primary" />
-            {objective.name}
+            {typeName}
           </SheetTitle>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* Flow and Category badges */}
+          <div className="flex gap-2">
+            <Badge variant="outline" className="bg-primary/10">
+              {objectiveFlowLabels[objective.flow]}
+            </Badge>
+            <Badge variant="outline" className="bg-secondary">
+              {objectiveCategoryLabels[objective.objectiveCategory]}
+            </Badge>
+          </div>
+
           {/* Progress Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -122,10 +130,10 @@ export function ObjectiveDetailsSheet({ open, onOpenChange, objective }: Objecti
             
             <div className="flex justify-between text-sm">
               <span className="font-medium">
-                {formatValue(objective.currentValue, objective.type, objective.unit)}
+                {formatValue(objective.currentValue, objective.unit, objective.unitSymbol)}
               </span>
               <span className="text-muted-foreground">
-                de {formatValue(objective.targetValue, objective.type, objective.unit)}
+                de {formatValue(objective.targetValue, objective.unit, objective.unitSymbol)}
               </span>
             </div>
             
@@ -136,12 +144,27 @@ export function ObjectiveDetailsSheet({ open, onOpenChange, objective }: Objecti
 
           <Separator />
 
+          {/* Assignment */}
+          {objective.targetName && (
+            <>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Atribuição</span>
+                <span className="font-medium">
+                  {objective.targetType === 'agent' ? 'Agente: ' : 'Agência: '}
+                  {objective.targetName}
+                </span>
+              </div>
+              <Separator />
+            </>
+          )}
+
           {/* Period */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>
-              {objective.startDate && format(objective.startDate, 'dd MMM yyyy', { locale: pt })}
-              {objective.endDate && ` - ${format(objective.endDate, 'dd MMM yyyy', { locale: pt })}`}
+              {format(objective.startDate, 'dd MMM yyyy', { locale: pt })}
+              {' - '}
+              {format(objective.endDate, 'dd MMM yyyy', { locale: pt })}
             </span>
           </div>
 
@@ -166,10 +189,13 @@ export function ObjectiveDetailsSheet({ open, onOpenChange, objective }: Objecti
                   <YAxis 
                     tick={{ fontSize: 12 }} 
                     className="text-muted-foreground"
-                    tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value) => objective.unit === 'currency' ? `€${(value / 1000).toFixed(0)}k` : value.toString()}
                   />
                   <Tooltip 
-                    formatter={(value: number) => [`€${value.toLocaleString('pt-PT')}`, 'Valor']}
+                    formatter={(value: number) => [
+                      formatValue(value, objective.unit, objective.unitSymbol), 
+                      'Valor'
+                    ]}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',

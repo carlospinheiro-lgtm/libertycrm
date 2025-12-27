@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Target, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Target, TrendingUp, AlertTriangle, CheckCircle2, Activity, Award } from 'lucide-react';
 import { Objective } from '@/types';
 
 interface ObjectivesStatsProps {
@@ -8,6 +8,8 @@ interface ObjectivesStatsProps {
 
 export function ObjectivesStats({ objectives }: ObjectivesStatsProps) {
   const total = objectives.length;
+  const activityCount = objectives.filter(o => o.objectiveCategory === 'activity').length;
+  const resultCount = objectives.filter(o => o.objectiveCategory === 'result').length;
   
   const onTarget = objectives.filter(o => {
     const percentage = (o.currentValue / o.targetValue) * 100;
@@ -31,6 +33,22 @@ export function ObjectivesStats({ objectives }: ObjectivesStatsProps) {
       icon: Target,
       iconColor: 'text-primary',
       bgColor: 'bg-primary/10',
+    },
+    {
+      label: 'Atividade',
+      value: activityCount,
+      subtitle: total > 0 ? `${Math.round((activityCount / total) * 100)}%` : '0%',
+      icon: Activity,
+      iconColor: 'text-amber-600',
+      bgColor: 'bg-amber-500/10',
+    },
+    {
+      label: 'Resultado',
+      value: resultCount,
+      subtitle: total > 0 ? `${Math.round((resultCount / total) * 100)}%` : '0%',
+      icon: Award,
+      iconColor: 'text-emerald-600',
+      bgColor: 'bg-emerald-500/10',
     },
     {
       label: 'No Alvo',
@@ -59,7 +77,7 @@ export function ObjectivesStats({ objectives }: ObjectivesStatsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {stats.map((stat) => (
         <Card key={stat.label}>
           <CardContent className="p-4">
