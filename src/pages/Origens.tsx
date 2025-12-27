@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Tag } from 'lucide-react';
 import { useSources } from '@/hooks/useSources';
-import { Source, SourceFlow, SourceCategory, sourceCategoryLabels, sourceFlowLabels } from '@/types';
+import { Source, SourceFlow, SourceCategory, SourceType, sourceCategoryLabels, sourceFlowLabels, sourceTypeLabels } from '@/types';
 
 export default function Origens() {
   const { sources, addSource, updateSource, deleteSource, toggleSourceActive } = useSources();
@@ -16,10 +16,12 @@ export default function Origens() {
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [flowFilter, setFlowFilter] = useState<SourceFlow | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<SourceCategory | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<SourceType | 'all'>('all');
 
   const filteredSources = sources.filter(source => {
     if (flowFilter !== 'all' && source.flow !== flowFilter && source.flow !== 'ambos') return false;
     if (categoryFilter !== 'all' && source.category !== categoryFilter) return false;
+    if (typeFilter !== 'all' && source.sourceType !== typeFilter) return false;
     return true;
   });
 
@@ -53,14 +55,26 @@ export default function Origens() {
           
           <div className="flex flex-wrap gap-2">
             <Select value={flowFilter} onValueChange={(v) => setFlowFilter(v as SourceFlow | 'all')}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Fluxo" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos Fluxos</SelectItem>
-                <SelectItem value="vendedores">Vendedores</SelectItem>
-                <SelectItem value="compradores">Compradores</SelectItem>
-                <SelectItem value="ambos">Ambos</SelectItem>
+                {Object.entries(sourceFlowLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as SourceType | 'all')}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Tipos</SelectItem>
+                {Object.entries(sourceTypeLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             

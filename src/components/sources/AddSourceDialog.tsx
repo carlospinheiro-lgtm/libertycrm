@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Source, SourceFlow, SourceCategory, sourceCategoryLabels, sourceFlowLabels } from '@/types';
+import { Source, SourceFlow, SourceCategory, SourceType, sourceCategoryLabels, sourceFlowLabels, sourceTypeLabels } from '@/types';
 import { toast } from 'sonner';
 
 interface AddSourceDialogProps {
@@ -29,6 +29,7 @@ interface AddSourceDialogProps {
 export function AddSourceDialog({ open, onOpenChange, onAdd }: AddSourceDialogProps) {
   const [name, setName] = useState('');
   const [flow, setFlow] = useState<SourceFlow>('ambos');
+  const [sourceType, setSourceType] = useState<SourceType>('passiva');
   const [category, setCategory] = useState<SourceCategory>('marketing');
 
   const handleSubmit = () => {
@@ -40,6 +41,7 @@ export function AddSourceDialog({ open, onOpenChange, onAdd }: AddSourceDialogPr
     onAdd({
       name: name.trim(),
       flow,
+      sourceType,
       category,
       isActive: true,
       createdBy: 'current-user', // TODO: Get from auth
@@ -53,6 +55,7 @@ export function AddSourceDialog({ open, onOpenChange, onAdd }: AddSourceDialogPr
   const resetForm = () => {
     setName('');
     setFlow('ambos');
+    setSourceType('passiva');
     setCategory('marketing');
   };
 
@@ -82,21 +85,37 @@ export function AddSourceDialog({ open, onOpenChange, onAdd }: AddSourceDialogPr
             />
           </div>
 
-          <div className="grid gap-2">
-            <Label>Fluxo</Label>
-            <Select value={flow} onValueChange={(v) => setFlow(v as SourceFlow)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(sourceFlowLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Define em que fluxos esta origem estará disponível
-            </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Fluxo *</Label>
+              <Select value={flow} onValueChange={(v) => setFlow(v as SourceFlow)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(sourceFlowLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Tipo de Origem *</Label>
+              <Select value={sourceType} onValueChange={(v) => setSourceType(v as SourceType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(sourceTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Ativa: prospecção | Passiva: leads recebidas
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-2">

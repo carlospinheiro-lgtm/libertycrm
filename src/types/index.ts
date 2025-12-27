@@ -17,13 +17,15 @@ export interface Client {
 export type LeadTemperature = 'hot' | 'warm' | 'cold' | 'undefined';
 
 // ============= SOURCE / ORIGIN TYPES =============
-export type SourceFlow = 'vendedores' | 'compradores' | 'ambos';
+export type SourceFlow = 'vendedores' | 'compradores' | 'recrutamento' | 'intermediacao_credito' | 'ambos';
+export type SourceType = 'ativa' | 'passiva';
 export type SourceCategory = 'posicionamento' | 'marketing' | 'referencias' | 'espontaneo';
 
 export interface Source {
   id: string;
   name: string;
   flow: SourceFlow;
+  sourceType: SourceType;
   category: SourceCategory;
   isActive: boolean;
   createdAt: Date;
@@ -32,24 +34,33 @@ export interface Source {
 
 // Default sources mock data
 export const defaultSources: Source[] = [
-  // Posicionamento
-  { id: '1', name: 'Entrou na Loja', flow: 'ambos', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
-  { id: '2', name: 'Posicionamento', flow: 'vendedores', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
-  { id: '3', name: 'Porta-a-Porta', flow: 'vendedores', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  // Posicionamento - ATIVA
+  { id: '1', name: 'Posicionamento', flow: 'vendedores', sourceType: 'ativa', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '2', name: 'Porta-a-Porta', flow: 'vendedores', sourceType: 'ativa', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '3', name: 'Entrou na Loja', flow: 'ambos', sourceType: 'passiva', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
   
-  // Marketing
-  { id: '4', name: 'Portal Imobiliário', flow: 'compradores', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
-  { id: '5', name: 'Facebook', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
-  { id: '6', name: 'Instagram', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
-  { id: '7', name: 'Google Ads', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
-  { id: '8', name: 'Website', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  // Marketing - PASSIVA
+  { id: '4', name: 'Portal Imobiliário', flow: 'compradores', sourceType: 'passiva', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '5', name: 'Facebook', flow: 'ambos', sourceType: 'passiva', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '6', name: 'Instagram', flow: 'ambos', sourceType: 'passiva', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '7', name: 'Google Ads', flow: 'ambos', sourceType: 'passiva', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '8', name: 'Website', flow: 'ambos', sourceType: 'passiva', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
   
-  // Referências
-  { id: '9', name: 'Referência Cliente', flow: 'ambos', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
-  { id: '10', name: 'Referência Parceiro', flow: 'ambos', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  // Referências - PASSIVA
+  { id: '9', name: 'Referência Cliente', flow: 'ambos', sourceType: 'passiva', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '10', name: 'Referência Parceiro', flow: 'ambos', sourceType: 'passiva', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
   
-  // Espontâneo
-  { id: '11', name: 'Contacto Direto', flow: 'ambos', category: 'espontaneo', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  // Espontâneo - ATIVA
+  { id: '11', name: 'Contacto Direto', flow: 'ambos', sourceType: 'ativa', category: 'espontaneo', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '12', name: 'Prospecção Telefónica', flow: 'ambos', sourceType: 'ativa', category: 'espontaneo', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  
+  // Recrutamento específicas
+  { id: '13', name: 'LinkedIn Recruiting', flow: 'recrutamento', sourceType: 'ativa', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '14', name: 'Candidatura Website', flow: 'recrutamento', sourceType: 'passiva', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  
+  // Intermediação de Crédito específicas
+  { id: '15', name: 'Pedido via Processo', flow: 'intermediacao_credito', sourceType: 'passiva', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '16', name: 'Contacto Banco Parceiro', flow: 'intermediacao_credito', sourceType: 'passiva', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
 ];
 
 // ============= LEAD TYPES =============
@@ -202,7 +213,7 @@ export interface AccountEntry {
 }
 
 // ============= OBJECTIVE TYPES =============
-export type ObjectiveFlow = 'vendedores' | 'compradores' | 'geral';
+export type ObjectiveFlow = 'vendedores' | 'compradores' | 'recrutamento' | 'intermediacao_credito' | 'geral';
 export type ObjectiveCategory = 'activity' | 'result';
 
 export type ActivityObjectiveType = 
@@ -218,7 +229,16 @@ export type ActivityObjectiveType =
   | 'leads_compradores'
   | 'qualificacao'
   | 'visitas'
-  | 'propostas';
+  | 'propostas'
+  // Recrutamento
+  | 'contactos_recrutamento'
+  | 'entrevistas_agendadas'
+  | 'entrevistas_realizadas'
+  | 'formacoes_iniciais'
+  // Intermediação de Crédito
+  | 'simulacoes_credito'
+  | 'processos_submetidos'
+  | 'aprovacoes_obtidas';
 
 export type ResultObjectiveType =
   | 'angariacao_reservada'
@@ -226,7 +246,12 @@ export type ResultObjectiveType =
   | 'transacao_venda'
   | 'transacao_arrendamento'
   | 'faturacao_vendas'
-  | 'faturacao_arrendamentos';
+  | 'faturacao_arrendamentos'
+  // Recrutamento
+  | 'consultores_integrados'
+  // Intermediação de Crédito
+  | 'creditos_formalizados'
+  | 'comissoes_credito';
 
 // Listas controladas de tipos por fluxo
 export const activityTypesVendedores = [
@@ -246,12 +271,34 @@ export const activityTypesCompradores = [
   { value: 'propostas', label: 'Propostas' },
 ] as const;
 
+export const activityTypesRecrutamento = [
+  { value: 'contactos_recrutamento', label: 'Contactos de Recrutamento' },
+  { value: 'entrevistas_agendadas', label: 'Entrevistas Agendadas' },
+  { value: 'entrevistas_realizadas', label: 'Entrevistas Realizadas' },
+  { value: 'formacoes_iniciais', label: 'Formações Iniciais' },
+] as const;
+
+export const activityTypesIntermediacao = [
+  { value: 'simulacoes_credito', label: 'Simulações de Crédito' },
+  { value: 'processos_submetidos', label: 'Processos Submetidos' },
+  { value: 'aprovacoes_obtidas', label: 'Aprovações Obtidas' },
+] as const;
+
 export const resultTypesVendedores = [
   { value: 'angariacao_reservada', label: 'Angariações Reservadas' },
 ] as const;
 
 export const resultTypesCompradores = [
   { value: 'reserva_comprador', label: 'Reservas' },
+] as const;
+
+export const resultTypesRecrutamento = [
+  { value: 'consultores_integrados', label: 'Consultores Integrados' },
+] as const;
+
+export const resultTypesIntermediacao = [
+  { value: 'creditos_formalizados', label: 'Créditos Formalizados' },
+  { value: 'comissoes_credito', label: 'Comissões de Crédito' },
 ] as const;
 
 export const resultTypesGerais = [
@@ -295,12 +342,20 @@ export function getObjectiveTypeName(objective: Objective): string {
     if (vendedorType) return vendedorType.label;
     const compradorType = activityTypesCompradores.find(t => t.value === objective.activityType);
     if (compradorType) return compradorType.label;
+    const recrutamentoType = activityTypesRecrutamento.find(t => t.value === objective.activityType);
+    if (recrutamentoType) return recrutamentoType.label;
+    const intermediacaoType = activityTypesIntermediacao.find(t => t.value === objective.activityType);
+    if (intermediacaoType) return intermediacaoType.label;
   }
   if (objective.objectiveCategory === 'result' && objective.resultType) {
     const vendedorType = resultTypesVendedores.find(t => t.value === objective.resultType);
     if (vendedorType) return vendedorType.label;
     const compradorType = resultTypesCompradores.find(t => t.value === objective.resultType);
     if (compradorType) return compradorType.label;
+    const recrutamentoType = resultTypesRecrutamento.find(t => t.value === objective.resultType);
+    if (recrutamentoType) return recrutamentoType.label;
+    const intermediacaoType = resultTypesIntermediacao.find(t => t.value === objective.resultType);
+    if (intermediacaoType) return intermediacaoType.label;
     const geralType = resultTypesGerais.find(t => t.value === objective.resultType);
     if (geralType) return geralType.label;
   }
@@ -367,12 +422,21 @@ export const sourceCategoryLabels: Record<SourceCategory, string> = {
 export const sourceFlowLabels: Record<SourceFlow, string> = {
   vendedores: 'Vendedores',
   compradores: 'Compradores',
-  ambos: 'Ambos',
+  recrutamento: 'Recrutamento',
+  intermediacao_credito: 'Interm. Crédito',
+  ambos: 'Todos os Fluxos',
+};
+
+export const sourceTypeLabels: Record<SourceType, string> = {
+  ativa: 'Ativa',
+  passiva: 'Passiva',
 };
 
 export const objectiveFlowLabels: Record<ObjectiveFlow, string> = {
   vendedores: 'Vendedores',
   compradores: 'Compradores',
+  recrutamento: 'Recrutamento',
+  intermediacao_credito: 'Interm. Crédito',
   geral: 'Geral',
 };
 

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Source, SourceFlow, SourceCategory, sourceCategoryLabels, sourceFlowLabels } from '@/types';
+import { Source, SourceFlow, SourceCategory, SourceType, sourceCategoryLabels, sourceFlowLabels, sourceTypeLabels } from '@/types';
 import { toast } from 'sonner';
 
 interface EditSourceDialogProps {
@@ -30,11 +30,13 @@ interface EditSourceDialogProps {
 export function EditSourceDialog({ open, onOpenChange, source, onSave }: EditSourceDialogProps) {
   const [name, setName] = useState(source.name);
   const [flow, setFlow] = useState<SourceFlow>(source.flow);
+  const [sourceType, setSourceType] = useState<SourceType>(source.sourceType || 'passiva');
   const [category, setCategory] = useState<SourceCategory>(source.category);
 
   useEffect(() => {
     setName(source.name);
     setFlow(source.flow);
+    setSourceType(source.sourceType || 'passiva');
     setCategory(source.category);
   }, [source]);
 
@@ -47,6 +49,7 @@ export function EditSourceDialog({ open, onOpenChange, source, onSave }: EditSou
     onSave(source.id, {
       name: name.trim(),
       flow,
+      sourceType,
       category,
     });
 
@@ -75,18 +78,34 @@ export function EditSourceDialog({ open, onOpenChange, source, onSave }: EditSou
             />
           </div>
 
-          <div className="grid gap-2">
-            <Label>Fluxo</Label>
-            <Select value={flow} onValueChange={(v) => setFlow(v as SourceFlow)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(sourceFlowLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Fluxo</Label>
+              <Select value={flow} onValueChange={(v) => setFlow(v as SourceFlow)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(sourceFlowLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Tipo de Origem</Label>
+              <Select value={sourceType} onValueChange={(v) => setSourceType(v as SourceType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(sourceTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid gap-2">

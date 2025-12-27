@@ -45,25 +45,9 @@ const objectivesMock: Objective[] = [
     targetName: 'Braga',
     sourceFilter: 'all',
   },
-  {
-    id: '3',
-    flow: 'vendedores',
-    objectiveCategory: 'activity',
-    activityType: 'chamadas_vendedores',
-    currentValue: 120,
-    targetValue: 150,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agent',
-    targetId: 'agent-1',
-    targetName: 'João Silva',
-    sourceFilter: 'all',
-  },
   // Vendedores - Resultado
   {
-    id: '4',
+    id: '3',
     flow: 'vendedores',
     objectiveCategory: 'result',
     resultType: 'angariacao_reservada',
@@ -80,22 +64,7 @@ const objectivesMock: Objective[] = [
   },
   // Compradores - Atividade
   {
-    id: '5',
-    flow: 'compradores',
-    objectiveCategory: 'activity',
-    activityType: 'qualificacao',
-    currentValue: 42,
-    targetValue: 60,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Braga',
-    sourceFilter: 'all',
-  },
-  {
-    id: '6',
+    id: '4',
     flow: 'compradores',
     objectiveCategory: 'activity',
     activityType: 'visitas',
@@ -110,24 +79,9 @@ const objectivesMock: Objective[] = [
     targetName: 'Maria Santos',
     sourceFilter: 'all',
   },
-  {
-    id: '7',
-    flow: 'compradores',
-    objectiveCategory: 'activity',
-    activityType: 'propostas',
-    currentValue: 12,
-    targetValue: 20,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Barcelos',
-    sourceFilter: 'all',
-  },
   // Compradores - Resultado
   {
-    id: '8',
+    id: '5',
     flow: 'compradores',
     objectiveCategory: 'result',
     resultType: 'reserva_comprador',
@@ -142,9 +96,73 @@ const objectivesMock: Objective[] = [
     targetName: 'Maria Santos',
     sourceFilter: 'all',
   },
-  // Geral - Resultado
+  // Recrutamento - Atividade
+  {
+    id: '6',
+    flow: 'recrutamento',
+    objectiveCategory: 'activity',
+    activityType: 'entrevistas_realizadas',
+    currentValue: 12,
+    targetValue: 20,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-12-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Braga',
+    sourceFilter: 'all',
+  },
+  // Recrutamento - Resultado
+  {
+    id: '7',
+    flow: 'recrutamento',
+    objectiveCategory: 'result',
+    resultType: 'consultores_integrados',
+    currentValue: 3,
+    targetValue: 5,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-10-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Todas',
+    sourceFilter: 'all',
+  },
+  // Intermediação de Crédito - Atividade
+  {
+    id: '8',
+    flow: 'intermediacao_credito',
+    objectiveCategory: 'activity',
+    activityType: 'simulacoes_credito',
+    currentValue: 25,
+    targetValue: 40,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-12-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Todas',
+    sourceFilter: 'all',
+  },
+  // Intermediação de Crédito - Resultado
   {
     id: '9',
+    flow: 'intermediacao_credito',
+    objectiveCategory: 'result',
+    resultType: 'creditos_formalizados',
+    currentValue: 8,
+    targetValue: 15,
+    unit: 'number',
+    unitSymbol: '',
+    startDate: new Date('2024-10-01'),
+    endDate: new Date('2024-12-31'),
+    targetType: 'agency',
+    targetName: 'Todas',
+    sourceFilter: 'all',
+  },
+  // Geral - Resultado
+  {
+    id: '10',
     flow: 'geral',
     objectiveCategory: 'result',
     resultType: 'transacao_venda',
@@ -159,7 +177,7 @@ const objectivesMock: Objective[] = [
     sourceFilter: 'all',
   },
   {
-    id: '10',
+    id: '11',
     flow: 'geral',
     objectiveCategory: 'result',
     resultType: 'faturacao_vendas',
@@ -251,6 +269,8 @@ export default function Objetivos() {
             <TabsTrigger value="all">Todos</TabsTrigger>
             <TabsTrigger value="vendedores">Vendedores</TabsTrigger>
             <TabsTrigger value="compradores">Compradores</TabsTrigger>
+            <TabsTrigger value="recrutamento">Recrutamento</TabsTrigger>
+            <TabsTrigger value="intermediacao_credito">Interm. Crédito</TabsTrigger>
             <TabsTrigger value="geral">Geral</TabsTrigger>
           </TabsList>
 
