@@ -13,6 +13,8 @@ import {
 import { Eye, Pencil, Trash2, ClipboardList } from 'lucide-react';
 import { Objective, getObjectiveTypeName, objectiveFlowLabels, objectiveCategoryLabels } from '@/types';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileObjectiveCard } from './MobileObjectiveCard';
 
 interface ObjectivesTableProps {
   objectives: Objective[];
@@ -66,6 +68,8 @@ function getCategoryBadgeColor(category: string): string {
 }
 
 export function ObjectivesTable({ objectives, onViewDetails, title = 'Lista de Objetivos' }: ObjectivesTableProps) {
+  const isMobile = useIsMobile();
+  
   const handleEdit = (objective: Objective) => {
     toast.info('Funcionalidade de edição em desenvolvimento');
   };
@@ -76,6 +80,26 @@ export function ObjectivesTable({ objectives, onViewDetails, title = 'Lista de O
 
   if (objectives.length === 0) {
     return null;
+  }
+
+  // Mobile: Use cards instead of table
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 px-1">
+          <ClipboardList className="h-4 w-4" />
+          {title} ({objectives.length})
+        </h3>
+        {objectives.map((objective) => (
+          <MobileObjectiveCard
+            key={objective.id}
+            objective={objective}
+            onViewDetails={onViewDetails}
+            showCategory={true}
+          />
+        ))}
+      </div>
+    );
   }
 
   return (

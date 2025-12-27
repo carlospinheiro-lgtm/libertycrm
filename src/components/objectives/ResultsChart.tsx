@@ -3,16 +3,29 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { BarChart3 } from 'lucide-react';
 import { Objective, ObjectiveFlow, objectiveFlowLabels } from '@/types';
 
+import { useIsMobile } from '@/hooks/use-mobile';
+
 interface ResultsChartProps {
   objectives: Objective[];
 }
 
 export function ResultsChart({ objectives }: ResultsChartProps) {
+  const isMobile = useIsMobile();
+  
   // Filter only result objectives
   const resultObjectives = objectives.filter(o => o.objectiveCategory === 'result');
   
   // Group by flow
   const flows: ObjectiveFlow[] = ['vendedores', 'compradores', 'recrutamento', 'intermediacao_credito', 'geral'];
+  
+  // Short labels for mobile
+  const mobileLabels: Record<ObjectiveFlow, string> = {
+    vendedores: 'Vend.',
+    compradores: 'Comp.',
+    recrutamento: 'Recr.',
+    intermediacao_credito: 'Créd.',
+    geral: 'Geral',
+  };
   
   const chartData = flows.map(flow => {
     const flowObjectives = resultObjectives.filter(o => o.flow === flow);
@@ -20,7 +33,8 @@ export function ResultsChart({ objectives }: ResultsChartProps) {
     const realizado = flowObjectives.reduce((sum, o) => sum + o.currentValue, 0);
     
     return {
-      name: objectiveFlowLabels[flow],
+      name: isMobile ? mobileLabels[flow] : objectiveFlowLabels[flow],
+      fullName: objectiveFlowLabels[flow],
       flow,
       Definido: definido,
       Realizado: realizado,
@@ -47,28 +61,32 @@ export function ResultsChart({ objectives }: ResultsChartProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div className={isMobile ? "h-[200px]" : "h-[280px]"}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={isMobile 
+                ? { top: 5, right: 10, left: 0, bottom: 5 }
+                : { top: 5, right: 30, left: 20, bottom: 5 }
+              }
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis type="number" className="text-xs" />
+              <XAxis type="number" className="text-xs" hide={isMobile} />
               <YAxis 
                 dataKey="name" 
                 type="category" 
-                width={100}
+                width={isMobile ? 45 : 100}
                 className="text-xs"
+                tick={{ fontSize: isMobile ? 10 : 12 }}
               />
               <Tooltip 
-                content={({ active, payload, label }) => {
+                content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
                       <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
-                        <p className="font-semibold mb-2">{label}</p>
+                        <p className="font-semibold mb-2">{data.fullName || data.name}</p>
                         <div className="space-y-1 text-sm">
                           <p className="flex justify-between gap-4">
                             <span className="text-muted-foreground">Definido:</span>
@@ -89,7 +107,7 @@ export function ResultsChart({ objectives }: ResultsChartProps) {
                   return null;
                 }}
               />
-              <Legend />
+              {!isMobile && <Legend />}
               <Bar 
                 dataKey="Definido" 
                 fill="hsl(var(--muted-foreground))" 
