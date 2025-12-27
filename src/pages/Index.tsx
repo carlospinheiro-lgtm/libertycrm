@@ -5,62 +5,99 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { ObjectivesSummary } from '@/components/dashboard/ObjectivesSummary';
 import { ObjectivesTracking } from '@/components/dashboard/ObjectivesTracking';
 import {
-  Users,
+  Activity,
   Home,
-  FileText,
-  UserPlus,
+  ShoppingCart,
+  Users,
+  CreditCard,
   TrendingUp,
-  Calendar,
 } from 'lucide-react';
+
+// Dados agregados dos objetivos (mock - futuramente virá da base de dados)
+const dashboardStats = {
+  // Vendedores Atividade
+  vendedoresAtividade: {
+    realized: 63,
+    defined: 80,
+    percentage: 79,
+  },
+  // Vendedores Resultado (Angariações Exclusivo + Exclusivo Rede)
+  vendedoresResultado: {
+    realized: 11,
+    defined: 15,
+    percentage: 73,
+  },
+  // Compradores Resultado (Reservas)
+  compradoresResultado: {
+    realized: 5,
+    defined: 8,
+    percentage: 63,
+  },
+  // Recrutamento Pipeline
+  recrutamentoPipeline: {
+    leadsObtidas: 22,
+    entrevistasRealizadas: 12,
+  },
+  // Intermediação Crédito
+  creditoPipeline: {
+    emAnalise: 8,
+    aprovados: 5,
+  },
+  // Faturação Mensal (derivada de comissões)
+  faturacaoMensal: {
+    valor: 45200,
+    percentagemObjetivo: 83,
+  },
+};
 
 const stats = [
   {
-    title: 'Leads Compradores',
-    value: 48,
-    change: '+12% vs mês anterior',
-    changeType: 'positive' as const,
-    icon: Users,
-    iconColor: 'primary' as const,
-  },
-  {
-    title: 'Leads Vendedores',
-    value: 32,
-    change: '+8% vs mês anterior',
-    changeType: 'positive' as const,
-    icon: Home,
-    iconColor: 'accent' as const,
-  },
-  {
-    title: 'Processos Ativos',
-    value: 15,
-    change: '5 em escritura',
-    changeType: 'neutral' as const,
-    icon: FileText,
+    title: 'Vendedores – Atividade',
+    value: `${dashboardStats.vendedoresAtividade.percentage}%`,
+    change: `${dashboardStats.vendedoresAtividade.realized}/${dashboardStats.vendedoresAtividade.defined} ações`,
+    changeType: dashboardStats.vendedoresAtividade.percentage >= 70 ? 'positive' as const : 'neutral' as const,
+    icon: Activity,
     iconColor: 'info' as const,
   },
   {
-    title: 'Candidatos Recrutamento',
-    value: 8,
-    change: '3 em entrevista',
-    changeType: 'neutral' as const,
-    icon: UserPlus,
-    iconColor: 'warning' as const,
-  },
-  {
-    title: 'Faturação Mensal',
-    value: '€45.2K',
-    change: '+23% vs objetivo',
-    changeType: 'positive' as const,
-    icon: TrendingUp,
+    title: 'Vendedores – Resultado',
+    value: dashboardStats.vendedoresResultado.realized,
+    change: `${dashboardStats.vendedoresResultado.percentage}% do objetivo`,
+    changeType: dashboardStats.vendedoresResultado.percentage >= 70 ? 'positive' as const : 'neutral' as const,
+    icon: Home,
     iconColor: 'success' as const,
   },
   {
-    title: 'Atividades Pendentes',
-    value: 12,
-    change: '4 para hoje',
+    title: 'Compradores – Resultado',
+    value: dashboardStats.compradoresResultado.realized,
+    change: `${dashboardStats.compradoresResultado.percentage}% do objetivo`,
+    changeType: dashboardStats.compradoresResultado.percentage >= 60 ? 'neutral' as const : 'negative' as const,
+    icon: ShoppingCart,
+    iconColor: 'success' as const,
+  },
+  {
+    title: 'Recrutamento – Pipeline',
+    value: dashboardStats.recrutamentoPipeline.leadsObtidas,
+    change: `${dashboardStats.recrutamentoPipeline.entrevistasRealizadas} entrevistas`,
     changeType: 'neutral' as const,
-    icon: Calendar,
-    iconColor: 'info' as const,
+    icon: Users,
+    iconColor: 'purple' as const,
+  },
+  {
+    title: 'Interm. Crédito – Pipeline',
+    value: dashboardStats.creditoPipeline.emAnalise,
+    change: `${dashboardStats.creditoPipeline.aprovados} aprovados`,
+    changeType: 'neutral' as const,
+    icon: CreditCard,
+    iconColor: 'warning' as const,
+  },
+  {
+    title: 'Faturação do Mês',
+    value: `€${(dashboardStats.faturacaoMensal.valor / 1000).toFixed(1)}K`,
+    change: `${dashboardStats.faturacaoMensal.percentagemObjetivo}% vs objetivo`,
+    changeType: 'positive' as const,
+    icon: TrendingUp,
+    iconColor: 'success' as const,
   },
 ];
 
