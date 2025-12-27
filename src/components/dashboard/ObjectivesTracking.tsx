@@ -2,43 +2,53 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ClipboardList, Plus, ArrowRight, Home, Wallet, Star, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { AddResultDialog } from './AddResultDialog';
+import { ObjectiveFlow, ObjectiveCategory, objectiveFlowLabels, objectiveCategoryLabels } from '@/types';
 
 // Mock data - TODO: Connect to database
 const updatesMock = [
   {
     id: '1',
     type: 'angariacao' as const,
+    flow: 'vendedores' as ObjectiveFlow,
+    objectiveCategory: 'result' as ObjectiveCategory,
     description: 'Nova angariação registada',
     value: '+1',
-    objectiveName: 'Novas Angariações',
+    objectiveName: 'Angariações Reservadas',
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
   },
   {
     id: '2',
     type: 'reserva' as const,
+    flow: 'compradores' as ObjectiveFlow,
+    objectiveCategory: 'result' as ObjectiveCategory,
     description: 'Reserva confirmada - Apartamento T3',
     value: '+€8.500',
-    objectiveName: 'Faturação Trimestral Q4',
+    objectiveName: 'Reservas',
     createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
   },
   {
     id: '3',
-    type: 'pontos' as const,
-    description: 'Pontos de equipa atualizados',
-    value: '+250 pts',
-    objectiveName: 'Pontos de Equipa',
+    type: 'lead' as const,
+    flow: 'vendedores' as ObjectiveFlow,
+    objectiveCategory: 'activity' as ObjectiveCategory,
+    description: 'Posicionamento registado',
+    value: '+5',
+    objectiveName: 'Posicionamento',
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
   },
   {
     id: '4',
     type: 'lead' as const,
-    description: 'Lead qualificada para compra',
+    flow: 'compradores' as ObjectiveFlow,
+    objectiveCategory: 'activity' as ObjectiveCategory,
+    description: 'Visita realizada',
     value: '+1',
-    objectiveName: 'Leads Qualificadas',
+    objectiveName: 'Visitas',
     createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
   },
 ];
@@ -60,6 +70,23 @@ const typeColors = {
   transacao: 'text-success',
   outro: 'text-muted-foreground',
 };
+
+function getFlowBadgeColor(flow: ObjectiveFlow): string {
+  switch (flow) {
+    case 'vendedores':
+      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+    case 'compradores':
+      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+    case 'geral':
+      return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+  }
+}
+
+function getCategoryBadgeColor(category: ObjectiveCategory): string {
+  return category === 'activity' 
+    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+}
 
 export function ObjectivesTracking() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -99,6 +126,14 @@ export function ObjectivesTracking() {
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getFlowBadgeColor(update.flow)}`}>
+                        {objectiveFlowLabels[update.flow]}
+                      </Badge>
+                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getCategoryBadgeColor(update.objectiveCategory)}`}>
+                        {objectiveCategoryLabels[update.objectiveCategory]}
+                      </Badge>
+                    </div>
                     <p className="text-sm font-medium truncate">{update.description}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                       <span className="font-medium text-foreground">{update.value}</span>

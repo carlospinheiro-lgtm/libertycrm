@@ -203,6 +203,7 @@ export interface AccountEntry {
 
 // ============= OBJECTIVE TYPES =============
 export type ObjectiveFlow = 'vendedores' | 'compradores' | 'geral';
+export type ObjectiveCategory = 'activity' | 'result';
 
 export type ActivityObjectiveType = 
   // Vendedores
@@ -223,25 +224,87 @@ export type ResultObjectiveType =
   | 'angariacao_reservada'
   | 'reserva_comprador'
   | 'transacao_venda'
-  | 'transacao_arrendamento';
+  | 'transacao_arrendamento'
+  | 'faturacao_vendas'
+  | 'faturacao_arrendamentos';
+
+// Listas controladas de tipos por fluxo
+export const activityTypesVendedores = [
+  { value: 'posicionamento_vendedores', label: 'Posicionamento' },
+  { value: 'leads_vendedores', label: 'Leads Obtidas' },
+  { value: 'chamadas_vendedores', label: 'Chamadas Realizadas' },
+  { value: 'contactos_efetivos_vendedores', label: 'Contactos Efetivos' },
+  { value: 'apresentacoes_servicos', label: 'Apresentações de Serviços' },
+  { value: 'seguimentos_vendedores', label: 'Seguimentos Realizados' },
+] as const;
+
+export const activityTypesCompradores = [
+  { value: 'posicionamento_compradores', label: 'Posicionamento' },
+  { value: 'leads_compradores', label: 'Leads Obtidas' },
+  { value: 'qualificacao', label: 'Qualificação' },
+  { value: 'visitas', label: 'Visitas' },
+  { value: 'propostas', label: 'Propostas' },
+] as const;
+
+export const resultTypesVendedores = [
+  { value: 'angariacao_reservada', label: 'Angariações Reservadas' },
+] as const;
+
+export const resultTypesCompradores = [
+  { value: 'reserva_comprador', label: 'Reservas' },
+] as const;
+
+export const resultTypesGerais = [
+  { value: 'transacao_venda', label: 'Transações – Venda' },
+  { value: 'transacao_arrendamento', label: 'Transações – Arrendamento' },
+  { value: 'faturacao_vendas', label: 'Faturação – Vendas' },
+  { value: 'faturacao_arrendamentos', label: 'Faturação – Arrendamentos' },
+] as const;
+
+// Unidades disponíveis
+export const objectiveUnits = [
+  { value: 'number', label: 'Número (nº)', symbol: '' },
+  { value: 'currency', label: 'Euros (€)', symbol: '€' },
+  { value: 'points', label: 'Pontos (pts)', symbol: 'pts' },
+] as const;
+
+export type ObjectiveUnit = 'number' | 'currency' | 'points';
 
 export interface Objective {
   id: string;
-  name: string;
   flow: ObjectiveFlow;
-  objectiveType: 'activity' | 'result';
+  objectiveCategory: ObjectiveCategory;
   activityType?: ActivityObjectiveType;
   resultType?: ResultObjectiveType;
   currentValue: number;
   targetValue: number;
-  unit: string;
-  type: 'currency' | 'number' | 'points' | 'percentage';
-  startDate?: Date;
-  endDate?: Date;
-  targetType?: 'agency' | 'director' | 'agent';
+  unit: ObjectiveUnit;
+  unitSymbol: string;
+  startDate: Date;
+  endDate: Date;
+  targetType: 'agency' | 'agent';
   targetId?: string;
   targetName?: string;
   sourceFilter?: 'all' | string[];
+}
+
+// Helper to get objective name from type
+export function getObjectiveTypeName(objective: Objective): string {
+  if (objective.objectiveCategory === 'activity' && objective.activityType) {
+    const vendedorType = activityTypesVendedores.find(t => t.value === objective.activityType);
+    if (vendedorType) return vendedorType.label;
+    const compradorType = activityTypesCompradores.find(t => t.value === objective.activityType);
+    if (compradorType) return compradorType.label;
+  }
+  if (objective.objectiveCategory === 'result' && objective.resultType) {
+    const vendedorType = resultTypesVendedores.find(t => t.value === objective.resultType);
+    if (vendedorType) return vendedorType.label;
+    const compradorType = resultTypesCompradores.find(t => t.value === objective.resultType);
+    if (compradorType) return compradorType.label;
+    const geralType = resultTypesGerais.find(t => t.value === objective.resultType);
+    if (geralType) return geralType.label;
+  }
+  return 'Objetivo';
 }
 
 // Objective Update
@@ -249,6 +312,8 @@ export interface ObjectiveUpdate {
   id: string;
   objectiveId: string;
   objectiveName: string;
+  flow: ObjectiveFlow;
+  objectiveCategory: ObjectiveCategory;
   type: 'angariacao' | 'reserva' | 'pontos' | 'lead' | 'transacao' | 'outro';
   description: string;
   value: string;
@@ -309,4 +374,9 @@ export const objectiveFlowLabels: Record<ObjectiveFlow, string> = {
   vendedores: 'Vendedores',
   compradores: 'Compradores',
   geral: 'Geral',
+};
+
+export const objectiveCategoryLabels: Record<ObjectiveCategory, string> = {
+  activity: 'Atividade',
+  result: 'Resultado',
 };
