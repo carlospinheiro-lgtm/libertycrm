@@ -25,7 +25,8 @@ const resultTypeConfigs: {
   { type: 'reserva_comprador', label: 'Reservas', shortLabel: 'Reserv.' },
   // Outros
   { type: 'creditos_formalizados', label: 'Créditos', shortLabel: 'Créd.' },
-  { type: 'consultores_integrados', label: 'Agentes', shortLabel: 'Agent.' },
+  { type: 'agentes_recrutados', label: 'Recrutados', shortLabel: 'Recr.' },
+  { type: 'agentes_integrados', label: 'Integrados', shortLabel: 'Integ.' },
 ];
 
 export function ResultsChart({ objectives }: ResultsChartProps) {
