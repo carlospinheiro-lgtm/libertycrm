@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { ObjectivesStats } from '@/components/objectives/ObjectivesStats';
-import { ObjectivesTable } from '@/components/objectives/ObjectivesTable';
-import { ResultsChart } from '@/components/objectives/ResultsChart';
 import { ResultTypeGrid } from '@/components/objectives/ResultTypeGrid';
-import { ObjectiveCategoryCards } from '@/components/objectives/ObjectiveCategoryCards';
+import { ActivityTypeGrid } from '@/components/objectives/ActivityTypeGrid';
 import { AddObjectiveDialog } from '@/components/objectives/AddObjectiveDialog';
 import { ObjectiveDetailsSheet } from '@/components/objectives/ObjectiveDetailsSheet';
 import { AddResultDialog } from '@/components/dashboard/AddResultDialog';
-import { AddActivityDialog } from '@/components/objectives/AddActivityDialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Target, Trophy, Activity, Filter } from 'lucide-react';
+import { Target, Trophy, Activity, Filter } from 'lucide-react';
 import { Objective, ObjectiveFlow } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
 
 // Mock data - TODO: Connect to database
 const objectivesMock: Objective[] = [
@@ -201,14 +196,11 @@ const objectivesMock: Objective[] = [
 export default function Objetivos() {
   const [addObjectiveOpen, setAddObjectiveOpen] = useState(false);
   const [addResultOpen, setAddResultOpen] = useState(false);
-  const [addActivityOpen, setAddActivityOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [agencyFilter, setAgencyFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<string>('current');
   const [flowFilter, setFlowFilter] = useState<ObjectiveFlow | 'all'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<'activity' | 'result' | null>(null);
-  const [mobileView, setMobileView] = useState<'results' | 'activity'>('results');
   const isMobile = useIsMobile();
 
   const handleViewDetails = (objective: Objective) => {
@@ -216,21 +208,10 @@ export default function Objetivos() {
     setDetailsOpen(true);
   };
 
-  const handleCategoryClick = (category: 'activity' | 'result') => {
-    setCategoryFilter(prev => prev === category ? null : category);
-    if (isMobile) {
-      setMobileView(category === 'result' ? 'results' : 'activity');
-    }
-  };
-
   const filteredObjectives = objectivesMock.filter(obj => {
     if (flowFilter !== 'all' && obj.flow !== flowFilter) return false;
-    if (categoryFilter && obj.objectiveCategory !== categoryFilter) return false;
     return true;
   });
-
-  const activityObjectives = filteredObjectives.filter(o => o.objectiveCategory === 'activity');
-  const resultObjectives = filteredObjectives.filter(o => o.objectiveCategory === 'result');
 
   return (
     <DashboardLayout>
@@ -287,168 +268,49 @@ export default function Objetivos() {
                 <SelectItem value="geral">Geral</SelectItem>
               </SelectContent>
             </Select>
-            
-            {/* Action Buttons - Desktop */}
-            {!isMobile && (
-              <>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setAddActivityOpen(true)} 
-                  size="sm" 
-                  className="h-9 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Atividade
-                </Button>
-                
-                <Button 
-                  onClick={() => setAddResultOpen(true)} 
-                  size="sm" 
-                  className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Resultado
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  onClick={() => setAddObjectiveOpen(true)} 
-                  size="sm" 
-                  className="h-9"
-                >
-                  <Target className="h-4 w-4 mr-1" />
-                  Objetivo
-                </Button>
-              </>
-            )}
           </div>
         </div>
 
-        {/* Mobile: Action Buttons */}
-        {isMobile && (
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setAddActivityOpen(true)} 
-              size="sm" 
-              className="flex-1 h-10 border-primary/30 text-primary hover:bg-primary/10"
-            >
-              <Activity className="h-4 w-4 mr-1.5" />
-              + Atividade
-            </Button>
-            
-            <Button 
-              onClick={() => setAddResultOpen(true)} 
-              size="sm" 
-              className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              <Trophy className="h-4 w-4 mr-1.5" />
-              + Resultado
-            </Button>
-          </div>
-        )}
+        {/* Action Buttons - Fixed Colors */}
+        <div className="flex flex-wrap gap-2">
+          {/* + Objetivo - VERMELHO */}
+          <Button 
+            onClick={() => setAddObjectiveOpen(true)} 
+            size={isMobile ? "sm" : "default"}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            <Target className="h-4 w-4 mr-1.5" />
+            + Objetivo
+          </Button>
+          
+          {/* + Atividade - AZUL */}
+          <Button 
+            onClick={() => setAddResultOpen(true)} 
+            size={isMobile ? "sm" : "default"}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Activity className="h-4 w-4 mr-1.5" />
+            + Atividade
+          </Button>
+          
+          {/* + Resultado - VERDE */}
+          <Button 
+            onClick={() => setAddResultOpen(true)} 
+            size={isMobile ? "sm" : "default"}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <Trophy className="h-4 w-4 mr-1.5" />
+            + Resultado
+          </Button>
+        </div>
 
-        {/* Mobile: Sticky Toggle */}
-        {isMobile && (
-          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 -mx-4 px-4 py-2 border-b">
-            <div className="flex rounded-lg bg-muted p-1">
-              <button
-                onClick={() => setMobileView('results')}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all",
-                  mobileView === 'results' 
-                    ? "bg-emerald-500 text-white shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Trophy className="h-4 w-4" />
-                Resultados
-              </button>
-              <button
-                onClick={() => setMobileView('activity')}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all",
-                  mobileView === 'activity' 
-                    ? "bg-primary text-white shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Activity className="h-4 w-4" />
-                Atividade
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="space-y-4 md:space-y-6">
-          {/* Category Cards - Desktop & Mobile */}
-          <ObjectiveCategoryCards 
-            objectives={objectivesMock}
-            onCategoryClick={handleCategoryClick}
-            selectedCategory={categoryFilter}
-          />
-
-          {/* Mobile View */}
-          {isMobile ? (
-            <>
-              {mobileView === 'results' ? (
-                <div className="space-y-4">
-                  {/* Result Type Cards Grid */}
-                  <ResultTypeGrid objectives={resultObjectives} flowFilter={flowFilter} />
-                  
-                  {/* Chart */}
-                  <ResultsChart objectives={resultObjectives} />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Activity Stats Summary */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-primary/10 rounded-lg p-3 text-center border border-primary/20">
-                      <p className="text-2xl font-bold text-primary">{activityObjectives.length}</p>
-                      <p className="text-xs text-muted-foreground">Objetivos</p>
-                    </div>
-                    <div className="bg-emerald-500/10 rounded-lg p-3 text-center border border-emerald-500/20">
-                      <p className="text-2xl font-bold text-emerald-600">
-                        {activityObjectives.filter(o => (o.currentValue / o.targetValue) >= 0.9).length}
-                      </p>
-                      <p className="text-xs text-muted-foreground">No Alvo</p>
-                    </div>
-                  </div>
-                  <ObjectivesTable 
-                    objectives={activityObjectives} 
-                    onViewDetails={handleViewDetails}
-                    title="Objetivos de Atividade"
-                  />
-                </div>
-              )}
-            </>
-          ) : (
-            /* Desktop View */
-            <>
-              {/* Stats Grid */}
-              <ObjectivesStats objectives={filteredObjectives} />
-
-              {/* Results Section - Cards by Result Type */}
-              {(!categoryFilter || categoryFilter === 'result') && (
-                <ResultTypeGrid objectives={resultObjectives} flowFilter={flowFilter} />
-              )}
-
-              {/* Chart */}
-              {(!categoryFilter || categoryFilter === 'result') && (
-                <ResultsChart objectives={resultObjectives} />
-              )}
-
-              {/* Activity Table */}
-              {(!categoryFilter || categoryFilter === 'activity') && (
-                <ObjectivesTable 
-                  objectives={activityObjectives} 
-                  onViewDetails={handleViewDetails}
-                  title="Objetivos de Atividade"
-                />
-              )}
-            </>
-          )}
+        {/* Main Content - Two Blocks */}
+        <div className="space-y-6">
+          {/* Block 1: Objetivos de Atividade (AZUL) */}
+          <ActivityTypeGrid objectives={filteredObjectives} flowFilter={flowFilter} />
+          
+          {/* Block 2: Objetivos de Resultado (VERDE) */}
+          <ResultTypeGrid objectives={filteredObjectives} flowFilter={flowFilter} />
         </div>
       </div>
 
@@ -461,11 +323,6 @@ export default function Objetivos() {
       <AddResultDialog 
         open={addResultOpen} 
         onOpenChange={setAddResultOpen} 
-      />
-      
-      <AddActivityDialog 
-        open={addActivityOpen} 
-        onOpenChange={setAddActivityOpen} 
       />
       
       <ObjectiveDetailsSheet 

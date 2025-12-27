@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { CalendarIcon, Trophy, HelpCircle } from 'lucide-react';
+import { CalendarIcon, Trophy, HelpCircle, Activity } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,9 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -40,26 +42,41 @@ import {
   resultTypesRecrutamento,
   resultTypesIntermediacao,
   resultTypesGerais,
+  activityTypesVendedores,
+  activityTypesCompradores,
+  activityTypesRecrutamento,
+  activityTypesIntermediacao,
 } from '@/types';
 
-// Result objectives list - ONLY result types
-const resultObjectivesList = [
-  ...resultTypesVendedores.map(t => ({ id: t.value, name: t.label, flow: 'Vendedores', isCurrency: false })),
-  ...resultTypesCompradores.map(t => ({ id: t.value, name: t.label, flow: 'Compradores', isCurrency: false })),
-  ...resultTypesRecrutamento.map(t => ({ id: t.value, name: t.label, flow: 'Recrutamento', isCurrency: false })),
+// All objectives list - Activity AND Result types
+const allObjectivesList = [
+  // Activity objectives
+  ...activityTypesVendedores.map(t => ({ id: t.value, name: t.label, flow: 'Vendedores', category: 'activity' as const, isCurrency: false })),
+  ...activityTypesCompradores.map(t => ({ id: t.value, name: t.label, flow: 'Compradores', category: 'activity' as const, isCurrency: false })),
+  ...activityTypesRecrutamento.map(t => ({ id: t.value, name: t.label, flow: 'Recrutamento', category: 'activity' as const, isCurrency: false })),
+  ...activityTypesIntermediacao.map(t => ({ id: t.value, name: t.label, flow: 'Crédito', category: 'activity' as const, isCurrency: false })),
+  // Result objectives
+  ...resultTypesVendedores.map(t => ({ id: t.value, name: t.label, flow: 'Vendedores', category: 'result' as const, isCurrency: false })),
+  ...resultTypesCompradores.map(t => ({ id: t.value, name: t.label, flow: 'Compradores', category: 'result' as const, isCurrency: false })),
+  ...resultTypesRecrutamento.map(t => ({ id: t.value, name: t.label, flow: 'Recrutamento', category: 'result' as const, isCurrency: false })),
   ...resultTypesIntermediacao.map(t => ({ 
     id: t.value, 
     name: t.label, 
     flow: 'Crédito', 
+    category: 'result' as const,
     isCurrency: t.value === 'comissoes_credito' 
   })),
   ...resultTypesGerais.map(t => ({ 
     id: t.value, 
     name: t.label, 
     flow: 'Geral', 
+    category: 'result' as const,
     isCurrency: t.value.includes('faturacao') 
   })),
 ];
+
+const activityObjectives = allObjectivesList.filter(o => o.category === 'activity');
+const resultObjectives = allObjectivesList.filter(o => o.category === 'result');
 
 interface AddResultDialogProps {
   open: boolean;
@@ -72,7 +89,8 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState<Date>(new Date());
 
-  const selectedObjective = resultObjectivesList.find(o => o.id === objectiveId);
+  const selectedObjective = allObjectivesList.find(o => o.id === objectiveId);
+  const isResult = selectedObjective?.category === 'result';
 
   const handleSubmit = () => {
     if (!objectiveId || !value) {
@@ -80,13 +98,14 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
       return;
     }
 
-    const objective = resultObjectivesList.find(o => o.id === objectiveId);
+    const objective = allObjectivesList.find(o => o.id === objectiveId);
     
     // TODO: Connect to database - save the result
-    console.log('New result:', { objectiveId, value, notes, date });
+    console.log('New entry:', { objectiveId, value, notes, date, category: objective?.category });
     
     const displayValue = objective?.isCurrency ? `€${value}` : `+${value}`;
-    toast.success(`Resultado registado: ${displayValue} em ${objective?.name}`);
+    const actionType = objective?.category === 'result' ? 'Resultado' : 'Atividade';
+    toast.success(`${actionType} registado: ${displayValue} em ${objective?.name}`);
     
     // Reset form
     setObjectiveId('');
@@ -110,24 +129,24 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-600">
             <Trophy className="h-5 w-5" />
-            Adicionar Resultado
+            Registar Execução
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Registe apenas acontecimentos já concretizados que contribuem para um objetivo.
+            Registe atividades realizadas ou resultados concretizados que fazem avançar os seus objetivos.
           </p>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Label htmlFor="result-objective">Tipo de Resultado</Label>
+              <Label htmlFor="result-objective">Objetivo</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Selecione o tipo de resultado: Reservas, Angariações, Transações, Faturação, etc.</p>
+                    <p>Selecione o objetivo: Atividade (esforço diário) ou Resultado (concretização)</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -137,22 +156,48 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
                 id="result-objective" 
                 className={cn(
                   "border-emerald-500/30 focus:ring-emerald-500/30",
-                  objectiveId && "border-emerald-500 bg-emerald-500/5"
+                  objectiveId && isResult && "border-emerald-500 bg-emerald-500/5",
+                  objectiveId && !isResult && "border-blue-500 bg-blue-500/5"
                 )}
               >
-                <SelectValue placeholder="Selecionar tipo de resultado" />
+                <SelectValue placeholder="Selecionar objetivo" />
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
-                {resultObjectivesList.map((obj) => (
-                  <SelectItem 
-                    key={obj.id} 
-                    value={obj.id}
-                    className="focus:bg-emerald-500/10 focus:text-emerald-700"
-                  >
-                    <span>{obj.name}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">({obj.flow})</span>
-                  </SelectItem>
-                ))}
+                {/* Activity Group */}
+                <SelectGroup>
+                  <SelectLabel className="flex items-center gap-2 text-blue-600">
+                    <Activity className="h-4 w-4" />
+                    Atividade (Esforço)
+                  </SelectLabel>
+                  {activityObjectives.map((obj) => (
+                    <SelectItem 
+                      key={obj.id} 
+                      value={obj.id}
+                      className="focus:bg-blue-500/10 focus:text-blue-700 pl-6"
+                    >
+                      <span>{obj.name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">({obj.flow})</span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                
+                {/* Result Group */}
+                <SelectGroup>
+                  <SelectLabel className="flex items-center gap-2 text-emerald-600 mt-2">
+                    <Trophy className="h-4 w-4" />
+                    Resultado (Concretização)
+                  </SelectLabel>
+                  {resultObjectives.map((obj) => (
+                    <SelectItem 
+                      key={obj.id} 
+                      value={obj.id}
+                      className="focus:bg-emerald-500/10 focus:text-emerald-700 pl-6"
+                    >
+                      <span>{obj.name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">({obj.flow})</span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -167,7 +212,9 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
               placeholder={selectedObjective?.isCurrency ? "Ex: 8500, 15000" : "Ex: 1, 2, 5"}
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="border-emerald-500/30 focus:ring-emerald-500/30"
+              className={cn(
+                isResult ? "border-emerald-500/30 focus:ring-emerald-500/30" : "border-blue-500/30 focus:ring-blue-500/30"
+              )}
             />
           </div>
 
@@ -178,7 +225,8 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
                 <Button
                   variant="outline"
                   className={cn(
-                    'w-full justify-start text-left font-normal border-emerald-500/30',
+                    'w-full justify-start text-left font-normal',
+                    isResult ? "border-emerald-500/30" : "border-blue-500/30",
                     !date && 'text-muted-foreground'
                   )}
                 >
@@ -206,7 +254,9 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="border-emerald-500/30 focus:ring-emerald-500/30"
+              className={cn(
+                isResult ? "border-emerald-500/30 focus:ring-emerald-500/30" : "border-blue-500/30 focus:ring-blue-500/30"
+              )}
             />
           </div>
         </div>
@@ -216,7 +266,7 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
             Cancelar
           </Button>
           <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            Registar Resultado
+            Registar
           </Button>
         </DialogFooter>
       </DialogContent>
