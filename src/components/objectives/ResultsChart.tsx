@@ -1,13 +1,28 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { BarChart3 } from 'lucide-react';
-import { Objective, ObjectiveFlow, objectiveFlowLabels } from '@/types';
-
+import { Objective, ResultObjectiveType } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ResultsChartProps {
   objectives: Objective[];
 }
+
+// Result type configurations for chart
+const resultTypeConfigs: {
+  type: ResultObjectiveType;
+  label: string;
+  shortLabel: string;
+  isCurrency?: boolean;
+}[] = [
+  { type: 'reserva_comprador', label: 'Reservas', shortLabel: 'Reserv.' },
+  { type: 'angariacao_reservada', label: 'Angariações', shortLabel: 'Angar.' },
+  { type: 'transacao_venda', label: 'Trans. Venda', shortLabel: 'Venda' },
+  { type: 'transacao_arrendamento', label: 'Trans. Arrend.', shortLabel: 'Arrend.' },
+  { type: 'faturacao_vendas', label: 'Fat. Vendas', shortLabel: 'Fat.V', isCurrency: true },
+  { type: 'creditos_formalizados', label: 'Créditos', shortLabel: 'Créd.' },
+  { type: 'consultores_integrados', label: 'Agentes', shortLabel: 'Agent.' },
+];
 
 export function ResultsChart({ objectives }: ResultsChartProps) {
   const isMobile = useIsMobile();
@@ -15,32 +30,22 @@ export function ResultsChart({ objectives }: ResultsChartProps) {
   // Filter only result objectives
   const resultObjectives = objectives.filter(o => o.objectiveCategory === 'result');
   
-  // Group by flow
-  const flows: ObjectiveFlow[] = ['vendedores', 'compradores', 'recrutamento', 'intermediacao_credito', 'geral'];
-  
-  // Short labels for mobile
-  const mobileLabels: Record<ObjectiveFlow, string> = {
-    vendedores: 'Vend.',
-    compradores: 'Comp.',
-    recrutamento: 'Recr.',
-    intermediacao_credito: 'Créd.',
-    geral: 'Geral',
-  };
-  
-  const chartData = flows.map(flow => {
-    const flowObjectives = resultObjectives.filter(o => o.flow === flow);
-    const definido = flowObjectives.reduce((sum, o) => sum + o.targetValue, 0);
-    const realizado = flowObjectives.reduce((sum, o) => sum + o.currentValue, 0);
+  // Group by result type instead of flow
+  const chartData = resultTypeConfigs.map(config => {
+    const typeObjectives = resultObjectives.filter(o => o.resultType === config.type);
+    const definido = typeObjectives.reduce((sum, o) => sum + o.targetValue, 0);
+    const realizado = typeObjectives.reduce((sum, o) => sum + o.currentValue, 0);
     
     return {
-      name: isMobile ? mobileLabels[flow] : objectiveFlowLabels[flow],
-      fullName: objectiveFlowLabels[flow],
-      flow,
+      name: isMobile ? config.shortLabel : config.label,
+      fullName: config.label,
+      type: config.type,
       Definido: definido,
       Realizado: realizado,
       taxa: definido > 0 ? (realizado / definido) * 100 : 0,
+      isCurrency: config.isCurrency,
     };
-  }).filter(d => d.Definido > 0); // Only show flows with objectives
+  }).filter(d => d.Definido > 0); // Only show types with objectives
   
   const getBarColor = (taxa: number) => {
     if (taxa >= 90) return 'hsl(142, 76%, 36%)'; // emerald-600
@@ -61,7 +66,7 @@ export function ResultsChart({ objectives }: ResultsChartProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className={isMobile ? "h-[200px]" : "h-[280px]"}>
+        <div className={isMobile ? "h-[220px]" : "h-[280px]"}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
@@ -76,7 +81,7 @@ export function ResultsChart({ objectives }: ResultsChartProps) {
               <YAxis 
                 dataKey="name" 
                 type="category" 
-                width={isMobile ? 45 : 100}
+                width={isMobile ? 50 : 100}
                 className="text-xs"
                 tick={{ fontSize: isMobile ? 10 : 12 }}
               />
@@ -84,17 +89,28 @@ export function ResultsChart({ objectives }: ResultsChartProps) {
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
+                    const formatValue = (val: number) => {
+                      if (data.isCurrency) {
+                        return new Intl.NumberFormat('pt-PT', { 
+                          style: 'currency', 
+                          currency: 'EUR',
+                          notation: val >= 10000 ? 'compact' : 'standard',
+                          maximumFractionDigits: 0
+                        }).format(val);
+                      }
+                      return val;
+                    };
                     return (
                       <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
-                        <p className="font-semibold mb-2">{data.fullName || data.name}</p>
+                        <p className="font-semibold mb-2">{data.fullName}</p>
                         <div className="space-y-1 text-sm">
                           <p className="flex justify-between gap-4">
                             <span className="text-muted-foreground">Definido:</span>
-                            <span className="font-medium">{data.Definido}</span>
+                            <span className="font-medium">{formatValue(data.Definido)}</span>
                           </p>
                           <p className="flex justify-between gap-4">
                             <span className="text-muted-foreground">Realizado:</span>
-                            <span className="font-medium text-emerald-600">{data.Realizado}</span>
+                            <span className="font-medium text-emerald-600">{formatValue(data.Realizado)}</span>
                           </p>
                           <p className="flex justify-between gap-4 pt-1 border-t">
                             <span className="text-muted-foreground">Taxa:</span>

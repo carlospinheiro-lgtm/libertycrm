@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard,
@@ -6,14 +5,16 @@ import {
   Home,
   UserPlus,
   FileText,
-  Calendar,
+  CalendarDays,
   Wallet,
   Target,
-  CalendarDays,
+  Calendar,
   Settings,
   ChevronLeft,
   ChevronRight,
   Building2,
+  X,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,8 +31,6 @@ const menuItems = [
   { icon: Settings, label: 'Administração', path: '/admin' },
 ];
 
-import { Tag } from 'lucide-react';
-
 const adminMenuItems = [
   { icon: Tag, label: 'Origens', path: '/origens' },
 ];
@@ -39,19 +38,29 @@ const adminMenuItems = [
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  isOpen?: boolean;
+  isMobile?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, isOpen = true, isMobile = false, onClose }: SidebarProps) {
+  // On mobile, show/hide based on isOpen prop with overlay behavior
+  if (isMobile && !isOpen) {
+    return null;
+  }
+
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-sidebar transition-all duration-300 flex flex-col',
-        collapsed ? 'w-16' : 'w-64'
+        'fixed left-0 top-0 z-50 h-screen bg-sidebar transition-all duration-300 flex flex-col',
+        isMobile 
+          ? 'w-64 shadow-2xl' // Full width on mobile as overlay
+          : (collapsed ? 'w-16' : 'w-64')
       )}
     >
       {/* Logo Area */}
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-        {!collapsed && (
+        {(isMobile || !collapsed) && (
           <div className="flex items-center gap-2">
             <Building2 className="h-8 w-8 text-sidebar-foreground" />
             <span className="font-heading text-lg font-bold text-sidebar-foreground">
@@ -59,8 +68,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </span>
           </div>
         )}
-        {collapsed && (
+        {!isMobile && collapsed && (
           <Building2 className="h-8 w-8 text-sidebar-foreground mx-auto" />
+        )}
+        {/* Close button for mobile */}
+        {isMobile && (
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
         )}
       </div>
 
@@ -73,12 +91,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 to={item.path}
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sidebar-foreground/80 transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  collapsed && 'justify-center px-2'
+                  !isMobile && collapsed && 'justify-center px-2'
                 )}
                 activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                onClick={isMobile ? onClose : undefined}
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                {!collapsed && (
+                {(isMobile || !collapsed) && (
                   <span className="text-sm truncate">{item.label}</span>
                 )}
               </NavLink>
@@ -88,7 +107,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         
         {/* Admin Section */}
         <div className="mt-4 pt-4 border-t border-sidebar-border">
-          {!collapsed && (
+          {(isMobile || !collapsed) && (
             <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase mb-2">
               Configurações
             </p>
@@ -100,12 +119,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   to={item.path}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sidebar-foreground/80 transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                    collapsed && 'justify-center px-2'
+                    !isMobile && collapsed && 'justify-center px-2'
                   )}
                   activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                  onClick={isMobile ? onClose : undefined}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
-                  {!collapsed && (
+                  {(isMobile || !collapsed) && (
                     <span className="text-sm truncate">{item.label}</span>
                   )}
                 </NavLink>
@@ -115,17 +135,19 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
       </nav>
 
-      {/* Toggle Button */}
-      <button
-        onClick={onToggle}
-        className="flex h-12 items-center justify-center border-t border-sidebar-border text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
-      >
-        {collapsed ? (
-          <ChevronRight className="h-5 w-5" />
-        ) : (
-          <ChevronLeft className="h-5 w-5" />
-        )}
-      </button>
+      {/* Toggle Button - only on desktop */}
+      {!isMobile && (
+        <button
+          onClick={onToggle}
+          className="flex h-12 items-center justify-center border-t border-sidebar-border text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
+        >
+          {collapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <ChevronLeft className="h-5 w-5" />
+          )}
+        </button>
+      )}
     </aside>
   );
 }
