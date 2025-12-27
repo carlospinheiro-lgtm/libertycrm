@@ -18,12 +18,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Flame, Sun, Snowflake, Circle, Trash2, CalendarIcon, Download } from 'lucide-react';
+import { Flame, Sun, Snowflake, Circle, Trash2, CalendarIcon, Download, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import type { KanbanLead } from '@/hooks/useKanbanState';
-import type { LeadTemperature } from '@/types';
+import type { LeadTemperature, SourceCategory } from '@/types';
 import { cn } from '@/lib/utils';
+import { sourceCategoryLabels } from '@/types';
 
 interface LeadDetailsSheetProps {
   open: boolean;
@@ -40,6 +41,13 @@ const temperatureOptions: { value: LeadTemperature; label: string; icon: React.R
   { value: 'cold', label: 'Frio', icon: <Snowflake className="h-4 w-4" />, color: 'bg-info text-info-foreground' },
   { value: 'undefined', label: 'Indefinido', icon: <Circle className="h-4 w-4" />, color: 'bg-muted text-muted-foreground' },
 ];
+
+const categoryColors: Record<SourceCategory, string> = {
+  posicionamento: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+  marketing: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+  referencias: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  espontaneo: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+};
 
 export function LeadDetailsSheet({
   open,
@@ -60,7 +68,9 @@ export function LeadDetailsSheet({
   if (!lead) return null;
 
   const handleSave = () => {
-    onSave(lead.id, formData);
+    // Don't allow changing source-related fields
+    const { sourceId, source, sourceCategory, ...editableFields } = formData;
+    onSave(lead.id, editableFields);
     onOpenChange(false);
   };
 
@@ -82,6 +92,25 @@ export function LeadDetailsSheet({
         </SheetHeader>
 
         <div className="grid gap-4 py-6">
+          {/* Source Display - READONLY */}
+          <div className="grid gap-2 p-3 bg-muted/50 rounded-lg border">
+            <Label className="flex items-center gap-2 text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              Origem (não editável)
+            </Label>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{lead.source || 'Não definida'}</span>
+              {lead.sourceCategory && (
+                <Badge variant="outline" className={categoryColors[lead.sourceCategory]}>
+                  {sourceCategoryLabels[lead.sourceCategory]}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A origem é definida na criação da lead e não pode ser alterada.
+            </p>
+          </div>
+
           {/* Temperature Selection */}
           <div className="grid gap-2">
             <Label>Temperatura do Cliente</Label>
@@ -148,15 +177,6 @@ export function LeadDetailsSheet({
               id="agency"
               value={formData.agency || ''}
               onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="source">Origem</Label>
-            <Input
-              id="source"
-              value={formData.source || ''}
-              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
             />
           </div>
 

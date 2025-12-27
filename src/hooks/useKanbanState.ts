@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { LeadTemperature } from '@/types';
+import type { LeadTemperature, SourceCategory } from '@/types';
 
 export interface KanbanLead {
   id: string;
@@ -9,6 +9,8 @@ export interface KanbanLead {
   agentName: string;
   agency: string;
   source: string;
+  sourceId: string;
+  sourceCategory: SourceCategory;
   entryDate: string;
   notes?: string;
   columnId: string;
