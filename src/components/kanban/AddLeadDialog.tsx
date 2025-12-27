@@ -28,8 +28,9 @@ import { CalendarIcon, Flame, Sun, Snowflake, Circle } from 'lucide-react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import type { LeadTemperature } from '@/types';
+import type { LeadTemperature, Source, SourceCategory } from '@/types';
 import type { KanbanLead, KanbanColumn } from '@/hooks/useKanbanState';
+import { defaultSources, sourceCategoryLabels } from '@/types';
 
 interface AddLeadDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ interface AddLeadDialogProps {
   columns: KanbanColumn[];
   onAdd: (lead: KanbanLead) => void;
   isRecruitment?: boolean;
+  leadFlow?: 'vendedores' | 'compradores';
 }
 
 const temperatureOptions: { value: LeadTemperature; label: string; icon: React.ReactNode; color: string }[] = [
@@ -46,23 +48,13 @@ const temperatureOptions: { value: LeadTemperature; label: string; icon: React.R
   { value: 'undefined', label: 'Indefinido', icon: <Circle className="h-4 w-4" />, color: 'bg-muted text-muted-foreground' },
 ];
 
-const sourceOptions = [
-  'Portal Imobiliário',
-  'Facebook',
-  'Instagram',
-  'LinkedIn',
-  'Referência',
-  'Website',
-  'Presencial',
-  'Outro',
-];
-
 export function AddLeadDialog({
   open,
   onOpenChange,
   columns,
   onAdd,
   isRecruitment = false,
+  leadFlow = 'compradores',
 }: AddLeadDialogProps) {
   const [formData, setFormData] = useState({
     clientName: '',
@@ -70,7 +62,7 @@ export function AddLeadDialog({
     email: '',
     agentName: '',
     agency: '',
-    source: '',
+    sourceId: '',
     notes: '',
     temperature: 'undefined' as LeadTemperature,
     nextActivityDate: undefined as Date | undefined,
@@ -78,8 +70,29 @@ export function AddLeadDialog({
     cvUrl: '',
   });
 
+  // Filter sources by flow
+  const availableSources = defaultSources.filter(source => 
+    source.isActive && (source.flow === leadFlow || source.flow === 'ambos')
+  );
+
+  // Group sources by category
+  const sourcesByCategory = availableSources.reduce((acc, source) => {
+    if (!acc[source.category]) acc[source.category] = [];
+    acc[source.category].push(source);
+    return acc;
+  }, {} as Record<SourceCategory, Source[]>);
+
+  const selectedSource = defaultSources.find(s => s.id === formData.sourceId);
+
   const handleSubmit = () => {
     if (!formData.clientName || !formData.phone || !formData.agentName) return;
+    
+    // Validation: Source is mandatory
+    if (!formData.sourceId) {
+      return;
+    }
+
+    const source = defaultSources.find(s => s.id === formData.sourceId);
 
     const newLead: KanbanLead = {
       id: crypto.randomUUID(),
@@ -88,7 +101,9 @@ export function AddLeadDialog({
       email: formData.email,
       agentName: formData.agentName,
       agency: formData.agency,
-      source: formData.source,
+      source: source?.name || '',
+      sourceId: formData.sourceId,
+      sourceCategory: source?.category || 'espontaneo',
       notes: formData.notes,
       temperature: formData.temperature,
       entryDate: new Date().toLocaleDateString('pt-PT'),
@@ -108,7 +123,7 @@ export function AddLeadDialog({
       email: '',
       agentName: '',
       agency: '',
-      source: '',
+      sourceId: '',
       notes: '',
       temperature: 'undefined',
       nextActivityDate: undefined,
@@ -116,6 +131,8 @@ export function AddLeadDialog({
       cvUrl: '',
     });
   };
+
+  const isFormValid = formData.clientName && formData.phone && formData.agentName && formData.sourceId;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -210,23 +227,42 @@ export function AddLeadDialog({
             </div>
           </div>
 
+          {/* Source Selection - MANDATORY */}
           <div className="grid gap-2">
-            <Label htmlFor="source">Origem</Label>
+            <Label htmlFor="source" className="flex items-center gap-1">
+              Origem <span className="text-destructive">*</span>
+              <span className="text-xs text-muted-foreground ml-1">(obrigatório, não editável após criação)</span>
+            </Label>
             <Select
-              value={formData.source}
-              onValueChange={(value) => setFormData({ ...formData, source: value })}
+              value={formData.sourceId}
+              onValueChange={(value) => setFormData({ ...formData, sourceId: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className={cn(!formData.sourceId && "border-destructive")}>
                 <SelectValue placeholder="Selecionar origem" />
               </SelectTrigger>
               <SelectContent>
-                {sourceOptions.map((source) => (
-                  <SelectItem key={source} value={source}>
-                    {source}
-                  </SelectItem>
+                {Object.entries(sourcesByCategory).map(([category, sources]) => (
+                  <div key={category}>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted">
+                      {sourceCategoryLabels[category as SourceCategory]}
+                    </div>
+                    {sources.map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        {source.name}
+                      </SelectItem>
+                    ))}
+                  </div>
                 ))}
               </SelectContent>
             </Select>
+            {!formData.sourceId && (
+              <p className="text-xs text-destructive">A origem é obrigatória</p>
+            )}
+            {selectedSource && (
+              <p className="text-xs text-muted-foreground">
+                Categoria: {sourceCategoryLabels[selectedSource.category]}
+              </p>
+            )}
           </div>
 
           {/* CV URL for Recruitment */}
@@ -298,7 +334,7 @@ export function AddLeadDialog({
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={!formData.clientName || !formData.phone || !formData.agentName}
+            disabled={!isFormValid}
           >
             Adicionar
           </Button>

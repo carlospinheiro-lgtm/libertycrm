@@ -16,7 +16,43 @@ export interface Client {
 // Temperature for leads
 export type LeadTemperature = 'hot' | 'warm' | 'cold' | 'undefined';
 
-// Lead Types
+// ============= SOURCE / ORIGIN TYPES =============
+export type SourceFlow = 'vendedores' | 'compradores' | 'ambos';
+export type SourceCategory = 'posicionamento' | 'marketing' | 'referencias' | 'espontaneo';
+
+export interface Source {
+  id: string;
+  name: string;
+  flow: SourceFlow;
+  category: SourceCategory;
+  isActive: boolean;
+  createdAt: Date;
+  createdBy: string;
+}
+
+// Default sources mock data
+export const defaultSources: Source[] = [
+  // Posicionamento
+  { id: '1', name: 'Entrou na Loja', flow: 'ambos', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '2', name: 'Posicionamento', flow: 'vendedores', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '3', name: 'Porta-a-Porta', flow: 'vendedores', category: 'posicionamento', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  
+  // Marketing
+  { id: '4', name: 'Portal Imobiliário', flow: 'compradores', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '5', name: 'Facebook', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '6', name: 'Instagram', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '7', name: 'Google Ads', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '8', name: 'Website', flow: 'ambos', category: 'marketing', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  
+  // Referências
+  { id: '9', name: 'Referência Cliente', flow: 'ambos', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  { id: '10', name: 'Referência Parceiro', flow: 'ambos', category: 'referencias', isActive: true, createdAt: new Date(), createdBy: 'system' },
+  
+  // Espontâneo
+  { id: '11', name: 'Contacto Direto', flow: 'ambos', category: 'espontaneo', isActive: true, createdAt: new Date(), createdBy: 'system' },
+];
+
+// ============= LEAD TYPES =============
 export interface BuyerLead {
   id: string;
   clientId: string;
@@ -24,7 +60,9 @@ export interface BuyerLead {
   agency: 'braga' | 'barcelos';
   agentId: string;
   agentName: string;
+  sourceId: string;
   source: string;
+  sourceCategory: SourceCategory;
   entryDate: Date;
   status: string;
   notes: string;
@@ -44,7 +82,9 @@ export interface SellerLead {
   propertyRef: string;
   propertyType: string;
   estimatedValue: number;
+  sourceId: string;
   source: string;
+  sourceCategory: SourceCategory;
   entryDate: Date;
   status: string;
   notes: string;
@@ -161,10 +201,37 @@ export interface AccountEntry {
   reference?: string;
 }
 
-// Objective
+// ============= OBJECTIVE TYPES =============
+export type ObjectiveFlow = 'vendedores' | 'compradores' | 'geral';
+
+export type ActivityObjectiveType = 
+  // Vendedores
+  | 'posicionamento_vendedores'
+  | 'leads_vendedores'
+  | 'chamadas_vendedores'
+  | 'contactos_efetivos_vendedores'
+  | 'apresentacoes_servicos'
+  | 'seguimentos_vendedores'
+  // Compradores
+  | 'posicionamento_compradores'
+  | 'leads_compradores'
+  | 'qualificacao'
+  | 'visitas'
+  | 'propostas';
+
+export type ResultObjectiveType =
+  | 'angariacao_reservada'
+  | 'reserva_comprador'
+  | 'transacao_venda'
+  | 'transacao_arrendamento';
+
 export interface Objective {
   id: string;
   name: string;
+  flow: ObjectiveFlow;
+  objectiveType: 'activity' | 'result';
+  activityType?: ActivityObjectiveType;
+  resultType?: ResultObjectiveType;
   currentValue: number;
   targetValue: number;
   unit: string;
@@ -174,6 +241,7 @@ export interface Objective {
   targetType?: 'agency' | 'director' | 'agent';
   targetId?: string;
   targetName?: string;
+  sourceFilter?: 'all' | string[];
 }
 
 // Objective Update
@@ -188,3 +256,57 @@ export interface ObjectiveUpdate {
   notes?: string;
   createdAt: Date;
 }
+
+// ============= TRANSACTION TYPES =============
+export type TransactionType = 'venda' | 'arrendamento';
+export type TransactionStatus = 'pendente' | 'cpcv_assinado' | 'cpcv_condicionado' | 'cpcv_descondicionado' | 'escritura';
+
+export interface Transaction {
+  id: string;
+  processId: string;
+  type: TransactionType;
+  status: TransactionStatus;
+  value: number;
+  
+  // Datas importantes
+  cpcvDate?: Date;
+  descondicionamentoDate?: Date;
+  escrituraDate?: Date;
+  
+  // Validação
+  validatedBy?: string;
+  validatedAt?: Date;
+  isValidated: boolean;
+  
+  // Origem herdada
+  buyerLeadId: string;
+  sellerLeadId: string;
+  buyerSourceId: string;
+  sellerSourceId: string;
+  
+  // Agentes
+  buyerAgentId: string;
+  sellerAgentId: string;
+  
+  agency: 'braga' | 'barcelos';
+}
+
+// Category labels for display
+export const sourceCategoryLabels: Record<SourceCategory, string> = {
+  posicionamento: 'Posicionamento',
+  marketing: 'Marketing',
+  referencias: 'Referências',
+  espontaneo: 'Espontâneo',
+};
+
+export const sourceFlowLabels: Record<SourceFlow, string> = {
+  vendedores: 'Vendedores',
+  compradores: 'Compradores',
+  ambos: 'Ambos',
+};
+
+export const objectiveFlowLabels: Record<ObjectiveFlow, string> = {
+  vendedores: 'Vendedores',
+  compradores: 'Compradores',
+  geral: 'Geral',
+};

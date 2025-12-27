@@ -9,6 +9,7 @@ import LeadsVendedores from "./pages/LeadsVendedores";
 import Recrutamento from "./pages/Recrutamento";
 import Processos from "./pages/Processos";
 import Objetivos from "./pages/Objetivos";
+import Origens from "./pages/Origens";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
             element={<ComingSoon title="Contas Correntes" />}
           />
           <Route path="/objetivos" element={<Objetivos />} />
+          <Route path="/origens" element={<Origens />} />
           <Route
             path="/agenda"
             element={<ComingSoon title="Agenda" />}

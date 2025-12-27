@@ -69,10 +69,12 @@ export function KanbanBoard({
   const [agentFilter, setAgentFilter] = useState('all');
   const [agencyFilter, setAgencyFilter] = useState('all');
 
-  // Convert leads to include temperature
+  // Convert leads to include required fields
   const leadsWithTemperature: KanbanLead[] = initialLeads.map(lead => ({
     ...lead,
     temperature: lead.temperature || 'undefined',
+    sourceId: (lead as any).sourceId || '11',
+    sourceCategory: (lead as any).sourceCategory || 'espontaneo',
   }));
 
   const {
