@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { CalendarIcon, Trophy, HelpCircle } from 'lucide-react';
+import { CalendarIcon, Activity, HelpCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -35,44 +35,30 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
-  resultTypesVendedores,
-  resultTypesCompradores,
-  resultTypesRecrutamento,
-  resultTypesIntermediacao,
-  resultTypesGerais,
+  activityTypesVendedores,
+  activityTypesCompradores,
+  activityTypesRecrutamento,
+  activityTypesIntermediacao,
 } from '@/types';
 
-// Result objectives list - ONLY result types
-const resultObjectivesList = [
-  ...resultTypesVendedores.map(t => ({ id: t.value, name: t.label, flow: 'Vendedores', isCurrency: false })),
-  ...resultTypesCompradores.map(t => ({ id: t.value, name: t.label, flow: 'Compradores', isCurrency: false })),
-  ...resultTypesRecrutamento.map(t => ({ id: t.value, name: t.label, flow: 'Recrutamento', isCurrency: false })),
-  ...resultTypesIntermediacao.map(t => ({ 
-    id: t.value, 
-    name: t.label, 
-    flow: 'Crédito', 
-    isCurrency: t.value === 'comissoes_credito' 
-  })),
-  ...resultTypesGerais.map(t => ({ 
-    id: t.value, 
-    name: t.label, 
-    flow: 'Geral', 
-    isCurrency: t.value.includes('faturacao') 
-  })),
+// Activity objectives list
+const activityObjectivesList = [
+  ...activityTypesVendedores.map(t => ({ id: t.value, name: t.label, flow: 'Vendedores' })),
+  ...activityTypesCompradores.map(t => ({ id: t.value, name: t.label, flow: 'Compradores' })),
+  ...activityTypesRecrutamento.map(t => ({ id: t.value, name: t.label, flow: 'Recrutamento' })),
+  ...activityTypesIntermediacao.map(t => ({ id: t.value, name: t.label, flow: 'Crédito' })),
 ];
 
-interface AddResultDialogProps {
+interface AddActivityDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
+export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps) {
   const [objectiveId, setObjectiveId] = useState('');
   const [value, setValue] = useState('');
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState<Date>(new Date());
-
-  const selectedObjective = resultObjectivesList.find(o => o.id === objectiveId);
 
   const handleSubmit = () => {
     if (!objectiveId || !value) {
@@ -80,13 +66,12 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
       return;
     }
 
-    const objective = resultObjectivesList.find(o => o.id === objectiveId);
+    const objective = activityObjectivesList.find(o => o.id === objectiveId);
     
-    // TODO: Connect to database - save the result
-    console.log('New result:', { objectiveId, value, notes, date });
+    // TODO: Connect to database - save the activity
+    console.log('New activity:', { objectiveId, value, notes, date });
     
-    const displayValue = objective?.isCurrency ? `€${value}` : `+${value}`;
-    toast.success(`Resultado registado: ${displayValue} em ${objective?.name}`);
+    toast.success(`Atividade registada: +${value} em ${objective?.name}`);
     
     // Reset form
     setObjectiveId('');
@@ -106,48 +91,42 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border-emerald-500/20">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-emerald-600">
-            <Trophy className="h-5 w-5" />
-            Adicionar Resultado
+          <DialogTitle className="flex items-center gap-2 text-primary">
+            <Activity className="h-5 w-5" />
+            Adicionar Atividade
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Registe apenas acontecimentos já concretizados que contribuem para um objetivo.
+            Registe atividades realizadas que fazem avançar os seus objetivos.
           </p>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Label htmlFor="result-objective">Tipo de Resultado</Label>
+              <Label htmlFor="activity-objective">Tipo de Atividade</Label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Selecione o tipo de resultado: Reservas, Angariações, Transações, Faturação, etc.</p>
+                    <p>Selecione o tipo de atividade que realizou: Posicionamento, Leads, Chamadas, Visitas, etc.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
             <Select value={objectiveId} onValueChange={setObjectiveId}>
-              <SelectTrigger 
-                id="result-objective" 
-                className={cn(
-                  "border-emerald-500/30 focus:ring-emerald-500/30",
-                  objectiveId && "border-emerald-500 bg-emerald-500/5"
-                )}
-              >
-                <SelectValue placeholder="Selecionar tipo de resultado" />
+              <SelectTrigger id="activity-objective" className="border-primary/20 focus:ring-primary/30">
+                <SelectValue placeholder="Selecionar atividade" />
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
-                {resultObjectivesList.map((obj) => (
+                {activityObjectivesList.map((obj) => (
                   <SelectItem 
                     key={obj.id} 
                     value={obj.id}
-                    className="focus:bg-emerald-500/10 focus:text-emerald-700"
+                    className="flex items-center"
                   >
                     <span>{obj.name}</span>
                     <span className="ml-2 text-xs text-muted-foreground">({obj.flow})</span>
@@ -158,16 +137,14 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="result-value">
-              {selectedObjective?.isCurrency ? 'Valor (€)' : 'Quantidade'}
-            </Label>
+            <Label htmlFor="activity-value">Quantidade</Label>
             <Input
-              id="result-value"
+              id="activity-value"
               type="number"
-              placeholder={selectedObjective?.isCurrency ? "Ex: 8500, 15000" : "Ex: 1, 2, 5"}
+              placeholder="Ex: 5, 10, 20"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="border-emerald-500/30 focus:ring-emerald-500/30"
+              className="border-primary/20 focus:ring-primary/30"
             />
           </div>
 
@@ -178,7 +155,7 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
                 <Button
                   variant="outline"
                   className={cn(
-                    'w-full justify-start text-left font-normal border-emerald-500/30',
+                    'w-full justify-start text-left font-normal border-primary/20',
                     !date && 'text-muted-foreground'
                   )}
                 >
@@ -199,14 +176,14 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="result-notes">Notas (opcional)</Label>
+            <Label htmlFor="activity-notes">Notas (opcional)</Label>
             <Textarea
-              id="result-notes"
+              id="activity-notes"
               placeholder="Descrição adicional..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="border-emerald-500/30 focus:ring-emerald-500/30"
+              className="border-primary/20 focus:ring-primary/30"
             />
           </div>
         </div>
@@ -215,8 +192,8 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
           <Button variant="outline" onClick={handleCancel}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            Registar Resultado
+          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90">
+            Registar Atividade
           </Button>
         </DialogFooter>
       </DialogContent>
