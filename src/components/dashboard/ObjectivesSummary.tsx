@@ -204,9 +204,11 @@ export function ObjectivesSummary() {
       </CardHeader>
       <CardContent>
         <Tabs value={selectedFlow} onValueChange={(v) => setSelectedFlow(v as ObjectiveFlow | 'all')}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="vendedores">Vendedores</TabsTrigger>
             <TabsTrigger value="compradores">Compradores</TabsTrigger>
+            <TabsTrigger value="recrutamento">Recrut.</TabsTrigger>
+            <TabsTrigger value="intermediacao_credito">Crédito</TabsTrigger>
             <TabsTrigger value="geral">Geral</TabsTrigger>
           </TabsList>
 

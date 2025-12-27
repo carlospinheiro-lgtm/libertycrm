@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Pencil, Trash2, Tag } from 'lucide-react';
-import { Source, sourceCategoryLabels, sourceFlowLabels } from '@/types';
+import { Source, sourceCategoryLabels, sourceFlowLabels, sourceTypeLabels } from '@/types';
 
 interface SourcesTableProps {
   sources: Source[];
@@ -23,7 +23,14 @@ const categoryColors: Record<string, string> = {
 const flowColors: Record<string, string> = {
   vendedores: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
   compradores: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
+  recrutamento: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
+  intermediacao_credito: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
   ambos: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+};
+
+const sourceTypeColors: Record<string, string> = {
+  ativa: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
+  passiva: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300',
 };
 
 export function SourcesTable({ sources, onEdit, onDelete, onToggleActive }: SourcesTableProps) {
@@ -47,6 +54,7 @@ export function SourcesTable({ sources, onEdit, onDelete, onToggleActive }: Sour
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Fluxo</TableHead>
+              <TableHead>Tipo</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -55,7 +63,7 @@ export function SourcesTable({ sources, onEdit, onDelete, onToggleActive }: Sour
           <TableBody>
             {sources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   Nenhuma origem encontrada
                 </TableCell>
               </TableRow>
@@ -66,6 +74,11 @@ export function SourcesTable({ sources, onEdit, onDelete, onToggleActive }: Sour
                   <TableCell>
                     <Badge variant="outline" className={flowColors[source.flow]}>
                       {sourceFlowLabels[source.flow]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={sourceTypeColors[source.sourceType || 'passiva']}>
+                      {sourceTypeLabels[source.sourceType || 'passiva']}
                     </Badge>
                   </TableCell>
                   <TableCell>

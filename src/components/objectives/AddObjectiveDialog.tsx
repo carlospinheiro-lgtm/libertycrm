@@ -33,11 +33,17 @@ import {
   ObjectiveUnit,
   activityTypesVendedores,
   activityTypesCompradores,
+  activityTypesRecrutamento,
+  activityTypesIntermediacao,
   resultTypesVendedores,
   resultTypesCompradores,
+  resultTypesRecrutamento,
+  resultTypesIntermediacao,
   resultTypesGerais,
   objectiveUnits,
   defaultSources,
+  sourceTypeLabels,
+  SourceType,
 } from '@/types';
 
 interface AddObjectiveDialogProps {
@@ -68,6 +74,7 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
   const [targetType, setTargetType] = useState<'agent' | 'agency' | ''>('');
   const [targetId, setTargetId] = useState<string>('');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<SourceType | 'all'>('all');
 
   // Get available objective types based on flow and category
   const availableTypes = useMemo(() => {
@@ -76,12 +83,16 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
     if (objectiveCategory === 'activity') {
       if (flow === 'vendedores') return activityTypesVendedores;
       if (flow === 'compradores') return activityTypesCompradores;
+      if (flow === 'recrutamento') return activityTypesRecrutamento;
+      if (flow === 'intermediacao_credito') return activityTypesIntermediacao;
       return [];
     }
     
     if (objectiveCategory === 'result') {
       if (flow === 'vendedores') return resultTypesVendedores;
       if (flow === 'compradores') return resultTypesCompradores;
+      if (flow === 'recrutamento') return resultTypesRecrutamento;
+      if (flow === 'intermediacao_credito') return resultTypesIntermediacao;
       if (flow === 'geral') return resultTypesGerais;
       return [];
     }
@@ -152,6 +163,7 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
     setTargetType('');
     setTargetId('');
     setSourceFilter('all');
+    setSourceTypeFilter('all');
   };
 
   const handleCancel = () => {
@@ -189,6 +201,8 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
                 <SelectContent>
                   <SelectItem value="vendedores">Vendedores</SelectItem>
                   <SelectItem value="compradores">Compradores</SelectItem>
+                  <SelectItem value="recrutamento">Recrutamento</SelectItem>
+                  <SelectItem value="intermediacao_credito">Interm. Crédito</SelectItem>
                   <SelectItem value="geral">Geral</SelectItem>
                 </SelectContent>
               </Select>
@@ -363,25 +377,42 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
             </div>
           </div>
 
-          {/* Source Filter (Optional) */}
-          <div className="grid gap-2">
-            <Label>Origem (opcional)</Label>
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todas as origens" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as origens</SelectItem>
-                <SelectGroup>
-                  <SelectLabel>Origens disponíveis</SelectLabel>
-                  {availableSources.map((source) => (
-                    <SelectItem key={source.id} value={source.id}>
-                      {source.name}
-                    </SelectItem>
+          {/* Source Filters (Optional) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Tipo de Origem (opcional)</Label>
+              <Select value={sourceTypeFilter} onValueChange={(v) => setSourceTypeFilter(v as SourceType | 'all')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  {Object.entries(sourceTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Origem específica (opcional)</Label>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as origens" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as origens</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>Origens disponíveis</SelectLabel>
+                    {availableSources.map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        {source.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
