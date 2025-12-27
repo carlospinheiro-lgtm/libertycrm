@@ -8,7 +8,7 @@ interface StatCardProps {
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
   icon: LucideIcon;
-  iconColor?: 'primary' | 'accent' | 'success' | 'warning' | 'info';
+  iconColor?: 'primary' | 'accent' | 'success' | 'warning' | 'info' | 'purple';
 }
 
 const iconColorClasses = {
@@ -17,6 +17,7 @@ const iconColorClasses = {
   success: 'bg-success/10 text-success',
   warning: 'bg-warning/10 text-warning',
   info: 'bg-info/10 text-info',
+  purple: 'bg-purple-500/10 text-purple-500',
 };
 
 export function StatCard({
