@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Objective, getObjectiveTypeName, objectiveFlowLabels } from '@/types';
 import { ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileObjectiveCard } from './MobileObjectiveCard';
 
 interface ResultsTableProps {
   objectives: Objective[];
@@ -11,6 +13,8 @@ interface ResultsTableProps {
 }
 
 export function ResultsTable({ objectives, onViewDetails }: ResultsTableProps) {
+  const isMobile = useIsMobile();
+  
   // Filter only result objectives
   const resultObjectives = objectives.filter(o => o.objectiveCategory === 'result');
   
@@ -58,6 +62,25 @@ export function ResultsTable({ objectives, onViewDetails }: ResultsTableProps) {
 
   if (resultObjectives.length === 0) {
     return null;
+  }
+
+  // Mobile: Use cards instead of table
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 px-1">
+          <ClipboardList className="h-4 w-4" />
+          Objetivos de Resultado ({resultObjectives.length})
+        </h3>
+        {resultObjectives.map((objective) => (
+          <MobileObjectiveCard
+            key={objective.id}
+            objective={objective}
+            onViewDetails={onViewDetails}
+          />
+        ))}
+      </div>
+    );
   }
 
   return (
