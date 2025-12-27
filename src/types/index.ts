@@ -164,13 +164,27 @@ export interface AccountEntry {
 // Objective
 export interface Objective {
   id: string;
-  targetType: 'agency' | 'director' | 'agent';
-  targetId: string;
-  targetName: string;
-  objectiveType: 'transactions' | 'listings' | 'leads' | 'revenue' | 'recruitments';
-  period: 'monthly' | 'annual';
-  year: number;
-  month?: number;
-  target: number;
-  achieved: number;
+  name: string;
+  currentValue: number;
+  targetValue: number;
+  unit: string;
+  type: 'currency' | 'number' | 'points' | 'percentage';
+  startDate?: Date;
+  endDate?: Date;
+  targetType?: 'agency' | 'director' | 'agent';
+  targetId?: string;
+  targetName?: string;
+}
+
+// Objective Update
+export interface ObjectiveUpdate {
+  id: string;
+  objectiveId: string;
+  objectiveName: string;
+  type: 'angariacao' | 'reserva' | 'pontos' | 'lead' | 'transacao' | 'outro';
+  description: string;
+  value: string;
+  numericValue: number;
+  notes?: string;
+  createdAt: Date;
 }
