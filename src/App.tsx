@@ -8,6 +8,7 @@ import LeadsCompradores from "./pages/LeadsCompradores";
 import LeadsVendedores from "./pages/LeadsVendedores";
 import Recrutamento from "./pages/Recrutamento";
 import Processos from "./pages/Processos";
+import Objetivos from "./pages/Objetivos";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 
@@ -33,10 +34,7 @@ const App = () => (
             path="/contas"
             element={<ComingSoon title="Contas Correntes" />}
           />
-          <Route
-            path="/objetivos"
-            element={<ComingSoon title="Objetivos & Performance" />}
-          />
+          <Route path="/objetivos" element={<Objetivos />} />
           <Route
             path="/agenda"
             element={<ComingSoon title="Agenda" />}
