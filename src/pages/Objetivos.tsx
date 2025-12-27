@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ObjectivesStats } from '@/components/objectives/ObjectivesStats';
 import { ObjectivesTable } from '@/components/objectives/ObjectivesTable';
+import { ResultsOverview } from '@/components/objectives/ResultsOverview';
+import { ResultsTable } from '@/components/objectives/ResultsTable';
+import { ResultsChart } from '@/components/objectives/ResultsChart';
 import { AddObjectiveDialog } from '@/components/objectives/AddObjectiveDialog';
 import { ObjectiveDetailsSheet } from '@/components/objectives/ObjectiveDetailsSheet';
 import { AddResultDialog } from '@/components/dashboard/AddResultDialog';
@@ -275,13 +278,26 @@ export default function Objetivos() {
           </TabsList>
 
           <TabsContent value={flowFilter} className="mt-6 space-y-6">
-            {/* Stats Grid */}
+            {/* Stats Grid - Activity */}
             <ObjectivesStats objectives={filteredObjectives} />
 
-            {/* Objectives Table */}
-            <ObjectivesTable 
+            {/* Results Section */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ResultsOverview objectives={filteredObjectives} />
+              <ResultsChart objectives={filteredObjectives} />
+            </div>
+
+            {/* Results Table */}
+            <ResultsTable 
               objectives={filteredObjectives} 
               onViewDetails={handleViewDetails}
+            />
+
+            {/* Activity Table */}
+            <ObjectivesTable 
+              objectives={filteredObjectives.filter(o => o.objectiveCategory === 'activity')} 
+              onViewDetails={handleViewDetails}
+              title="Objetivos de Atividade"
             />
           </TabsContent>
         </Tabs>
