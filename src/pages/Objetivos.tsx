@@ -5,11 +5,17 @@ import { ActivityTypeGrid } from '@/components/objectives/ActivityTypeGrid';
 import { AddObjectiveDialog } from '@/components/objectives/AddObjectiveDialog';
 import { ObjectiveDetailsSheet } from '@/components/objectives/ObjectiveDetailsSheet';
 import { AddResultDialog } from '@/components/dashboard/AddResultDialog';
+import { AddActivityDialog } from '@/components/objectives/AddActivityDialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Target, Trophy, Activity, Filter } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Target, Trophy, Activity, Filter, CalendarIcon } from 'lucide-react';
 import { Objective, ObjectiveFlow } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 // Mock data - TODO: Connect to database
 const objectivesMock: Objective[] = [
@@ -196,12 +202,51 @@ const objectivesMock: Objective[] = [
 export default function Objetivos() {
   const [addObjectiveOpen, setAddObjectiveOpen] = useState(false);
   const [addResultOpen, setAddResultOpen] = useState(false);
+  const [addActivityOpen, setAddActivityOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [agencyFilter, setAgencyFilter] = useState<string>('all');
-  const [periodFilter, setPeriodFilter] = useState<string>('current');
+  const [periodFilter, setPeriodFilter] = useState<string>('this_month');
+  const [customDateRange, setCustomDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [flowFilter, setFlowFilter] = useState<ObjectiveFlow | 'all'>('all');
   const isMobile = useIsMobile();
+
+  // Calculate date range based on period filter
+  const getDateRange = () => {
+    const now = new Date();
+    switch (periodFilter) {
+      case 'this_month':
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case 'last_month':
+        return { start: startOfMonth(subMonths(now, 1)), end: endOfMonth(subMonths(now, 1)) };
+      case 'last_3_months':
+        return { start: startOfMonth(subMonths(now, 2)), end: endOfMonth(now) };
+      case 'last_6_months':
+        return { start: startOfMonth(subMonths(now, 5)), end: endOfMonth(now) };
+      case 'this_year':
+        return { start: startOfYear(now), end: endOfYear(now) };
+      case 'custom':
+        return { start: customDateRange.from, end: customDateRange.to };
+      default:
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+    }
+  };
+
+  const getPeriodLabel = () => {
+    switch (periodFilter) {
+      case 'this_month': return 'Este mês';
+      case 'last_month': return 'Mês anterior';
+      case 'last_3_months': return 'Últimos 3 meses';
+      case 'last_6_months': return 'Últimos 6 meses';
+      case 'this_year': return 'Ano atual';
+      case 'custom': 
+        if (customDateRange.from && customDateRange.to) {
+          return `${format(customDateRange.from, 'dd/MM')} - ${format(customDateRange.to, 'dd/MM')}`;
+        }
+        return 'Personalizado';
+      default: return 'Período';
+    }
+  };
 
   const handleViewDetails = (objective: Objective) => {
     setSelectedObjective(objective);
@@ -241,17 +286,69 @@ export default function Objetivos() {
               </SelectContent>
             </Select>
             
-            <Select value={periodFilter} onValueChange={setPeriodFilter}>
-              <SelectTrigger className="w-[90px] md:w-[140px] h-9">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="current">Atual</SelectItem>
-                <SelectItem value="q4">Q4 2024</SelectItem>
-                <SelectItem value="q3">Q3 2024</SelectItem>
-                <SelectItem value="year">Ano 2024</SelectItem>
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[120px] md:w-[160px] h-9 justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <span className="truncate">{getPeriodLabel()}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="p-2 space-y-1 border-b">
+                  <Button 
+                    variant={periodFilter === 'this_month' ? 'secondary' : 'ghost'} 
+                    className="w-full justify-start text-sm h-8"
+                    onClick={() => setPeriodFilter('this_month')}
+                  >
+                    Este mês
+                  </Button>
+                  <Button 
+                    variant={periodFilter === 'last_month' ? 'secondary' : 'ghost'} 
+                    className="w-full justify-start text-sm h-8"
+                    onClick={() => setPeriodFilter('last_month')}
+                  >
+                    Mês anterior
+                  </Button>
+                  <Button 
+                    variant={periodFilter === 'last_3_months' ? 'secondary' : 'ghost'} 
+                    className="w-full justify-start text-sm h-8"
+                    onClick={() => setPeriodFilter('last_3_months')}
+                  >
+                    Últimos 3 meses
+                  </Button>
+                  <Button 
+                    variant={periodFilter === 'last_6_months' ? 'secondary' : 'ghost'} 
+                    className="w-full justify-start text-sm h-8"
+                    onClick={() => setPeriodFilter('last_6_months')}
+                  >
+                    Últimos 6 meses
+                  </Button>
+                  <Button 
+                    variant={periodFilter === 'this_year' ? 'secondary' : 'ghost'} 
+                    className="w-full justify-start text-sm h-8"
+                    onClick={() => setPeriodFilter('this_year')}
+                  >
+                    Ano atual
+                  </Button>
+                </div>
+                <div className="p-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-2 px-2">Período personalizado:</p>
+                  <Calendar
+                    mode="range"
+                    selected={{ from: customDateRange.from, to: customDateRange.to }}
+                    onSelect={(range) => {
+                      setCustomDateRange({ from: range?.from, to: range?.to });
+                      if (range?.from && range?.to) {
+                        setPeriodFilter('custom');
+                      }
+                    }}
+                    numberOfMonths={1}
+                    locale={pt}
+                    className="pointer-events-auto"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* Flow Filter */}
             <Select value={flowFilter} onValueChange={(v) => setFlowFilter(v as ObjectiveFlow | 'all')}>
@@ -285,7 +382,7 @@ export default function Objetivos() {
           
           {/* + Atividade - AZUL */}
           <Button 
-            onClick={() => setAddResultOpen(true)} 
+            onClick={() => setAddActivityOpen(true)} 
             size={isMobile ? "sm" : "default"}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
@@ -324,8 +421,13 @@ export default function Objetivos() {
         open={addResultOpen} 
         onOpenChange={setAddResultOpen} 
       />
+
+      <AddActivityDialog 
+        open={addActivityOpen} 
+        onOpenChange={setAddActivityOpen} 
+      />
       
-      <ObjectiveDetailsSheet 
+      <ObjectiveDetailsSheet
         open={detailsOpen} 
         onOpenChange={setDetailsOpen}
         objective={selectedObjective}
