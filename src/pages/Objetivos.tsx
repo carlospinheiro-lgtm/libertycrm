@@ -6,11 +6,12 @@ import { AddObjectiveDialog } from '@/components/objectives/AddObjectiveDialog';
 import { ObjectiveDetailsSheet } from '@/components/objectives/ObjectiveDetailsSheet';
 import { AddResultDialog } from '@/components/dashboard/AddResultDialog';
 import { AddActivityDialog } from '@/components/objectives/AddActivityDialog';
+import { AllObjectivesDialog } from '@/components/objectives/AllObjectivesDialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Target, Trophy, Activity, Filter, CalendarIcon } from 'lucide-react';
+import { Target, Trophy, Activity, Filter, CalendarIcon, ClipboardList } from 'lucide-react';
 import { Objective, ObjectiveFlow } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
@@ -326,6 +327,7 @@ export default function Objetivos() {
   const [addObjectiveOpen, setAddObjectiveOpen] = useState(false);
   const [addResultOpen, setAddResultOpen] = useState(false);
   const [addActivityOpen, setAddActivityOpen] = useState(false);
+  const [allObjectivesOpen, setAllObjectivesOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [agencyFilter, setAgencyFilter] = useState<string>('all');
@@ -493,6 +495,17 @@ export default function Objetivos() {
 
         {/* Action Buttons - Fixed Colors */}
         <div className="flex flex-wrap gap-2">
+          {/* Ver todos os objetivos - OUTLINE */}
+          <Button 
+            onClick={() => setAllObjectivesOpen(true)} 
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            className="border-slate-300 hover:bg-slate-100"
+          >
+            <ClipboardList className="h-4 w-4 mr-1.5" />
+            {isMobile ? "Ver todos" : "Ver todos os objetivos"}
+          </Button>
+
           {/* + Objetivo - VERMELHO */}
           <Button 
             onClick={() => setAddObjectiveOpen(true)} 
@@ -554,6 +567,13 @@ export default function Objetivos() {
         open={detailsOpen} 
         onOpenChange={setDetailsOpen}
         objective={selectedObjective}
+      />
+
+      <AllObjectivesDialog
+        open={allObjectivesOpen}
+        onOpenChange={setAllObjectivesOpen}
+        objectives={objectivesMock}
+        onViewDetails={handleViewDetails}
       />
     </DashboardLayout>
   );
