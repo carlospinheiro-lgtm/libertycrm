@@ -39,7 +39,6 @@ import {
   resultTypesCompradores,
   resultTypesRecrutamento,
   resultTypesIntermediacao,
-  resultTypesGerais,
   objectiveUnits,
   defaultSources,
   sourceTypeLabels,
@@ -93,7 +92,8 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
       if (flow === 'compradores') return resultTypesCompradores;
       if (flow === 'recrutamento') return resultTypesRecrutamento;
       if (flow === 'intermediacao_credito') return resultTypesIntermediacao;
-      if (flow === 'geral') return resultTypesGerais;
+      // 'geral' flow no longer has specific result types - use vendedores as default
+      if (flow === 'geral') return resultTypesVendedores;
       return [];
     }
     

@@ -38,23 +38,22 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 // Result objectives list - ONLY RESULT types
+// UPDATED: Removed transações, faturação is now derived (not selectable directly)
+// Commission is required for reservas and angariação reservada
 const resultObjectivesList = [
-  // Vendedores
-  { id: 'angariacao_reservada', name: 'Angariações', flow: 'Vendedores', tipo: 'resultado' as const, isCurrency: false },
-  { id: 'angariacao_exclusiva', name: 'Angariações exclusivas', flow: 'Vendedores', tipo: 'resultado' as const, isCurrency: false },
-  { id: 'angariacao_vendida', name: 'Angariações vendidas', flow: 'Vendedores', tipo: 'resultado' as const, isCurrency: false },
-  // Compradores
-  { id: 'reserva_comprador', name: 'Reservas', flow: 'Compradores', tipo: 'resultado' as const, isCurrency: false },
-  // Geral
-  { id: 'transacao_venda', name: 'Transações – Venda', flow: 'Geral', tipo: 'resultado' as const, isCurrency: false },
-  { id: 'transacao_arrendamento', name: 'Transações – Arrendamento', flow: 'Geral', tipo: 'resultado' as const, isCurrency: false },
-  { id: 'faturacao_vendas', name: 'Faturação – Vendas', flow: 'Geral', tipo: 'resultado' as const, isCurrency: true },
-  { id: 'faturacao_arrendamentos', name: 'Faturação – Arrendamentos', flow: 'Geral', tipo: 'resultado' as const, isCurrency: true },
+  // Vendedores - Angariações (selecionáveis)
+  { id: 'angariacao_exclusiva', name: 'Angariações (Exclusivo)', flow: 'Vendedores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
+  { id: 'angariacao_exclusiva_rede', name: 'Angariações (Exclusivo de Rede)', flow: 'Vendedores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
+  { id: 'angariacao_reservada', name: 'Angariações Reservadas', flow: 'Vendedores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: true, faturacaoType: 'venda' as const },
+  // Compradores - Reservas (requerem comissão)
+  { id: 'reserva_venda', name: 'Reserva de Venda', flow: 'Compradores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: true, faturacaoType: 'venda' as const },
+  { id: 'reserva_arrendamento', name: 'Reserva de Arrendamento', flow: 'Compradores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: true, faturacaoType: 'arrendamento' as const },
   // Recrutamento
-  { id: 'consultores_integrados', name: 'Recrutamentos concretizados', flow: 'Recrutamento', tipo: 'resultado' as const, isCurrency: false },
+  { id: 'consultores_integrados', name: 'Recrutamentos concretizados', flow: 'Recrutamento', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
   // Intermediação de Crédito
-  { id: 'creditos_formalizados', name: 'Créditos aprovados', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: false },
-  { id: 'comissoes_credito', name: 'Comissões de crédito', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: true },
+  { id: 'creditos_formalizados', name: 'Créditos aprovados', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
+  // REMOVED: transacao_venda, transacao_arrendamento
+  // REMOVED from dropdown: faturacao_vendas, faturacao_arrendamentos (derived automatically)
 ];
 
 // Group by flow
@@ -72,10 +71,12 @@ interface AddResultDialogProps {
 export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
   const [objectiveId, setObjectiveId] = useState('');
   const [value, setValue] = useState('');
+  const [commission, setCommission] = useState('');
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState<Date>(new Date());
 
   const selectedObjective = resultObjectivesList.find(o => o.id === objectiveId);
+  const requiresCommission = selectedObjective?.requiresCommission ?? false;
 
   const handleSubmit = () => {
     if (!objectiveId || !value) {
@@ -85,8 +86,24 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
 
     const objective = resultObjectivesList.find(o => o.id === objectiveId);
     
+    // Validate commission is required
+    if (objective?.requiresCommission && !commission) {
+      toast.error('O valor da comissão é obrigatório para este tipo de resultado');
+      return;
+    }
+    
     // TODO: Connect to database - save the result
-    console.log('New result:', { objectiveId, value, notes, date, tipo: 'resultado' });
+    console.log('New result:', { objectiveId, value, commission, notes, date, tipo: 'resultado' });
+    
+    // If has commission, automatically associate to faturação
+    if (commission && objective?.requiresCommission && objective.faturacaoType) {
+      const faturacaoType = objective.faturacaoType === 'arrendamento' 
+        ? 'faturacao_arrendamentos' 
+        : 'faturacao_vendas';
+      
+      console.log('Faturação automática:', { faturacaoType, value: commission });
+      toast.success(`Comissão de €${commission} associada automaticamente à Faturação`);
+    }
     
     const displayValue = objective?.isCurrency ? `€${value}` : `+${value}`;
     toast.success(`Resultado registado: ${displayValue} em ${objective?.name}`);
@@ -94,6 +111,7 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
     // Reset form
     setObjectiveId('');
     setValue('');
+    setCommission('');
     setNotes('');
     setDate(new Date());
     onOpenChange(false);
@@ -102,6 +120,7 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
   const handleCancel = () => {
     setObjectiveId('');
     setValue('');
+    setCommission('');
     setNotes('');
     setDate(new Date());
     onOpenChange(false);
@@ -177,6 +196,39 @@ export function AddResultDialog({ open, onOpenChange }: AddResultDialogProps) {
               className="border-emerald-500/30 focus:ring-emerald-500/30"
             />
           </div>
+
+          {/* Campo de comissão obrigatório para Reservas e Angariações Reservadas */}
+          {requiresCommission && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="commission-value" className="text-emerald-700 font-medium">
+                  Valor da Comissão (€) *
+                </Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-emerald-600 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>A comissão será automaticamente associada ao cartão de Faturação correspondente.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                id="commission-value"
+                type="number"
+                placeholder="Ex: 8500, 15000"
+                value={commission}
+                onChange={(e) => setCommission(e.target.value)}
+                required
+                className="border-emerald-600 focus:ring-emerald-600 bg-emerald-50/50"
+              />
+              <p className="text-xs text-emerald-600/80">
+                Este valor será somado automaticamente à Faturação ({selectedObjective?.faturacaoType === 'arrendamento' ? 'Arrendamentos' : 'Vendas'})
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Data</Label>
