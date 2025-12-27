@@ -24,7 +24,7 @@ const resultTypeConfigs: {
   // Compradores
   { type: 'reserva_comprador', label: 'Reservas', shortLabel: 'Reserv.' },
   // Outros
-  { type: 'creditos_formalizados', label: 'Créditos', shortLabel: 'Créd.' },
+  { type: 'creditos_aprovados', label: 'Créditos Aprovados', shortLabel: 'Créd.' },
   { type: 'agentes_recrutados', label: 'Recrutados', shortLabel: 'Recr.' },
   { type: 'agentes_integrados', label: 'Integrados', shortLabel: 'Integ.' },
 ];

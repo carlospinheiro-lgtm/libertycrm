@@ -37,10 +37,7 @@ const activityTypeConfigs: {
   { type: 'marcar_entrevistas_recrutamento', label: 'Marcar Entrevistas', icon: '📅', flows: ['recrutamento'] },
   { type: 'entrevistas_realizadas', label: 'Fazer Entrevistas', icon: '🎤', flows: ['recrutamento'] },
   { type: 'seguimentos_recrutamento', label: 'Seguir Leads', icon: '🔄', flows: ['recrutamento'] },
-  // Intermediação de Crédito
-  { type: 'simulacoes_credito', label: 'Simulações Crédito', icon: '💳', flows: ['intermediacao_credito'] },
-  { type: 'processos_submetidos', label: 'Processos Submetidos', icon: '📄', flows: ['intermediacao_credito'] },
-  { type: 'aprovacoes_obtidas', label: 'Aprovações Obtidas', icon: '✅', flows: ['intermediacao_credito'] },
+  // Intermediação de Crédito - NÃO tem atividades
 ];
 
 export function ActivityTypeGrid({ objectives, flowFilter = 'all' }: ActivityTypeGridProps) {

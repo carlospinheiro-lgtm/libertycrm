@@ -34,7 +34,6 @@ import {
   activityTypesVendedores,
   activityTypesCompradores,
   activityTypesRecrutamento,
-  activityTypesIntermediacao,
   resultTypesVendedores,
   resultTypesCompradores,
   resultTypesRecrutamento,
@@ -83,7 +82,7 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
       if (flow === 'vendedores') return activityTypesVendedores;
       if (flow === 'compradores') return activityTypesCompradores;
       if (flow === 'recrutamento') return activityTypesRecrutamento;
-      if (flow === 'intermediacao_credito') return activityTypesIntermediacao;
+      if (flow === 'intermediacao_credito') return []; // Crédito não tem atividades
       return [];
     }
     
@@ -213,13 +212,13 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
               <Select 
                 value={objectiveCategory} 
                 onValueChange={handleCategoryChange}
-                disabled={!flow || (flow === 'geral' && objectiveCategory !== 'result')}
+                disabled={!flow || flow === 'geral' || flow === 'intermediacao_credito'}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar" />
                 </SelectTrigger>
                 <SelectContent>
-                  {flow !== 'geral' && (
+                  {flow !== 'geral' && flow !== 'intermediacao_credito' && (
                     <SelectItem value="activity">Atividade</SelectItem>
                   )}
                   <SelectItem value="result">Resultado</SelectItem>

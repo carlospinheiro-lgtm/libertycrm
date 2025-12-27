@@ -242,28 +242,12 @@ const objectivesMock: Objective[] = [
     targetName: 'Todas',
     sourceFilter: 'all',
   },
-  // Intermediação de Crédito - Atividade
+  // Intermediação de Crédito - Resultado (Crédito não tem atividades)
   {
     id: '8',
     flow: 'intermediacao_credito',
-    objectiveCategory: 'activity',
-    activityType: 'simulacoes_credito',
-    currentValue: 25,
-    targetValue: 40,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  // Intermediação de Crédito - Resultado
-  {
-    id: '9',
-    flow: 'intermediacao_credito',
     objectiveCategory: 'result',
-    resultType: 'creditos_formalizados',
+    resultType: 'creditos_aprovados',
     currentValue: 8,
     targetValue: 15,
     unit: 'number',
