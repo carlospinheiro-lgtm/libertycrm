@@ -59,10 +59,7 @@ const activityObjectivesList = [
   { id: 'marcar_entrevistas_recrutamento', name: 'Marcar Entrevistas', flow: 'Recrutamento', tipo: 'atividade' as const },
   { id: 'entrevistas_realizadas', name: 'Fazer Entrevistas', flow: 'Recrutamento', tipo: 'atividade' as const },
   { id: 'seguimentos_recrutamento', name: 'Seguir Leads Não Recrutadas', flow: 'Recrutamento', tipo: 'atividade' as const },
-  // Intermediação de Crédito
-  { id: 'simulacoes_credito', name: 'Simulações de crédito', flow: 'Crédito', tipo: 'atividade' as const },
-  { id: 'processos_submetidos', name: 'Processos submetidos', flow: 'Crédito', tipo: 'atividade' as const },
-  { id: 'aprovacoes_obtidas', name: 'Aprovações obtidas', flow: 'Crédito', tipo: 'atividade' as const },
+  // Intermediação de Crédito - NÃO tem atividades, apenas resultados
 ];
 
 // Group by flow

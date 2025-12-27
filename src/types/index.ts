@@ -237,10 +237,7 @@ export type ActivityObjectiveType =
   | 'marcar_entrevistas_recrutamento'
   | 'entrevistas_realizadas'
   | 'seguimentos_recrutamento'
-  // Intermediação de Crédito
-  | 'simulacoes_credito'
-  | 'processos_submetidos'
-  | 'aprovacoes_obtidas';
+  ; // Intermediação de Crédito não tem atividades - apenas resultados
 
 export type ResultObjectiveType =
   // Vendedores - Angariações
@@ -256,8 +253,7 @@ export type ResultObjectiveType =
   | 'agentes_recrutados'
   | 'agentes_integrados'
   // Intermediação de Crédito
-  | 'creditos_formalizados'
-  | 'comissoes_credito';
+  | 'creditos_aprovados';
 
 // Listas controladas de tipos por fluxo
 export const activityTypesVendedores = [
@@ -286,11 +282,7 @@ export const activityTypesRecrutamento = [
   { value: 'seguimentos_recrutamento', label: 'Seguir Leads Não Recrutadas' },
 ] as const;
 
-export const activityTypesIntermediacao = [
-  { value: 'simulacoes_credito', label: 'Simulações de Crédito' },
-  { value: 'processos_submetidos', label: 'Processos Submetidos' },
-  { value: 'aprovacoes_obtidas', label: 'Aprovações Obtidas' },
-] as const;
+// Intermediação de Crédito não tem atividades - apenas resultados
 
 export const resultTypesVendedores = [
   { value: 'angariacao_exclusiva', label: 'Angariações (Exclusivo)' },
@@ -310,8 +302,7 @@ export const resultTypesRecrutamento = [
 ] as const;
 
 export const resultTypesIntermediacao = [
-  { value: 'creditos_formalizados', label: 'Créditos Formalizados' },
-  { value: 'comissoes_credito', label: 'Comissões de Crédito' },
+  { value: 'creditos_aprovados', label: 'Créditos Aprovados' },
 ] as const;
 
 // Unidades disponíveis
@@ -350,8 +341,7 @@ export function getObjectiveTypeName(objective: Objective): string {
     if (compradorType) return compradorType.label;
     const recrutamentoType = activityTypesRecrutamento.find(t => t.value === objective.activityType);
     if (recrutamentoType) return recrutamentoType.label;
-    const intermediacaoType = activityTypesIntermediacao.find(t => t.value === objective.activityType);
-    if (intermediacaoType) return intermediacaoType.label;
+    // Intermediação de Crédito não tem atividades
   }
   if (objective.objectiveCategory === 'result' && objective.resultType) {
     const vendedorType = resultTypesVendedores.find(t => t.value === objective.resultType);

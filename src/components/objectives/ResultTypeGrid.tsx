@@ -30,9 +30,8 @@ const resultTypeConfigs: {
   // Recrutamento - 2 cartões separados
   { type: 'agentes_recrutados', label: 'Agentes Recrutados', icon: '✅', flows: ['recrutamento'] },
   { type: 'agentes_integrados', label: 'Agentes Integrados', icon: '🌟', flows: ['recrutamento'] },
-  // Intermediação de Crédito
-  { type: 'creditos_formalizados', label: 'Créditos Escriturados', icon: '💳', flows: ['intermediacao_credito'] },
-  { type: 'comissoes_credito', label: 'Comissões de Crédito', icon: '💰', isCurrency: true, flows: ['intermediacao_credito'] },
+  // Intermediação de Crédito - apenas 1 resultado
+  { type: 'creditos_aprovados', label: 'Créditos Aprovados', icon: '💳', flows: ['intermediacao_credito'] },
 ];
 
 export function ResultTypeGrid({ objectives, flowFilter = 'all' }: ResultTypeGridProps) {

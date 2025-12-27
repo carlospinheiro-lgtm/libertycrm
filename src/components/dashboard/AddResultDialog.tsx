@@ -52,9 +52,8 @@ const resultObjectivesList = [
   // Recrutamento - 2 resultados separados
   { id: 'agentes_recrutados', name: 'Agentes Recrutados', flow: 'Recrutamento', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false, description: 'Decisão positiva do candidato' },
   { id: 'agentes_integrados', name: 'Agentes Integrados', flow: 'Recrutamento', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false, description: 'Agente operacional na agência' },
-  // Intermediação de Crédito
-  { id: 'creditos_formalizados', name: 'Créditos aprovados', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
-  { id: 'comissoes_credito', name: 'Comissões de Crédito', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: true, requiresCommission: false },
+  // Intermediação de Crédito - apenas 1 resultado
+  { id: 'creditos_aprovados', name: 'Créditos Aprovados', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
 ];
 
 // Group by flow
