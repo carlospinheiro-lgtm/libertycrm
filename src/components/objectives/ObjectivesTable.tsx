@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 interface ObjectivesTableProps {
   objectives: Objective[];
   onViewDetails: (objective: Objective) => void;
+  title?: string;
 }
 
 function formatValue(value: number, unit: string, unitSymbol: string): string {
@@ -64,7 +65,7 @@ function getCategoryBadgeColor(category: string): string {
     : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
 }
 
-export function ObjectivesTable({ objectives, onViewDetails }: ObjectivesTableProps) {
+export function ObjectivesTable({ objectives, onViewDetails, title = 'Lista de Objetivos' }: ObjectivesTableProps) {
   const handleEdit = (objective: Objective) => {
     toast.info('Funcionalidade de edição em desenvolvimento');
   };
@@ -73,12 +74,16 @@ export function ObjectivesTable({ objectives, onViewDetails }: ObjectivesTablePr
     toast.info('Funcionalidade de eliminar em desenvolvimento');
   };
 
+  if (objectives.length === 0) {
+    return null;
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg font-heading">Lista de Objetivos</CardTitle>
+          <CardTitle className="text-lg font-heading">{title}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
