@@ -261,7 +261,7 @@ export type ResultObjectiveType =
 
 // Listas controladas de tipos por fluxo
 export const activityTypesVendedores = [
-  { value: 'posicionamento_vendedores', label: 'Posicionamento' },
+  { value: 'posicionamento_vendedores', label: 'Prospeção de Clientes' },
   { value: 'leads_vendedores', label: 'Leads Obtidas' },
   { value: 'chamadas_vendedores', label: 'Chamadas Realizadas' },
   { value: 'contactos_efetivos_vendedores', label: 'Contactos Efetivos' },
@@ -270,7 +270,7 @@ export const activityTypesVendedores = [
 ] as const;
 
 export const activityTypesCompradores = [
-  { value: 'posicionamento_compradores', label: 'Posicionamento' },
+  { value: 'posicionamento_compradores', label: 'Prospeção de Clientes' },
   { value: 'leads_compradores', label: 'Leads Obtidas' },
   { value: 'qualificacao', label: 'Qualificação' },
   { value: 'visitas', label: 'Visitas' },

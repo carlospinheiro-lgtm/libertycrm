@@ -495,12 +495,11 @@ export default function Objetivos() {
 
         {/* Action Buttons - Fixed Colors */}
         <div className="flex flex-wrap gap-2">
-          {/* Ver todos os objetivos - OUTLINE */}
+          {/* Ver todos os objetivos - CINZA FIXO */}
           <Button 
             onClick={() => setAllObjectivesOpen(true)} 
-            variant="outline"
             size={isMobile ? "sm" : "default"}
-            className="border-slate-300 hover:bg-slate-100"
+            className="bg-gray-600 hover:bg-gray-700 text-white border-0"
           >
             <ClipboardList className="h-4 w-4 mr-1.5" />
             {isMobile ? "Ver todos" : "Ver todos os objetivos"}

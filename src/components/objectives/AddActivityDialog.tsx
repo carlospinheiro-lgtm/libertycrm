@@ -40,14 +40,14 @@ import { toast } from 'sonner';
 // Activity objectives list - ONLY ACTIVITY types
 const activityObjectivesList = [
   // Vendedores
-  { id: 'posicionamento_vendedores', name: 'Posicionamento', flow: 'Vendedores', tipo: 'atividade' as const },
+  { id: 'posicionamento_vendedores', name: 'Prospeção de Clientes', flow: 'Vendedores', tipo: 'atividade' as const },
   { id: 'leads_vendedores', name: 'Leads obtidas', flow: 'Vendedores', tipo: 'atividade' as const },
   { id: 'chamadas_vendedores', name: 'Chamadas realizadas', flow: 'Vendedores', tipo: 'atividade' as const },
   { id: 'contactos_efetivos_vendedores', name: 'Contactos efetivos', flow: 'Vendedores', tipo: 'atividade' as const },
   { id: 'apresentacoes_servicos', name: 'Apresentações de serviços', flow: 'Vendedores', tipo: 'atividade' as const },
   { id: 'seguimentos_vendedores', name: 'Seguimentos', flow: 'Vendedores', tipo: 'atividade' as const },
   // Compradores
-  { id: 'posicionamento_compradores', name: 'Posicionamento', flow: 'Compradores', tipo: 'atividade' as const },
+  { id: 'posicionamento_compradores', name: 'Prospeção de Clientes', flow: 'Compradores', tipo: 'atividade' as const },
   { id: 'leads_compradores', name: 'Leads obtidas', flow: 'Compradores', tipo: 'atividade' as const },
   { id: 'qualificacao', name: 'Qualificações', flow: 'Compradores', tipo: 'atividade' as const },
   { id: 'visitas', name: 'Visitas realizadas', flow: 'Compradores', tipo: 'atividade' as const },
@@ -135,7 +135,7 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
                     <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Selecione o tipo de atividade que realizou: Posicionamento, Leads, Chamadas, Visitas, etc.</p>
+                    <p>Selecione o tipo de atividade que realizou: Prospeção, Leads, Chamadas, Visitas, etc.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
