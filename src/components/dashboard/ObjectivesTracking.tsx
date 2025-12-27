@@ -1,11 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, Plus, ArrowRight, Home, Wallet, Star, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { AddResultDialog } from './AddResultDialog';
-import { toast } from 'sonner';
 
 // Mock data - TODO: Connect to database
 const updatesMock = [
@@ -63,9 +63,10 @@ const typeColors = {
 
 export function ObjectivesTracking() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleGoToObjectives = () => {
-    toast.info('Página de Objetivos em desenvolvimento');
+    navigate('/objetivos');
   };
 
   return (
