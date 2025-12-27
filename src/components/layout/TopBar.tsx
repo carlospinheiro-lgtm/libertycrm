@@ -1,4 +1,4 @@
-import { Bell, Search, User, Building2 } from 'lucide-react';
+import { Bell, Search, User, Building2, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,36 +11,53 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface TopBarProps {
   sidebarCollapsed: boolean;
+  onMenuClick?: () => void;
+  showMenuButton?: boolean;
 }
 
-export function TopBar({ sidebarCollapsed }: TopBarProps) {
+export function TopBar({ sidebarCollapsed, onMenuClick, showMenuButton = false }: TopBarProps) {
   return (
     <header
-      className={`fixed top-0 right-0 z-30 h-16 bg-card border-b border-border transition-all duration-300 ${
-        sidebarCollapsed ? 'left-16' : 'left-64'
-      }`}
+      className={cn(
+        "fixed top-0 right-0 z-30 h-16 bg-card border-b border-border transition-all duration-300",
+        showMenuButton ? 'left-0' : (sidebarCollapsed ? 'left-16' : 'left-64')
+      )}
     >
-      <div className="flex h-full items-center justify-between px-6">
-        {/* Search */}
-        <div className="flex items-center gap-4 flex-1 max-w-md">
-          <div className="relative flex-1">
+      <div className="flex h-full items-center justify-between px-4 md:px-6">
+        {/* Left side - Menu button and Search */}
+        <div className="flex items-center gap-3 flex-1 max-w-md">
+          {/* Hamburger menu for mobile */}
+          {showMenuButton && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onMenuClick}
+              className="shrink-0"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+          
+          {/* Search - hidden on very small screens */}
+          <div className="relative flex-1 hidden sm:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Pesquisar leads, clientes, processos..."
+              placeholder="Pesquisar..."
               className="pl-10 bg-background"
             />
           </div>
         </div>
 
         {/* Right Side */}
-        <div className="flex items-center gap-4">
-          {/* Agency Selector */}
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Agency Selector - hidden on mobile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 hidden md:flex">
                 <Building2 className="h-4 w-4" />
                 <span>Braga</span>
               </Button>

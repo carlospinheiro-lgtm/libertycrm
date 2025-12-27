@@ -2,17 +2,14 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ObjectivesStats } from '@/components/objectives/ObjectivesStats';
 import { ObjectivesTable } from '@/components/objectives/ObjectivesTable';
-import { ResultsOverview } from '@/components/objectives/ResultsOverview';
-import { ResultsTable } from '@/components/objectives/ResultsTable';
 import { ResultsChart } from '@/components/objectives/ResultsChart';
-import { MobileResultsSummary } from '@/components/objectives/MobileResultsSummary';
+import { ResultTypeGrid } from '@/components/objectives/ResultTypeGrid';
 import { AddObjectiveDialog } from '@/components/objectives/AddObjectiveDialog';
 import { ObjectiveDetailsSheet } from '@/components/objectives/ObjectiveDetailsSheet';
 import { AddResultDialog } from '@/components/dashboard/AddResultDialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Target, Trophy, Activity } from 'lucide-react';
+import { Plus, Target, Trophy, Activity, Filter } from 'lucide-react';
 import { Objective, ObjectiveFlow } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -220,7 +217,6 @@ export default function Objetivos() {
     return true;
   });
 
-  const resultObjectives = filteredObjectives.filter(o => o.objectiveCategory === 'result');
   const activityObjectives = filteredObjectives.filter(o => o.objectiveCategory === 'activity');
 
   return (
@@ -240,7 +236,7 @@ export default function Objetivos() {
           
           <div className="flex flex-wrap gap-2">
             <Select value={agencyFilter} onValueChange={setAgencyFilter}>
-              <SelectTrigger className="w-[110px] md:w-[140px] h-9">
+              <SelectTrigger className="w-[100px] md:w-[140px] h-9">
                 <SelectValue placeholder="Agência" />
               </SelectTrigger>
               <SelectContent>
@@ -251,7 +247,7 @@ export default function Objetivos() {
             </Select>
             
             <Select value={periodFilter} onValueChange={setPeriodFilter}>
-              <SelectTrigger className="w-[100px] md:w-[140px] h-9">
+              <SelectTrigger className="w-[90px] md:w-[140px] h-9">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -259,6 +255,22 @@ export default function Objetivos() {
                 <SelectItem value="q4">Q4 2024</SelectItem>
                 <SelectItem value="q3">Q3 2024</SelectItem>
                 <SelectItem value="year">Ano 2024</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Flow Filter */}
+            <Select value={flowFilter} onValueChange={(v) => setFlowFilter(v as ObjectiveFlow | 'all')}>
+              <SelectTrigger className="w-[100px] md:w-[150px] h-9">
+                <Filter className="h-4 w-4 mr-1 md:mr-2 shrink-0" />
+                <SelectValue placeholder="Fluxo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Fluxos</SelectItem>
+                <SelectItem value="vendedores">Vendedores</SelectItem>
+                <SelectItem value="compradores">Compradores</SelectItem>
+                <SelectItem value="recrutamento">Recrutamento</SelectItem>
+                <SelectItem value="intermediacao_credito">Crédito</SelectItem>
+                <SelectItem value="geral">Geral</SelectItem>
               </SelectContent>
             </Select>
             
@@ -316,82 +328,63 @@ export default function Objetivos() {
           </div>
         )}
 
-        {/* Flow Tabs - Horizontal scrollable on mobile */}
-        <Tabs value={flowFilter} onValueChange={(v) => setFlowFilter(v as ObjectiveFlow | 'all')}>
-          <div className="-mx-4 px-4 md:mx-0 md:px-0 overflow-x-auto scrollbar-hide">
-            <TabsList className="inline-flex w-max md:w-auto">
-              <TabsTrigger value="all" className="text-xs md:text-sm">Todos</TabsTrigger>
-              <TabsTrigger value="vendedores" className="text-xs md:text-sm">Vendedores</TabsTrigger>
-              <TabsTrigger value="compradores" className="text-xs md:text-sm">Compradores</TabsTrigger>
-              <TabsTrigger value="recrutamento" className="text-xs md:text-sm">Recrutamento</TabsTrigger>
-              <TabsTrigger value="intermediacao_credito" className="text-xs md:text-sm">Crédito</TabsTrigger>
-              <TabsTrigger value="geral" className="text-xs md:text-sm">Geral</TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value={flowFilter} className="mt-4 md:mt-6 space-y-4 md:space-y-6">
-            {/* Mobile View */}
-            {isMobile ? (
-              <>
-                {mobileView === 'results' ? (
-                  <div className="space-y-4">
-                    <MobileResultsSummary objectives={filteredObjectives} />
-                    <ResultsTable 
-                      objectives={filteredObjectives} 
-                      onViewDetails={handleViewDetails}
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Activity Stats Summary */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-muted/50 rounded-lg p-3 text-center">
-                        <p className="text-2xl font-bold">{activityObjectives.length}</p>
-                        <p className="text-xs text-muted-foreground">Objetivos</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-3 text-center">
-                        <p className="text-2xl font-bold text-emerald-600">
-                          {activityObjectives.filter(o => (o.currentValue / o.targetValue) >= 0.9).length}
-                        </p>
-                        <p className="text-xs text-muted-foreground">No Alvo</p>
-                      </div>
-                    </div>
-                    <ObjectivesTable 
-                      objectives={activityObjectives} 
-                      onViewDetails={handleViewDetails}
-                      title="Objetivos de Atividade"
-                    />
-                  </div>
-                )}
-              </>
-            ) : (
-              /* Desktop View */
-              <>
-                {/* Stats Grid */}
-                <ObjectivesStats objectives={filteredObjectives} />
-
-                {/* Results Section */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <ResultsOverview objectives={filteredObjectives} />
+        {/* Content */}
+        <div className="space-y-4 md:space-y-6">
+          {/* Mobile View */}
+          {isMobile ? (
+            <>
+              {mobileView === 'results' ? (
+                <div className="space-y-4">
+                  {/* Result Type Cards Grid */}
+                  <ResultTypeGrid objectives={filteredObjectives} flowFilter={flowFilter} />
+                  
+                  {/* Chart */}
                   <ResultsChart objectives={filteredObjectives} />
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Activity Stats Summary */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold">{activityObjectives.length}</p>
+                      <p className="text-xs text-muted-foreground">Objetivos</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-emerald-600">
+                        {activityObjectives.filter(o => (o.currentValue / o.targetValue) >= 0.9).length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">No Alvo</p>
+                    </div>
+                  </div>
+                  <ObjectivesTable 
+                    objectives={activityObjectives} 
+                    onViewDetails={handleViewDetails}
+                    title="Objetivos de Atividade"
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            /* Desktop View */
+            <>
+              {/* Stats Grid */}
+              <ObjectivesStats objectives={filteredObjectives} />
 
-                {/* Results Table */}
-                <ResultsTable 
-                  objectives={filteredObjectives} 
-                  onViewDetails={handleViewDetails}
-                />
+              {/* Results Section - Cards by Result Type */}
+              <ResultTypeGrid objectives={filteredObjectives} flowFilter={flowFilter} />
 
-                {/* Activity Table */}
-                <ObjectivesTable 
-                  objectives={activityObjectives} 
-                  onViewDetails={handleViewDetails}
-                  title="Objetivos de Atividade"
-                />
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
+              {/* Chart */}
+              <ResultsChart objectives={filteredObjectives} />
+
+              {/* Activity Table */}
+              <ObjectivesTable 
+                objectives={activityObjectives} 
+                onViewDetails={handleViewDetails}
+                title="Objetivos de Atividade"
+              />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Dialogs */}
