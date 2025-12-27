@@ -16,6 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
+  SelectGroup,
+  SelectLabel,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -34,20 +36,36 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import {
-  activityTypesVendedores,
-  activityTypesCompradores,
-  activityTypesRecrutamento,
-  activityTypesIntermediacao,
-} from '@/types';
 
-// Activity objectives list
+// Activity objectives list - ONLY ACTIVITY types
 const activityObjectivesList = [
-  ...activityTypesVendedores.map(t => ({ id: t.value, name: t.label, flow: 'Vendedores' })),
-  ...activityTypesCompradores.map(t => ({ id: t.value, name: t.label, flow: 'Compradores' })),
-  ...activityTypesRecrutamento.map(t => ({ id: t.value, name: t.label, flow: 'Recrutamento' })),
-  ...activityTypesIntermediacao.map(t => ({ id: t.value, name: t.label, flow: 'Crédito' })),
+  // Vendedores
+  { id: 'posicionamento_vendedores', name: 'Posicionamento', flow: 'Vendedores', tipo: 'atividade' as const },
+  { id: 'leads_vendedores', name: 'Leads obtidas', flow: 'Vendedores', tipo: 'atividade' as const },
+  { id: 'chamadas_vendedores', name: 'Chamadas realizadas', flow: 'Vendedores', tipo: 'atividade' as const },
+  { id: 'contactos_efetivos_vendedores', name: 'Contactos efetivos', flow: 'Vendedores', tipo: 'atividade' as const },
+  { id: 'apresentacoes_servicos', name: 'Apresentações de serviços', flow: 'Vendedores', tipo: 'atividade' as const },
+  { id: 'seguimentos_vendedores', name: 'Seguimentos', flow: 'Vendedores', tipo: 'atividade' as const },
+  // Compradores
+  { id: 'posicionamento_compradores', name: 'Posicionamento', flow: 'Compradores', tipo: 'atividade' as const },
+  { id: 'leads_compradores', name: 'Leads obtidas', flow: 'Compradores', tipo: 'atividade' as const },
+  { id: 'visitas', name: 'Visitas realizadas', flow: 'Compradores', tipo: 'atividade' as const },
+  { id: 'qualificacao', name: 'Qualificações', flow: 'Compradores', tipo: 'atividade' as const },
+  { id: 'propostas', name: 'Propostas apresentadas', flow: 'Compradores', tipo: 'atividade' as const },
+  // Recrutamento
+  { id: 'entrevistas_realizadas', name: 'Entrevistas realizadas', flow: 'Recrutamento', tipo: 'atividade' as const },
+  { id: 'contactos_recrutamento', name: 'Contactos de recrutamento', flow: 'Recrutamento', tipo: 'atividade' as const },
+  // Intermediação de Crédito
+  { id: 'contactos_ic', name: 'Contactos IC', flow: 'Crédito', tipo: 'atividade' as const },
+  { id: 'simulacoes_credito', name: 'Simulações de crédito', flow: 'Crédito', tipo: 'atividade' as const },
 ];
+
+// Group by flow
+const activityByFlow = activityObjectivesList.reduce((acc, obj) => {
+  if (!acc[obj.flow]) acc[obj.flow] = [];
+  acc[obj.flow].push(obj);
+  return acc;
+}, {} as Record<string, typeof activityObjectivesList>);
 
 interface AddActivityDialogProps {
   open: boolean;
@@ -62,14 +80,14 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
 
   const handleSubmit = () => {
     if (!objectiveId || !value) {
-      toast.error('Preencha o objetivo e o valor');
+      toast.error('Preencha o tipo de atividade e a quantidade');
       return;
     }
 
     const objective = activityObjectivesList.find(o => o.id === objectiveId);
     
     // TODO: Connect to database - save the activity
-    console.log('New activity:', { objectiveId, value, notes, date });
+    console.log('New activity:', { objectiveId, value, notes, date, tipo: 'atividade' });
     
     toast.success(`Atividade registada: +${value} em ${objective?.name}`);
     
@@ -91,14 +109,14 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md border-blue-500/20">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-primary">
+          <DialogTitle className="flex items-center gap-2 text-blue-600">
             <Activity className="h-5 w-5" />
-            Adicionar Atividade
+            Registar Atividade
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Registe atividades realizadas que fazem avançar os seus objetivos.
+            Registe atividades de esforço diário que fazem avançar os seus objetivos.
           </p>
         </DialogHeader>
         
@@ -118,19 +136,29 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
               </TooltipProvider>
             </div>
             <Select value={objectiveId} onValueChange={setObjectiveId}>
-              <SelectTrigger id="activity-objective" className="border-primary/20 focus:ring-primary/30">
+              <SelectTrigger 
+                id="activity-objective" 
+                className="border-blue-500/30 focus:ring-blue-500/30"
+              >
                 <SelectValue placeholder="Selecionar atividade" />
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
-                {activityObjectivesList.map((obj) => (
-                  <SelectItem 
-                    key={obj.id} 
-                    value={obj.id}
-                    className="flex items-center"
-                  >
-                    <span>{obj.name}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">({obj.flow})</span>
-                  </SelectItem>
+                {Object.entries(activityByFlow).map(([flow, activities]) => (
+                  <SelectGroup key={flow}>
+                    <SelectLabel className="text-blue-600 flex items-center gap-1">
+                      <Activity className="h-3 w-3" />
+                      {flow}
+                    </SelectLabel>
+                    {activities.map((obj) => (
+                      <SelectItem 
+                        key={obj.id} 
+                        value={obj.id}
+                        className="focus:bg-blue-500/10 focus:text-blue-700 pl-6"
+                      >
+                        {obj.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
@@ -144,7 +172,7 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
               placeholder="Ex: 5, 10, 20"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="border-primary/20 focus:ring-primary/30"
+              className="border-blue-500/30 focus:ring-blue-500/30"
             />
           </div>
 
@@ -155,7 +183,7 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
                 <Button
                   variant="outline"
                   className={cn(
-                    'w-full justify-start text-left font-normal border-primary/20',
+                    'w-full justify-start text-left font-normal border-blue-500/30',
                     !date && 'text-muted-foreground'
                   )}
                 >
@@ -183,7 +211,7 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="border-primary/20 focus:ring-primary/30"
+              className="border-blue-500/30 focus:ring-blue-500/30"
             />
           </div>
         </div>
@@ -192,8 +220,8 @@ export function AddActivityDialog({ open, onOpenChange }: AddActivityDialogProps
           <Button variant="outline" onClick={handleCancel}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90">
-            Registar Atividade
+          <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white">
+            Registar
           </Button>
         </DialogFooter>
       </DialogContent>
