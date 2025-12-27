@@ -4,9 +4,11 @@ import { ObjectivesStats } from '@/components/objectives/ObjectivesStats';
 import { ObjectivesTable } from '@/components/objectives/ObjectivesTable';
 import { ResultsChart } from '@/components/objectives/ResultsChart';
 import { ResultTypeGrid } from '@/components/objectives/ResultTypeGrid';
+import { ObjectiveCategoryCards } from '@/components/objectives/ObjectiveCategoryCards';
 import { AddObjectiveDialog } from '@/components/objectives/AddObjectiveDialog';
 import { ObjectiveDetailsSheet } from '@/components/objectives/ObjectiveDetailsSheet';
 import { AddResultDialog } from '@/components/dashboard/AddResultDialog';
+import { AddActivityDialog } from '@/components/objectives/AddActivityDialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Target, Trophy, Activity, Filter } from 'lucide-react';
@@ -199,11 +201,13 @@ const objectivesMock: Objective[] = [
 export default function Objetivos() {
   const [addObjectiveOpen, setAddObjectiveOpen] = useState(false);
   const [addResultOpen, setAddResultOpen] = useState(false);
+  const [addActivityOpen, setAddActivityOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [agencyFilter, setAgencyFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<string>('current');
   const [flowFilter, setFlowFilter] = useState<ObjectiveFlow | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'activity' | 'result' | null>(null);
   const [mobileView, setMobileView] = useState<'results' | 'activity'>('results');
   const isMobile = useIsMobile();
 
@@ -212,12 +216,21 @@ export default function Objetivos() {
     setDetailsOpen(true);
   };
 
+  const handleCategoryClick = (category: 'activity' | 'result') => {
+    setCategoryFilter(prev => prev === category ? null : category);
+    if (isMobile) {
+      setMobileView(category === 'result' ? 'results' : 'activity');
+    }
+  };
+
   const filteredObjectives = objectivesMock.filter(obj => {
     if (flowFilter !== 'all' && obj.flow !== flowFilter) return false;
+    if (categoryFilter && obj.objectiveCategory !== categoryFilter) return false;
     return true;
   });
 
   const activityObjectives = filteredObjectives.filter(o => o.objectiveCategory === 'activity');
+  const resultObjectives = filteredObjectives.filter(o => o.objectiveCategory === 'result');
 
   return (
     <DashboardLayout>
@@ -235,6 +248,7 @@ export default function Objetivos() {
           </div>
           
           <div className="flex flex-wrap gap-2">
+            {/* Filters */}
             <Select value={agencyFilter} onValueChange={setAgencyFilter}>
               <SelectTrigger className="w-[100px] md:w-[140px] h-9">
                 <SelectValue placeholder="Agência" />
@@ -274,27 +288,65 @@ export default function Objetivos() {
               </SelectContent>
             </Select>
             
+            {/* Action Buttons - Desktop */}
             {!isMobile && (
               <>
-                <Button variant="outline" onClick={() => setAddResultOpen(true)} size="sm" className="h-9">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setAddActivityOpen(true)} 
+                  size="sm" 
+                  className="h-9 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Atividade
+                </Button>
+                
+                <Button 
+                  onClick={() => setAddResultOpen(true)} 
+                  size="sm" 
+                  className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
                   <Plus className="h-4 w-4 mr-1" />
                   Resultado
                 </Button>
                 
-                <Button onClick={() => setAddObjectiveOpen(true)} size="sm" className="h-9">
-                  <Plus className="h-4 w-4 mr-1" />
+                <Button 
+                  variant="outline"
+                  onClick={() => setAddObjectiveOpen(true)} 
+                  size="sm" 
+                  className="h-9"
+                >
+                  <Target className="h-4 w-4 mr-1" />
                   Objetivo
                 </Button>
               </>
             )}
-            
-            {isMobile && (
-              <Button onClick={() => setAddObjectiveOpen(true)} size="sm" className="h-9">
-                <Plus className="h-4 w-4" />
-              </Button>
-            )}
           </div>
         </div>
+
+        {/* Mobile: Action Buttons */}
+        {isMobile && (
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setAddActivityOpen(true)} 
+              size="sm" 
+              className="flex-1 h-10 border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Activity className="h-4 w-4 mr-1.5" />
+              + Atividade
+            </Button>
+            
+            <Button 
+              onClick={() => setAddResultOpen(true)} 
+              size="sm" 
+              className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Trophy className="h-4 w-4 mr-1.5" />
+              + Resultado
+            </Button>
+          </div>
+        )}
 
         {/* Mobile: Sticky Toggle */}
         {isMobile && (
@@ -305,7 +357,7 @@ export default function Objetivos() {
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all",
                   mobileView === 'results' 
-                    ? "bg-background shadow-sm text-foreground" 
+                    ? "bg-emerald-500 text-white shadow-sm" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -317,7 +369,7 @@ export default function Objetivos() {
                 className={cn(
                   "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all",
                   mobileView === 'activity' 
-                    ? "bg-background shadow-sm text-foreground" 
+                    ? "bg-primary text-white shadow-sm" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -330,26 +382,33 @@ export default function Objetivos() {
 
         {/* Content */}
         <div className="space-y-4 md:space-y-6">
+          {/* Category Cards - Desktop & Mobile */}
+          <ObjectiveCategoryCards 
+            objectives={objectivesMock}
+            onCategoryClick={handleCategoryClick}
+            selectedCategory={categoryFilter}
+          />
+
           {/* Mobile View */}
           {isMobile ? (
             <>
               {mobileView === 'results' ? (
                 <div className="space-y-4">
                   {/* Result Type Cards Grid */}
-                  <ResultTypeGrid objectives={filteredObjectives} flowFilter={flowFilter} />
+                  <ResultTypeGrid objectives={resultObjectives} flowFilter={flowFilter} />
                   
                   {/* Chart */}
-                  <ResultsChart objectives={filteredObjectives} />
+                  <ResultsChart objectives={resultObjectives} />
                 </div>
               ) : (
                 <div className="space-y-4">
                   {/* Activity Stats Summary */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold">{activityObjectives.length}</p>
+                    <div className="bg-primary/10 rounded-lg p-3 text-center border border-primary/20">
+                      <p className="text-2xl font-bold text-primary">{activityObjectives.length}</p>
                       <p className="text-xs text-muted-foreground">Objetivos</p>
                     </div>
-                    <div className="bg-muted/50 rounded-lg p-3 text-center">
+                    <div className="bg-emerald-500/10 rounded-lg p-3 text-center border border-emerald-500/20">
                       <p className="text-2xl font-bold text-emerald-600">
                         {activityObjectives.filter(o => (o.currentValue / o.targetValue) >= 0.9).length}
                       </p>
@@ -371,17 +430,23 @@ export default function Objetivos() {
               <ObjectivesStats objectives={filteredObjectives} />
 
               {/* Results Section - Cards by Result Type */}
-              <ResultTypeGrid objectives={filteredObjectives} flowFilter={flowFilter} />
+              {(!categoryFilter || categoryFilter === 'result') && (
+                <ResultTypeGrid objectives={resultObjectives} flowFilter={flowFilter} />
+              )}
 
               {/* Chart */}
-              <ResultsChart objectives={filteredObjectives} />
+              {(!categoryFilter || categoryFilter === 'result') && (
+                <ResultsChart objectives={resultObjectives} />
+              )}
 
               {/* Activity Table */}
-              <ObjectivesTable 
-                objectives={activityObjectives} 
-                onViewDetails={handleViewDetails}
-                title="Objetivos de Atividade"
-              />
+              {(!categoryFilter || categoryFilter === 'activity') && (
+                <ObjectivesTable 
+                  objectives={activityObjectives} 
+                  onViewDetails={handleViewDetails}
+                  title="Objetivos de Atividade"
+                />
+              )}
             </>
           )}
         </div>
@@ -396,6 +461,11 @@ export default function Objetivos() {
       <AddResultDialog 
         open={addResultOpen} 
         onOpenChange={setAddResultOpen} 
+      />
+      
+      <AddActivityDialog 
+        open={addActivityOpen} 
+        onOpenChange={setAddActivityOpen} 
       />
       
       <ObjectiveDetailsSheet 
