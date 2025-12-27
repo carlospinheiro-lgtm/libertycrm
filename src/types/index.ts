@@ -231,10 +231,12 @@ export type ActivityObjectiveType =
   | 'visitas'
   | 'propostas'
   // Recrutamento
-  | 'contactos_recrutamento'
-  | 'entrevistas_agendadas'
+  | 'prospeccao_leads_recrutamento'
+  | 'leads_obtidas_recrutamento'
+  | 'contactos_leads_recrutamento'
+  | 'marcar_entrevistas_recrutamento'
   | 'entrevistas_realizadas'
-  | 'formacoes_iniciais'
+  | 'seguimentos_recrutamento'
   // Intermediação de Crédito
   | 'simulacoes_credito'
   | 'processos_submetidos'
@@ -251,7 +253,8 @@ export type ResultObjectiveType =
   // Compradores
   | 'reserva_comprador'
   // Recrutamento
-  | 'consultores_integrados'
+  | 'agentes_recrutados'
+  | 'agentes_integrados'
   // Intermediação de Crédito
   | 'creditos_formalizados'
   | 'comissoes_credito';
@@ -275,10 +278,12 @@ export const activityTypesCompradores = [
 ] as const;
 
 export const activityTypesRecrutamento = [
-  { value: 'contactos_recrutamento', label: 'Contactos de Recrutamento' },
-  { value: 'entrevistas_agendadas', label: 'Entrevistas Agendadas' },
-  { value: 'entrevistas_realizadas', label: 'Entrevistas Realizadas' },
-  { value: 'formacoes_iniciais', label: 'Formações Iniciais' },
+  { value: 'prospeccao_leads_recrutamento', label: 'Prospecção de Leads' },
+  { value: 'leads_obtidas_recrutamento', label: 'Nº de Leads Obtidas' },
+  { value: 'contactos_leads_recrutamento', label: 'Contactar Leads' },
+  { value: 'marcar_entrevistas_recrutamento', label: 'Marcar Entrevistas' },
+  { value: 'entrevistas_realizadas', label: 'Fazer Entrevistas' },
+  { value: 'seguimentos_recrutamento', label: 'Seguir Leads Não Recrutadas' },
 ] as const;
 
 export const activityTypesIntermediacao = [
@@ -300,7 +305,8 @@ export const resultTypesCompradores = [
 ] as const;
 
 export const resultTypesRecrutamento = [
-  { value: 'consultores_integrados', label: 'Consultores Integrados' },
+  { value: 'agentes_recrutados', label: 'Agentes Recrutados' },
+  { value: 'agentes_integrados', label: 'Agentes Integrados' },
 ] as const;
 
 export const resultTypesIntermediacao = [

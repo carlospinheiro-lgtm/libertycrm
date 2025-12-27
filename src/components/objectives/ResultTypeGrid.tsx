@@ -10,7 +10,7 @@ interface ResultTypeGridProps {
   flowFilter?: ObjectiveFlow | 'all';
 }
 
-// Define result types configuration - UPDATED: Removed transações, added new vendedores types
+// Define result types configuration - UPDATED with separate recruitment cards
 const resultTypeConfigs: {
   type: ResultObjectiveType;
   label: string;
@@ -27,10 +27,12 @@ const resultTypeConfigs: {
   { type: 'faturacao_arrendamentos', label: 'Faturação (Arrendamentos)', icon: '💷', isCurrency: true, flows: ['vendedores'] },
   // Compradores
   { type: 'reserva_comprador', label: 'Reservas', icon: '🛒', flows: ['compradores'] },
+  // Recrutamento - 2 cartões separados
+  { type: 'agentes_recrutados', label: 'Agentes Recrutados', icon: '✅', flows: ['recrutamento'] },
+  { type: 'agentes_integrados', label: 'Agentes Integrados', icon: '🌟', flows: ['recrutamento'] },
   // Intermediação de Crédito
   { type: 'creditos_formalizados', label: 'Créditos Escriturados', icon: '💳', flows: ['intermediacao_credito'] },
-  // Recrutamento
-  { type: 'consultores_integrados', label: 'Agentes Integrados', icon: '👥', flows: ['recrutamento'] },
+  { type: 'comissoes_credito', label: 'Comissões de Crédito', icon: '💰', isCurrency: true, flows: ['intermediacao_credito'] },
 ];
 
 export function ResultTypeGrid({ objectives, flowFilter = 'all' }: ResultTypeGridProps) {

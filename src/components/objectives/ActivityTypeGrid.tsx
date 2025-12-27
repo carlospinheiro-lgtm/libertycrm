@@ -17,18 +17,30 @@ const activityTypeConfigs: {
   icon: string;
   flows: ObjectiveFlow[];
 }[] = [
-  { type: 'posicionamento_vendedores', label: 'Posicionamento (Vend.)', icon: '📍', flows: ['vendedores'] },
-  { type: 'leads_vendedores', label: 'Leads (Vend.)', icon: '👤', flows: ['vendedores'] },
+  // Vendedores
+  { type: 'posicionamento_vendedores', label: 'Posicionamento', icon: '📍', flows: ['vendedores'] },
+  { type: 'leads_vendedores', label: 'Leads Obtidas', icon: '👤', flows: ['vendedores'] },
   { type: 'chamadas_vendedores', label: 'Chamadas', icon: '📞', flows: ['vendedores'] },
   { type: 'contactos_efetivos_vendedores', label: 'Contactos Efetivos', icon: '🤝', flows: ['vendedores'] },
+  { type: 'apresentacoes_servicos', label: 'Apresentações Serviços', icon: '🎯', flows: ['vendedores'] },
   { type: 'seguimentos_vendedores', label: 'Seguimentos', icon: '🔄', flows: ['vendedores'] },
-  { type: 'posicionamento_compradores', label: 'Posicionamento (Comp.)', icon: '📍', flows: ['compradores'] },
-  { type: 'leads_compradores', label: 'Leads (Comp.)', icon: '👤', flows: ['compradores'] },
-  { type: 'visitas', label: 'Visitas', icon: '👁️', flows: ['compradores'] },
+  // Compradores
+  { type: 'posicionamento_compradores', label: 'Posicionamento', icon: '📍', flows: ['compradores'] },
+  { type: 'leads_compradores', label: 'Leads Obtidas', icon: '👤', flows: ['compradores'] },
   { type: 'qualificacao', label: 'Qualificação', icon: '📋', flows: ['compradores'] },
+  { type: 'visitas', label: 'Visitas', icon: '👁️', flows: ['compradores'] },
   { type: 'propostas', label: 'Propostas', icon: '📝', flows: ['compradores'] },
-  { type: 'entrevistas_realizadas', label: 'Entrevistas', icon: '🎤', flows: ['recrutamento'] },
+  // Recrutamento - 6 atividades completas
+  { type: 'prospeccao_leads_recrutamento', label: 'Prospecção de Leads', icon: '🔍', flows: ['recrutamento'] },
+  { type: 'leads_obtidas_recrutamento', label: 'Leads Obtidas', icon: '👤', flows: ['recrutamento'] },
+  { type: 'contactos_leads_recrutamento', label: 'Contactar Leads', icon: '📞', flows: ['recrutamento'] },
+  { type: 'marcar_entrevistas_recrutamento', label: 'Marcar Entrevistas', icon: '📅', flows: ['recrutamento'] },
+  { type: 'entrevistas_realizadas', label: 'Fazer Entrevistas', icon: '🎤', flows: ['recrutamento'] },
+  { type: 'seguimentos_recrutamento', label: 'Seguir Leads', icon: '🔄', flows: ['recrutamento'] },
+  // Intermediação de Crédito
   { type: 'simulacoes_credito', label: 'Simulações Crédito', icon: '💳', flows: ['intermediacao_credito'] },
+  { type: 'processos_submetidos', label: 'Processos Submetidos', icon: '📄', flows: ['intermediacao_credito'] },
+  { type: 'aprovacoes_obtidas', label: 'Aprovações Obtidas', icon: '✅', flows: ['intermediacao_credito'] },
 ];
 
 export function ActivityTypeGrid({ objectives, flowFilter = 'all' }: ActivityTypeGridProps) {

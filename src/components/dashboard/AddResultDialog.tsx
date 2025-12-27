@@ -40,6 +40,7 @@ import { toast } from 'sonner';
 // Result objectives list - ONLY RESULT types
 // UPDATED: Removed transações, faturação is now derived (not selectable directly)
 // Commission is required for reservas and angariação reservada
+// Recrutamento has 2 separate results: Agentes Recrutados and Agentes Integrados
 const resultObjectivesList = [
   // Vendedores - Angariações (selecionáveis)
   { id: 'angariacao_exclusiva', name: 'Angariações (Exclusivo)', flow: 'Vendedores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
@@ -48,12 +49,12 @@ const resultObjectivesList = [
   // Compradores - Reservas (requerem comissão)
   { id: 'reserva_venda', name: 'Reserva de Venda', flow: 'Compradores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: true, faturacaoType: 'venda' as const },
   { id: 'reserva_arrendamento', name: 'Reserva de Arrendamento', flow: 'Compradores', tipo: 'resultado' as const, isCurrency: false, requiresCommission: true, faturacaoType: 'arrendamento' as const },
-  // Recrutamento
-  { id: 'consultores_integrados', name: 'Recrutamentos concretizados', flow: 'Recrutamento', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
+  // Recrutamento - 2 resultados separados
+  { id: 'agentes_recrutados', name: 'Agentes Recrutados', flow: 'Recrutamento', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false, description: 'Decisão positiva do candidato' },
+  { id: 'agentes_integrados', name: 'Agentes Integrados', flow: 'Recrutamento', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false, description: 'Agente operacional na agência' },
   // Intermediação de Crédito
   { id: 'creditos_formalizados', name: 'Créditos aprovados', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: false, requiresCommission: false },
-  // REMOVED: transacao_venda, transacao_arrendamento
-  // REMOVED from dropdown: faturacao_vendas, faturacao_arrendamentos (derived automatically)
+  { id: 'comissoes_credito', name: 'Comissões de Crédito', flow: 'Crédito', tipo: 'resultado' as const, isCurrency: true, requiresCommission: false },
 ];
 
 // Group by flow

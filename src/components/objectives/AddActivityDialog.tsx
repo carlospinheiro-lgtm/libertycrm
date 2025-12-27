@@ -49,15 +49,20 @@ const activityObjectivesList = [
   // Compradores
   { id: 'posicionamento_compradores', name: 'Posicionamento', flow: 'Compradores', tipo: 'atividade' as const },
   { id: 'leads_compradores', name: 'Leads obtidas', flow: 'Compradores', tipo: 'atividade' as const },
-  { id: 'visitas', name: 'Visitas realizadas', flow: 'Compradores', tipo: 'atividade' as const },
   { id: 'qualificacao', name: 'Qualificações', flow: 'Compradores', tipo: 'atividade' as const },
+  { id: 'visitas', name: 'Visitas realizadas', flow: 'Compradores', tipo: 'atividade' as const },
   { id: 'propostas', name: 'Propostas apresentadas', flow: 'Compradores', tipo: 'atividade' as const },
-  // Recrutamento
-  { id: 'entrevistas_realizadas', name: 'Entrevistas realizadas', flow: 'Recrutamento', tipo: 'atividade' as const },
-  { id: 'contactos_recrutamento', name: 'Contactos de recrutamento', flow: 'Recrutamento', tipo: 'atividade' as const },
+  // Recrutamento - 6 atividades completas
+  { id: 'prospeccao_leads_recrutamento', name: 'Prospecção de Leads', flow: 'Recrutamento', tipo: 'atividade' as const },
+  { id: 'leads_obtidas_recrutamento', name: 'Nº de Leads Obtidas', flow: 'Recrutamento', tipo: 'atividade' as const },
+  { id: 'contactos_leads_recrutamento', name: 'Contactar Leads', flow: 'Recrutamento', tipo: 'atividade' as const },
+  { id: 'marcar_entrevistas_recrutamento', name: 'Marcar Entrevistas', flow: 'Recrutamento', tipo: 'atividade' as const },
+  { id: 'entrevistas_realizadas', name: 'Fazer Entrevistas', flow: 'Recrutamento', tipo: 'atividade' as const },
+  { id: 'seguimentos_recrutamento', name: 'Seguir Leads Não Recrutadas', flow: 'Recrutamento', tipo: 'atividade' as const },
   // Intermediação de Crédito
-  { id: 'contactos_ic', name: 'Contactos IC', flow: 'Crédito', tipo: 'atividade' as const },
   { id: 'simulacoes_credito', name: 'Simulações de crédito', flow: 'Crédito', tipo: 'atividade' as const },
+  { id: 'processos_submetidos', name: 'Processos submetidos', flow: 'Crédito', tipo: 'atividade' as const },
+  { id: 'aprovacoes_obtidas', name: 'Aprovações obtidas', flow: 'Crédito', tipo: 'atividade' as const },
 ];
 
 // Group by flow
