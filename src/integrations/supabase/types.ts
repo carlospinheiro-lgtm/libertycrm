@@ -14,16 +14,324 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agencies: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          remax_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          remax_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          remax_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      import_logs: {
+        Row: {
+          agency_id: string
+          created_count: number | null
+          deactivated_count: number | null
+          file_name: string | null
+          id: string
+          import_type: Database["public"]["Enums"]["import_type"]
+          imported_at: string | null
+          imported_by: string | null
+          notes: string | null
+          updated_count: number | null
+        }
+        Insert: {
+          agency_id: string
+          created_count?: number | null
+          deactivated_count?: number | null
+          file_name?: string | null
+          id?: string
+          import_type: Database["public"]["Enums"]["import_type"]
+          imported_at?: string | null
+          imported_by?: string | null
+          notes?: string | null
+          updated_count?: number | null
+        }
+        Update: {
+          agency_id?: string
+          created_count?: number | null
+          deactivated_count?: number | null
+          file_name?: string | null
+          id?: string
+          import_type?: Database["public"]["Enums"]["import_type"]
+          imported_at?: string | null
+          imported_by?: string | null
+          notes?: string | null
+          updated_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_logs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_logs_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          id: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          agency_id: string
+          created_at: string | null
+          external_id: string | null
+          id: string
+          is_active: boolean | null
+          is_synced: boolean | null
+          last_synced_at: string | null
+          leader_user_id: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_synced?: boolean | null
+          last_synced_at?: string | null
+          leader_user_id?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_synced?: boolean | null
+          last_synced_at?: string | null
+          leader_user_id?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_leader_user_id_fkey"
+            columns: ["leader_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_agencies: {
+        Row: {
+          agency_id: string
+          assigned_agent_id: string | null
+          created_at: string | null
+          external_id: string | null
+          id: string
+          is_active: boolean | null
+          is_synced: boolean | null
+          last_synced_at: string | null
+          team_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          assigned_agent_id?: string | null
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_synced?: boolean | null
+          last_synced_at?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          assigned_agent_id?: string | null
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_synced?: boolean | null
+          last_synced_at?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_agencies_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_agencies_assigned_agent_id_fkey"
+            columns: ["assigned_agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_agencies_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_agencies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          agency_id: string
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_agency_ids: { Args: { _user_id: string }; Returns: string[] }
+      has_agency_access: {
+        Args: { _agency_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role_in_agency: {
+        Args: {
+          _agency_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_global_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "diretor_geral"
+        | "diretor_comercial"
+        | "diretor_agencia"
+        | "team_leader"
+        | "agente_imobiliario"
+        | "diretor_rh"
+        | "diretor_financeiro"
+        | "gestor_backoffice"
+        | "assistente_administrativo"
+        | "consultor_externo"
+      import_type: "users" | "teams"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +458,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "diretor_geral",
+        "diretor_comercial",
+        "diretor_agencia",
+        "team_leader",
+        "agente_imobiliario",
+        "diretor_rh",
+        "diretor_financeiro",
+        "gestor_backoffice",
+        "assistente_administrativo",
+        "consultor_externo",
+      ],
+      import_type: ["users", "teams"],
+    },
   },
 } as const
