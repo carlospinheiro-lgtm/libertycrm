@@ -5,9 +5,10 @@ import { RolesPermissionsGrid } from '@/components/admin/RolesPermissionsGrid';
 import { AgenciesTeamsPanel } from '@/components/admin/AgenciesTeamsPanel';
 import { SettingsPanel } from '@/components/admin/SettingsPanel';
 import { UserSwitcher } from '@/components/admin/UserSwitcher';
+import { ImportsPanel } from '@/components/admin/imports';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, Shield, Building2, Settings, Lock } from 'lucide-react';
+import { Users, Shield, Building2, Settings, Lock, Upload } from 'lucide-react';
 
 export default function Administracao() {
   const { hasPermission, hasAnyPermission } = useAuth();
