@@ -18,12 +18,14 @@ export default function Administracao() {
   const canAccessRoles = hasPermission('admin.roles.read');
   const canAccessAgencies = hasAnyPermission(['admin.users.read', 'admin.settings.read']);
   const canAccessSettings = hasPermission('admin.settings.read');
+  const canAccessImports = hasAnyPermission(['admin.users.create', 'admin.settings.update']);
 
   // Determinar tab inicial baseado nas permissões
   const getDefaultTab = () => {
     if (canAccessUsers) return 'users';
     if (canAccessRoles) return 'roles';
     if (canAccessAgencies) return 'agencies';
+    if (canAccessImports) return 'imports';
     if (canAccessSettings) return 'settings';
     return 'users';
   };
@@ -48,7 +50,7 @@ export default function Administracao() {
 
         {/* Tabs */}
         <Tabs defaultValue={getDefaultTab()} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-1 bg-transparent p-1 h-auto">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-1 bg-transparent p-1 h-auto">
             <TabsTrigger 
               value="users" 
               disabled={!canAccessUsers}
@@ -84,6 +86,18 @@ export default function Administracao() {
               <Building2 className="h-4 w-4" />
               <span className="hidden sm:inline">Agências</span>
               {!canAccessAgencies && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="imports" 
+              disabled={!canAccessImports}
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
+                         data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm
+                         data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground
+                         hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Importações</span>
+              {!canAccessImports && <Lock className="h-3 w-3 ml-1" />}
             </TabsTrigger>
             <TabsTrigger 
               value="settings" 
@@ -123,6 +137,15 @@ export default function Administracao() {
               fallback={<NoAccessMessage />}
             >
               <AgenciesTeamsPanel />
+            </PermissionGuard>
+          </TabsContent>
+
+          <TabsContent value="imports" className="mt-6">
+            <PermissionGuard 
+              permissions={['admin.users.create', 'admin.settings.update']} 
+              fallback={<NoAccessMessage />}
+            >
+              <ImportsPanel />
             </PermissionGuard>
           </TabsContent>
 
