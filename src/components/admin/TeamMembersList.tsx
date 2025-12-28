@@ -3,6 +3,11 @@ import { roleLabels } from '@/types/rbac';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { ArrowRightLeft, UserMinus, Crown } from 'lucide-react';
 
 interface TeamMembersListProps {
@@ -57,24 +62,32 @@ export function TeamMembersList({ members, leaderId, onMove, onRemove }: TeamMem
             </div>
             
             <div className="flex items-center gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => onMove(user)}
-                title="Mover para outra equipa"
-              >
-                <ArrowRightLeft className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:text-destructive"
-                onClick={() => onRemove(user)}
-                title="Remover da equipa"
-              >
-                <UserMinus className="h-3.5 w-3.5" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => onMove(user)}
+                  >
+                    <ArrowRightLeft className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Mover para outra equipa</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => onRemove(user)}
+                  >
+                    <UserMinus className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Remover da equipa</TooltipContent>
+              </Tooltip>
             </div>
           </div>
         );

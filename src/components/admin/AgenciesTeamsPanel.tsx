@@ -42,6 +42,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Building2, Users, UserCircle, Plus, Pencil, ChevronDown, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { TeamMembersList } from './TeamMembersList';
@@ -279,24 +284,32 @@ export function AgenciesTeamsPanel() {
                                 </button>
                               </CollapsibleTrigger>
                               <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => openAddMemberDialog(team)}
-                                  title="Adicionar membro"
-                                >
-                                  <UserPlus className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => openEditDialog(team)}
-                                  title="Editar equipa"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => openAddMemberDialog(team)}
+                                    >
+                                      <UserPlus className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Adicionar membro</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => openEditDialog(team)}
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Editar equipa</TooltipContent>
+                                </Tooltip>
                               </div>
                             </div>
                             
@@ -371,12 +384,12 @@ export function AgenciesTeamsPanel() {
             {newTeamAgency && (
               <div className="space-y-2">
                 <Label>Líder de Equipa</Label>
-                <Select value={newTeamLeader} onValueChange={setNewTeamLeader}>
+                <Select value={newTeamLeader || "_none_"} onValueChange={(v) => setNewTeamLeader(v === "_none_" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecionar líder (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem líder</SelectItem>
+                    <SelectItem value="_none_">Sem líder</SelectItem>
                     {getPotentialLeaders(newTeamAgency).map(user => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name}
@@ -418,12 +431,12 @@ export function AgenciesTeamsPanel() {
             {newTeamAgency && (
               <div className="space-y-2">
                 <Label>Líder de Equipa</Label>
-                <Select value={newTeamLeader} onValueChange={setNewTeamLeader}>
+                <Select value={newTeamLeader || "_none_"} onValueChange={(v) => setNewTeamLeader(v === "_none_" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecionar líder (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem líder</SelectItem>
+                    <SelectItem value="_none_">Sem líder</SelectItem>
                     {getPotentialLeaders(newTeamAgency).map(user => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name}
