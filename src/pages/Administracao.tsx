@@ -35,7 +35,7 @@ export default function Administracao() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Administração</h1>
             <p className="text-muted-foreground">
-              Gestão de utilizadores, permissões e configurações
+              Gestão de utilizadores, permissões e estrutura organizacional
             </p>
           </div>
           
@@ -47,11 +47,14 @@ export default function Administracao() {
 
         {/* Tabs */}
         <Tabs defaultValue={getDefaultTab()} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-1 bg-transparent p-1 h-auto">
             <TabsTrigger 
               value="users" 
               disabled={!canAccessUsers}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
+                         data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm
+                         data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground
+                         hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Utilizadores</span>
@@ -60,7 +63,10 @@ export default function Administracao() {
             <TabsTrigger 
               value="roles" 
               disabled={!canAccessRoles}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
+                         data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm
+                         data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground
+                         hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Shield className="h-4 w-4" />
               <span className="hidden sm:inline">Funções</span>
@@ -69,7 +75,10 @@ export default function Administracao() {
             <TabsTrigger 
               value="agencies" 
               disabled={!canAccessAgencies}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
+                         data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm
+                         data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground
+                         hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Building2 className="h-4 w-4" />
               <span className="hidden sm:inline">Agências</span>
@@ -78,7 +87,10 @@ export default function Administracao() {
             <TabsTrigger 
               value="settings" 
               disabled={!canAccessSettings}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
+                         data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm
+                         data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground
+                         hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Configurações</span>
