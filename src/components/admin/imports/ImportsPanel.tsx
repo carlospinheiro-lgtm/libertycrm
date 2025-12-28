@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useActiveAgencies } from '@/hooks/useAgencies';
 import { useImportLogs } from '@/hooks/useImportLogs';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,10 +16,25 @@ export function ImportsPanel() {
   const [usersDialogOpen, setUsersDialogOpen] = useState(false);
   const [teamsDialogOpen, setTeamsDialogOpen] = useState(false);
   
+  const { hasPermission } = useAuth();
   const { data: agencies, isLoading: agenciesLoading } = useActiveAgencies();
   const { data: importLogs, isLoading: logsLoading } = useImportLogs(selectedAgencyId);
   
   const selectedAgency = agencies?.find(a => a.id === selectedAgencyId);
+  
+  // Verificar permissões - apenas utilizadores com permissão podem importar
+  const canImport = hasPermission('admin.users.create') || hasPermission('admin.settings.update');
+
+  if (!canImport) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Não tem permissões para aceder às importações.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">
