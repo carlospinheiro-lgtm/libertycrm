@@ -169,12 +169,12 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
           {agencyId && filteredTeams.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="team">Equipa</Label>
-              <Select value={teamId} onValueChange={setTeamId}>
+              <Select value={teamId || "_none_"} onValueChange={(v) => setTeamId(v === "_none_" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar equipa (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem equipa</SelectItem>
+                  <SelectItem value="_none_">Sem equipa</SelectItem>
                   {filteredTeams.map(team => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.name}
@@ -209,12 +209,12 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
           {showAssignedAgent && availableAgents.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="assignedAgent">Agente Atribuído</Label>
-              <Select value={assignedAgentId} onValueChange={setAssignedAgentId}>
+              <Select value={assignedAgentId || "_none_"} onValueChange={(v) => setAssignedAgentId(v === "_none_" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar agente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="_none_">Nenhum</SelectItem>
                   {availableAgents.map(agent => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}

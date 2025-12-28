@@ -149,12 +149,12 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
           {agencyId && filteredTeams.length > 0 && (
             <div className="space-y-2">
               <Label htmlFor="team">Equipa</Label>
-              <Select value={teamId} onValueChange={setTeamId}>
+              <Select value={teamId || "_none_"} onValueChange={(v) => setTeamId(v === "_none_" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar equipa (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem equipa</SelectItem>
+                  <SelectItem value="_none_">Sem equipa</SelectItem>
                   {filteredTeams.map(team => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.name}
