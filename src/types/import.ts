@@ -21,8 +21,20 @@ export interface ImportResult {
   created: number;
   updated: number;
   deactivated: number;
+  unchanged: number;
   errors: string[];
 }
+
+// Tipo para diferenças entre valores atuais e novos
+export interface FieldDiff {
+  field: string;
+  fieldLabel: string;
+  currentValue: string | null;
+  newValue: string;
+}
+
+// Ações possíveis durante importação
+export type ImportAction = 'create' | 'update' | 'no_change' | 'deactivate' | 'skip';
 
 export interface ImportPreviewUser {
   external_id: string;
@@ -32,8 +44,12 @@ export interface ImportPreviewUser {
   role: string;
   team?: string;
   isActive: boolean;
-  action: 'create' | 'update' | 'deactivate' | 'skip';
+  action: ImportAction;
+  diffs?: FieldDiff[];  // Diferenças para updates
+  requiresConfirmation?: boolean;  // Se precisa confirmação manual
+  confirmed?: boolean;  // Se foi confirmado pelo utilizador
   error?: string;
+  existingId?: string;  // ID do registo existente
 }
 
 export interface ImportPreviewTeam {
@@ -41,8 +57,12 @@ export interface ImportPreviewTeam {
   name: string;
   leader?: string;
   isActive: boolean;
-  action: 'create' | 'update' | 'deactivate' | 'skip';
+  action: ImportAction;
+  diffs?: FieldDiff[];
+  requiresConfirmation?: boolean;
+  confirmed?: boolean;
   error?: string;
+  existingId?: string;
 }
 
 // Mapeamento de funções PT para roles do sistema
