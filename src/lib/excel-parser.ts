@@ -1,20 +1,32 @@
 import * as XLSX from 'xlsx';
 import { ImportUserRow, ImportTeamRow, roleMapping } from '@/types/import';
 
-export function parseExcelFile<T>(file: File): Promise<T[]> {
+/**
+ * Parse both Excel (.xlsx, .xls) and CSV files
+ */
+export function parseFile<T>(file: File): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    const extension = file.name.split('.').pop()?.toLowerCase();
     
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        
+        // XLSX library can handle both Excel and CSV files
+        const workbook = XLSX.read(data, { 
+          type: extension === 'csv' ? 'string' : 'binary',
+          raw: false,
+          codepage: 65001, // UTF-8 for CSV
+        });
+        
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json<T>(worksheet, { defval: '' });
         resolve(jsonData);
       } catch (error) {
-        reject(new Error('Erro ao processar ficheiro Excel'));
+        const fileType = extension === 'csv' ? 'CSV' : 'Excel';
+        reject(new Error(`Erro ao processar ficheiro ${fileType}`));
       }
     };
     
@@ -22,8 +34,20 @@ export function parseExcelFile<T>(file: File): Promise<T[]> {
       reject(new Error('Erro ao ler ficheiro'));
     };
     
-    reader.readAsBinaryString(file);
+    // Read as text for CSV, binary for Excel
+    if (extension === 'csv') {
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      reader.readAsBinaryString(file);
+    }
   });
+}
+
+/**
+ * @deprecated Use parseFile instead
+ */
+export function parseExcelFile<T>(file: File): Promise<T[]> {
+  return parseFile<T>(file);
 }
 
 export function parseUserRows(rawRows: Record<string, unknown>[]): ImportUserRow[] {

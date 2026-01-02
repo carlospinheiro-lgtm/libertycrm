@@ -41,6 +41,66 @@ export type Database = {
         }
         Relationships: []
       }
+      import_jobs: {
+        Row: {
+          agency_id: string
+          completed_at: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          diff_json: Json | null
+          file_hash: string | null
+          file_name: string
+          id: string
+          notes: string | null
+          status: string
+          summary_json: Json | null
+          type: string
+        }
+        Insert: {
+          agency_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          diff_json?: Json | null
+          file_hash?: string | null
+          file_name: string
+          id?: string
+          notes?: string | null
+          status?: string
+          summary_json?: Json | null
+          type: string
+        }
+        Update: {
+          agency_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          diff_json?: Json | null
+          file_hash?: string | null
+          file_name?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          summary_json?: Json | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_logs: {
         Row: {
           agency_id: string

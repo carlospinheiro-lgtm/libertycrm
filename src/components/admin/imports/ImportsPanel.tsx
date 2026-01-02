@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useActiveAgencies } from '@/hooks/useAgencies';
-import { useImportLogs } from '@/hooks/useImportLogs';
+import { useImportJobs } from '@/hooks/useImportJobs';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export function ImportsPanel() {
   
   const { hasPermission } = useAuth();
   const { data: agencies, isLoading: agenciesLoading } = useActiveAgencies();
-  const { data: importLogs, isLoading: logsLoading } = useImportLogs(selectedAgencyId);
+  const { data: importJobs, isLoading: jobsLoading } = useImportJobs(selectedAgencyId);
   
   const selectedAgency = agencies?.find(a => a.id === selectedAgencyId);
   
@@ -137,8 +137,8 @@ export function ImportsPanel() {
           </CardHeader>
           <CardContent>
             <ImportHistoryTable 
-              logs={importLogs || []} 
-              isLoading={logsLoading} 
+              jobs={importJobs || []} 
+              isLoading={jobsLoading} 
             />
           </CardContent>
         </Card>

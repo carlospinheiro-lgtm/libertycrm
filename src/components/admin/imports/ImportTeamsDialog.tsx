@@ -21,7 +21,7 @@ import {
 } from '@/lib/excel-parser';
 import { ImportTeamRow, ImportPreviewTeam, ImportResult, FieldDiff } from '@/types/import';
 import { useUpsertTeam, useDeactivateMissingTeams, useTeamsByAgency } from '@/hooks/useTeamsSupabase';
-import { useCreateImportLog } from '@/hooks/useImportLogs';
+import { useCreateImportJob } from '@/hooks/useImportJobs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Loader2, CheckCircle, RefreshCcw, AlertTriangle } from 'lucide-react';
@@ -51,7 +51,7 @@ export function ImportTeamsDialog({
   const { data: existingTeams } = useTeamsByAgency(agencyId);
   const upsertTeam = useUpsertTeam();
   const deactivateMissing = useDeactivateMissingTeams();
-  const createImportLog = useCreateImportLog();
+  const createImportJob = useCreateImportJob();
 
   const resetState = useCallback(() => {
     setStep('upload');
@@ -300,15 +300,30 @@ export function ImportTeamsDialog({
         }
       }
       
-      // Log the import
-      await createImportLog.mutateAsync({
+      // Build diff_json for detailed logging
+      const diffJson = previewData
+        .filter(p => p.action === 'update' && p.confirmed && p.diffs && p.diffs.length > 0)
+        .map(p => ({
+          external_id: p.external_id,
+          changes: p.diffs || [],
+          appliedAt: new Date().toISOString(),
+        }));
+      
+      // Log the import using import_jobs
+      await createImportJob.mutateAsync({
         agency_id: agencyId,
-        import_type: 'teams',
+        type: 'teams',
         file_name: fileName,
-        created_count: result.created,
-        updated_count: result.updated,
-        deactivated_count: result.deactivated,
-        notes: result.errors.length > 0 ? `${result.errors.length} erros, ${result.unchanged} sem alterações` : `${result.unchanged} sem alterações`,
+        status: 'completed',
+        summary_json: {
+          created: result.created,
+          updated: result.updated,
+          deactivated: result.deactivated,
+          unchanged: result.unchanged,
+          errors: result.errors,
+        },
+        diff_json: diffJson.length > 0 ? diffJson : undefined,
+        notes: result.unchanged > 0 ? `${result.unchanged} sem alterações` : undefined,
       });
       
       setImportResult(result);
