@@ -2,6 +2,20 @@ import * as XLSX from 'xlsx';
 import { ImportUserRow, ImportTeamRow, roleMapping } from '@/types/import';
 
 /**
+ * Remove accented characters for normalization
+ */
+function removeAccents(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Normalize column keys - lowercase, no accents, underscores for spaces
+ */
+function normalizeKey(key: string): string {
+  return removeAccents(key.toLowerCase().trim().replace(/\s+/g, '_'));
+}
+
+/**
  * Parse both Excel (.xlsx, .xls) and CSV files
  */
 export function parseFile<T>(file: File): Promise<T[]> {
@@ -51,26 +65,40 @@ export function parseExcelFile<T>(file: File): Promise<T[]> {
 }
 
 export function parseUserRows(rawRows: Record<string, unknown>[]): ImportUserRow[] {
+  if (rawRows.length === 0) return [];
+  
+  // Debug: log original column names
+  console.log('[Import] Colunas originais:', Object.keys(rawRows[0]));
+  
   return rawRows.map((row) => {
-    // Normalize column names (handle variations)
-    const normalizeKey = (key: string) => key.toLowerCase().trim().replace(/\s+/g, '_');
     const normalizedRow: Record<string, string> = {};
     
     Object.entries(row).forEach(([key, value]) => {
       normalizedRow[normalizeKey(key)] = String(value || '').trim();
     });
     
-    // Extract values with fallbacks
-    const externalId = normalizedRow['external_id'] || normalizedRow['id_externo'] || normalizedRow['id'] || '';
-    const nome = normalizedRow['nome'] || normalizedRow['name'] || '';
-    const email = normalizedRow['email'] || normalizedRow['e-mail'] || '';
-    const telefone = normalizedRow['telefone'] || normalizedRow['phone'] || normalizedRow['telemovel'] || '';
-    const funcao = normalizedRow['funcao'] || normalizedRow['função'] || normalizedRow['role'] || normalizedRow['cargo'] || '';
-    const equipa = normalizedRow['equipa'] || normalizedRow['team'] || normalizedRow['equipa_id'] || '';
-    const estadoRaw = normalizedRow['estado'] || normalizedRow['status'] || normalizedRow['ativo'] || 'ativo';
+    // Helper to find value from multiple possible column names
+    const findValue = (...keys: string[]): string => {
+      for (const key of keys) {
+        const normalizedKey = normalizeKey(key);
+        if (normalizedRow[normalizedKey]) {
+          return normalizedRow[normalizedKey];
+        }
+      }
+      return '';
+    };
+    
+    // Extract values with extended fallbacks for MAXWORK variations
+    const externalId = findValue('external_id', 'id_externo', 'id', 'user_id', 'userid', 'codigo', 'code');
+    const nome = findValue('nome', 'name', 'nome_completo', 'full_name', 'utilizador', 'user', 'username');
+    const email = findValue('email', 'e-mail', 'mail', 'e_mail', 'correio');
+    const telefone = findValue('telefone', 'phone', 'telemovel', 'mobile', 'contacto', 'tel');
+    const funcao = findValue('funcao', 'função', 'role', 'cargo', 'rolename', 'role_name', 'perfil', 'tipo', 'position', 'posicao');
+    const equipa = findValue('equipa', 'team', 'equipa_id', 'team_id', 'grupo', 'group', 'team_name', 'nome_equipa');
+    const estadoRaw = findValue('estado', 'status', 'ativo', 'active', 'is_active', 'activo') || 'ativo';
     
     // Normalize estado
-    const estado = ['inativo', 'inactive', 'false', '0', 'não', 'nao'].includes(estadoRaw.toLowerCase()) 
+    const estado = ['inativo', 'inactive', 'false', '0', 'não', 'nao', 'no', 'disabled'].includes(estadoRaw.toLowerCase()) 
       ? 'inativo' 
       : 'ativo';
     
@@ -87,20 +115,36 @@ export function parseUserRows(rawRows: Record<string, unknown>[]): ImportUserRow
 }
 
 export function parseTeamRows(rawRows: Record<string, unknown>[]): ImportTeamRow[] {
+  if (rawRows.length === 0) return [];
+  
+  // Debug: log original column names
+  console.log('[Import] Colunas originais (equipas):', Object.keys(rawRows[0]));
+  
   return rawRows.map((row) => {
-    const normalizeKey = (key: string) => key.toLowerCase().trim().replace(/\s+/g, '_');
     const normalizedRow: Record<string, string> = {};
     
     Object.entries(row).forEach(([key, value]) => {
       normalizedRow[normalizeKey(key)] = String(value || '').trim();
     });
     
-    const externalId = normalizedRow['external_id'] || normalizedRow['id_externo'] || normalizedRow['id'] || '';
-    const nomeEquipa = normalizedRow['nome_equipa'] || normalizedRow['equipa'] || normalizedRow['name'] || normalizedRow['nome'] || '';
-    const liderEquipa = normalizedRow['lider_equipa'] || normalizedRow['líder'] || normalizedRow['lider'] || normalizedRow['leader'] || '';
-    const estadoRaw = normalizedRow['estado'] || normalizedRow['status'] || normalizedRow['ativo'] || 'ativo';
+    // Helper to find value from multiple possible column names
+    const findValue = (...keys: string[]): string => {
+      for (const key of keys) {
+        const normalizedKey = normalizeKey(key);
+        if (normalizedRow[normalizedKey]) {
+          return normalizedRow[normalizedKey];
+        }
+      }
+      return '';
+    };
     
-    const estado = ['inativo', 'inactive', 'false', '0', 'não', 'nao'].includes(estadoRaw.toLowerCase()) 
+    // Extract values with extended fallbacks for MAXWORK variations
+    const externalId = findValue('external_id', 'id_externo', 'id', 'team_id', 'teamid', 'codigo', 'code');
+    const nomeEquipa = findValue('nome_equipa', 'equipa', 'name', 'nome', 'team_name', 'team', 'nome_da_equipa', 'teamname', 'grupo', 'group');
+    const liderEquipa = findValue('lider_equipa', 'líder', 'lider', 'leader', 'leader_id', 'responsavel', 'responsável', 'chefe', 'manager', 'team_leader');
+    const estadoRaw = findValue('estado', 'status', 'ativo', 'active', 'is_active', 'activo') || 'ativo';
+    
+    const estado = ['inativo', 'inactive', 'false', '0', 'não', 'nao', 'no', 'disabled'].includes(estadoRaw.toLowerCase()) 
       ? 'inativo' 
       : 'ativo';
     
@@ -114,7 +158,7 @@ export function parseTeamRows(rawRows: Record<string, unknown>[]): ImportTeamRow
 }
 
 export function normalizeRole(funcao: string): string | null {
-  const normalized = funcao.toLowerCase().trim();
+  const normalized = removeAccents(funcao.toLowerCase().trim());
   return roleMapping[normalized] || null;
 }
 
