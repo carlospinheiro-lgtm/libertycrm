@@ -67,19 +67,39 @@ export interface ImportPreviewTeam {
 
 // Mapeamento de funções PT para roles do sistema
 export const roleMapping: Record<string, string> = {
+  // Direção
   'diretor geral': 'diretor_geral',
   'diretor comercial': 'diretor_comercial',
   'diretor agência': 'diretor_agencia',
   'diretor agencia': 'diretor_agencia',
+  'broker': 'diretor_agencia',
+  
+  // Liderança
   'líder equipa': 'team_leader',
   'lider equipa': 'team_leader',
   'team leader': 'team_leader',
+  'leader': 'team_leader',
+  
+  // Agentes
   'agente imobiliário': 'agente_imobiliario',
   'agente imobiliario': 'agente_imobiliario',
   'agente': 'agente_imobiliario',
+  'agente associado': 'agente_imobiliario',
+  'associate': 'agente_imobiliario',
+  'agent': 'agente_imobiliario',
+  
+  // RH e Financeiro
   'diretor rh': 'diretor_rh',
   'diretor financeiro': 'diretor_financeiro',
+  
+  // Backoffice/Suporte
   'gestor backoffice': 'gestor_backoffice',
   'assistente administrativo': 'assistente_administrativo',
+  'staff': 'assistente_administrativo',
+  'administrativo': 'assistente_administrativo',
+  'admin': 'assistente_administrativo',
+  
+  // Outros
   'consultor externo': 'consultor_externo',
+  'consultor': 'consultor_externo',
 };
