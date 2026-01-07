@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Tables, TablesInsert } from '@/integrations/supabase/types';
+import { Tables, TablesInsert, Enums } from '@/integrations/supabase/types';
 
 export type Profile = Tables<'profiles'>;
 export type UserAgency = Tables<'user_agencies'>;
 export type UserRole = Tables<'user_roles'>;
+export type Team = Tables<'teams'>;
+export type AppRole = Enums<'app_role'>;
 
 export type ProfileInsert = TablesInsert<'profiles'>;
 export type UserAgencyInsert = TablesInsert<'user_agencies'>;
@@ -14,6 +16,73 @@ export interface UserWithAgencyInfo {
   profile: Profile;
   userAgency: UserAgency;
   roles: UserRole[];
+}
+
+export interface UserWithDetails {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  agencyId: string;
+  teamId: string | null;
+  teamName: string | null;
+  isActive: boolean;
+  isSynced: boolean;
+  externalId: string | null;
+  roles: AppRole[];
+}
+
+export function useUsersWithDetails(agencyId: string | null) {
+  return useQuery({
+    queryKey: ['users_with_details', agencyId],
+    enabled: !!agencyId,
+    queryFn: async () => {
+      if (!agencyId) return [];
+
+      // Fetch user_agencies with profiles and teams
+      const { data: userAgencies, error: uaError } = await supabase
+        .from('user_agencies')
+        .select(`
+          *,
+          profiles!user_agencies_user_id_fkey (*),
+          teams!user_agencies_team_id_fkey (*)
+        `)
+        .eq('agency_id', agencyId)
+        .order('created_at', { ascending: false });
+
+      if (uaError) throw uaError;
+      if (!userAgencies) return [];
+
+      // Fetch roles for all users in this agency
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('agency_id', agencyId);
+
+      if (rolesError) throw rolesError;
+
+      // Combine data
+      return userAgencies.map((ua): UserWithDetails => {
+        const profile = ua.profiles as Profile;
+        const team = ua.teams as Team | null;
+        const userRoles = roles?.filter(r => r.user_id === ua.user_id).map(r => r.role) || [];
+
+        return {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          phone: profile.phone,
+          agencyId: ua.agency_id,
+          teamId: ua.team_id,
+          teamName: team?.name || null,
+          isActive: ua.is_active ?? true,
+          isSynced: ua.is_synced ?? false,
+          externalId: ua.external_id,
+          roles: userRoles,
+        };
+      });
+    },
+  });
 }
 
 export function useUserAgenciesByAgency(agencyId: string | null) {
