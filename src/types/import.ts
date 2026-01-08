@@ -102,4 +102,22 @@ export const roleMapping: Record<string, string> = {
   // Outros
   'consultor externo': 'consultor_externo',
   'consultor': 'consultor_externo',
+  
+  // Agentes em formação
+  'agente em formação': 'agente_imobiliario',
+  'agente em formacao': 'agente_imobiliario',
+  'trainee': 'agente_imobiliario',
+  
+  // Gestão de processos
+  'gestor de processos': 'gestor_backoffice',
+  'gestor(a) de processos': 'gestor_backoffice',
+  'gestora de processos': 'gestor_backoffice',
+  
+  // Assistentes
+  'assistente': 'assistente_administrativo',
+  
+  // Coordenadores
+  'coordenador': 'team_leader',
+  'coordenador(a)': 'team_leader',
+  'coordenadora': 'team_leader',
 };
