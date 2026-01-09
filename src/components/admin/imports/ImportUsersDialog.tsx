@@ -237,100 +237,81 @@ export function ImportUsersDialog({
     try {
       const activeExternalIds: string[] = [];
       
-      for (let i = 0; i < rawData.length; i++) {
-        const row = rawData[i];
+      // Filter users to import (new or confirmed updates)
+      const usersToImport = rawData.filter((row, i) => {
         const preview = previewData[i];
         
-        // Ignorar se tem erro ou se precisa confirmação mas não foi confirmado
+        // Skip if has error
         if (preview.error) {
           result.errors.push(preview.error);
-          continue;
+          return false;
         }
         
-        if (preview.action === 'no_change') {
-          result.unchanged++;
-          if (row.estado === 'ativo') {
-            activeExternalIds.push(row.external_id);
-          }
-          continue;
-        }
-        
-        if (preview.action === 'update' && preview.requiresConfirmation && !preview.confirmed) {
-          // Não atualizar se não foi confirmado
-          if (row.estado === 'ativo') {
-            activeExternalIds.push(row.external_id);
-          }
-          continue;
-        }
-        
+        // Track active external IDs
         if (row.estado === 'ativo') {
           activeExternalIds.push(row.external_id);
         }
         
-        try {
-          // Check if profile exists by email
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', row.email.toLowerCase())
-            .maybeSingle();
-          
-          let profileId = existingProfile?.id;
-          
-          // If profile doesn't exist, create it
-          if (!profileId) {
-            const { data: newProfile, error: profileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: crypto.randomUUID(),
-                email: row.email.toLowerCase(),
-                name: row.nome,
-                phone: row.telefone,
-                is_active: row.estado === 'ativo',
-              })
-              .select()
-              .single();
-            
-            if (profileError) {
-              result.errors.push(`Erro ao criar perfil para ${row.email}: ${profileError.message}`);
-              continue;
-            }
-            
-            profileId = newProfile.id;
-          } else {
-            // Update profile name and phone if exists
-            await supabase
-              .from('profiles')
-              .update({
-                name: row.nome,
-                phone: row.telefone,
-                is_active: row.estado === 'ativo',
-              })
-              .eq('id', profileId);
-          }
-          
-          // Find team
+        // No change - count but don't import
+        if (preview.action === 'no_change') {
+          result.unchanged++;
+          return false;
+        }
+        
+        // Update not confirmed - skip
+        if (preview.action === 'update' && preview.requiresConfirmation && !preview.confirmed) {
+          return false;
+        }
+        
+        // Include new users, confirmed updates, and deactivations
+        return preview.action === 'create' || 
+               (preview.action === 'update' && preview.confirmed) ||
+               preview.action === 'deactivate';
+      });
+      
+      if (usersToImport.length > 0) {
+        // Prepare data for Edge Function
+        const usersData = usersToImport.map(row => {
           const team = teams?.find(t => t.external_id === row.equipa);
+          const normalizedRole = normalizeRole(row.funcao);
           
-          // Upsert user_agency
-          const { action } = await upsertUserAgency.mutateAsync({
-            agencyId,
-            externalId: row.external_id,
-            profileId,
-            teamId: team?.id,
-            data: {
-              is_active: row.estado === 'ativo',
-            },
-          });
+          return {
+            email: row.email.toLowerCase(),
+            name: row.nome,
+            phone: row.telefone,
+            external_id: row.external_id,
+            agency_id: agencyId,
+            team_id: team?.id,
+            role: normalizedRole || 'agente_imobiliario',
+            is_active: row.estado === 'ativo',
+          };
+        });
+        
+        // Call Edge Function to create/update users
+        const { data: importResponse, error: importError } = await supabase.functions.invoke('import-users', {
+          body: { users: usersData, agency_id: agencyId },
+        });
+        
+        if (importError) {
+          console.error('Edge function error:', importError);
+          result.errors.push(`Erro na função de importação: ${importError.message}`);
+        } else if (importResponse) {
+          console.log('Import response:', importResponse);
           
-          if (action === 'created') {
-            result.created++;
-          } else {
-            result.updated++;
+          if (importResponse.error) {
+            result.errors.push(importResponse.error);
+          } else if (importResponse.results) {
+            // Process results from Edge Function
+            for (const userResult of importResponse.results) {
+              if (userResult.action === 'created') {
+                result.created++;
+              } else if (userResult.action === 'updated') {
+                result.updated++;
+              } else if (userResult.action === 'error') {
+                result.errors.push(`${userResult.email}: ${userResult.error}`);
+              }
+            }
           }
-          
-        } catch (error: any) {
-          result.errors.push(`Erro ao importar ${row.nome}: ${error.message}`);
         }
       }
       
@@ -383,6 +364,7 @@ export function ImportUsersDialog({
       }
       
     } catch (error: any) {
+      console.error('Import error:', error);
       toast.error('Erro durante a importação');
       result.errors.push(`Erro geral: ${error.message}`);
       setImportResult(result);
