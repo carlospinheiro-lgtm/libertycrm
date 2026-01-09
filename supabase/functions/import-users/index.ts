@@ -59,12 +59,13 @@ serve(async (req) => {
     }
 
     // Verify the JWT and get the user
-    const anonKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseClient = createClient(supabaseUrl, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
       global: { headers: { Authorization: authHeader } },
     });
 
+    console.log('Verifying user authorization...');
     const { data: { user: callingUser }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !callingUser) {
       console.error('Auth error:', authError);
@@ -73,9 +74,11 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    console.log(`Authenticated user: ${callingUser.email} (${callingUser.id})`);
 
     // Check if calling user is a global admin (diretor_geral)
-    const { data: isAdmin } = await supabaseAdmin.rpc('is_global_admin', { _user_id: callingUser.id });
+    const { data: isAdmin, error: adminCheckError } = await supabaseAdmin.rpc('is_global_admin', { _user_id: callingUser.id });
+    console.log(`Admin check for ${callingUser.email}: isAdmin=${isAdmin}, error=${adminCheckError?.message || 'none'}`);
     if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions. Only global admins can import users.' }),
