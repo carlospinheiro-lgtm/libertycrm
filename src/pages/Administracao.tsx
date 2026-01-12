@@ -3,12 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UsersTable } from '@/components/admin/UsersTable';
 import { RolesPermissionsGrid } from '@/components/admin/RolesPermissionsGrid';
 import { AgenciesTeamsPanel } from '@/components/admin/AgenciesTeamsPanel';
+import { TeamsPanel } from '@/components/admin/TeamsPanel';
 import { SettingsPanel } from '@/components/admin/SettingsPanel';
 import { UserSwitcher } from '@/components/admin/UserSwitcher';
 import { ImportsPanel } from '@/components/admin/imports';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, Shield, Building2, Settings, Lock, Upload } from 'lucide-react';
+import { Users, Shield, Building2, Settings, Lock, Upload, Users2 } from 'lucide-react';
 
 export default function Administracao() {
   const { hasPermission, hasAnyPermission } = useAuth();
@@ -17,12 +18,14 @@ export default function Administracao() {
   const canAccessUsers = hasAnyPermission(['admin.users.read', 'admin.users.create']);
   const canAccessRoles = hasPermission('admin.roles.read');
   const canAccessAgencies = hasAnyPermission(['admin.users.read', 'admin.settings.read']);
+  const canAccessTeams = hasAnyPermission(['admin.users.read', 'admin.users.create']);
   const canAccessSettings = hasPermission('admin.settings.read');
   const canAccessImports = hasAnyPermission(['admin.users.create', 'admin.settings.update']);
 
   // Determinar tab inicial baseado nas permissões
   const getDefaultTab = () => {
     if (canAccessUsers) return 'users';
+    if (canAccessTeams) return 'teams';
     if (canAccessRoles) return 'roles';
     if (canAccessAgencies) return 'agencies';
     if (canAccessImports) return 'imports';
@@ -50,7 +53,7 @@ export default function Administracao() {
 
         {/* Tabs */}
         <Tabs defaultValue={getDefaultTab()} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-1 bg-transparent p-1 h-auto">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 gap-1 bg-transparent p-1 h-auto">
             <TabsTrigger 
               value="users" 
               disabled={!canAccessUsers}
@@ -62,6 +65,18 @@ export default function Administracao() {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Utilizadores</span>
               {!canAccessUsers && <Lock className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="teams" 
+              disabled={!canAccessTeams}
+              className="flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all
+                         data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm
+                         data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground
+                         hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Users2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Equipas</span>
+              {!canAccessTeams && <Lock className="h-3 w-3 ml-1" />}
             </TabsTrigger>
             <TabsTrigger 
               value="roles" 
@@ -119,6 +134,15 @@ export default function Administracao() {
               fallback={<NoAccessMessage />}
             >
               <UsersTable />
+            </PermissionGuard>
+          </TabsContent>
+
+          <TabsContent value="teams" className="mt-6">
+            <PermissionGuard 
+              permissions={['admin.users.read', 'admin.users.create']} 
+              fallback={<NoAccessMessage />}
+            >
+              <TeamsPanel />
             </PermissionGuard>
           </TabsContent>
 

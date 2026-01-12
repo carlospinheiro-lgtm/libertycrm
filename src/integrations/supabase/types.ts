@@ -188,6 +188,63 @@ export type Database = {
         }
         Relationships: []
       }
+      team_memberships: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_leader: boolean | null
+          is_synced: boolean | null
+          joined_at: string | null
+          last_synced_at: string | null
+          relation_type: string | null
+          status: string | null
+          team_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_leader?: boolean | null
+          is_synced?: boolean | null
+          joined_at?: string | null
+          last_synced_at?: string | null
+          relation_type?: string | null
+          status?: string | null
+          team_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_leader?: boolean | null
+          is_synced?: boolean | null
+          joined_at?: string | null
+          last_synced_at?: string | null
+          relation_type?: string | null
+          status?: string | null
+          team_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_memberships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           agency_id: string
@@ -199,6 +256,8 @@ export type Database = {
           last_synced_at: string | null
           leader_user_id: string | null
           name: string
+          nickname: string | null
+          team_type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -211,6 +270,8 @@ export type Database = {
           last_synced_at?: string | null
           leader_user_id?: string | null
           name: string
+          nickname?: string | null
+          team_type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -223,6 +284,8 @@ export type Database = {
           last_synced_at?: string | null
           leader_user_id?: string | null
           name?: string
+          nickname?: string | null
+          team_type?: string | null
           updated_at?: string | null
         }
         Relationships: [
