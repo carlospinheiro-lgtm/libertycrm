@@ -28,9 +28,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Search, UserPlus, Pencil, UserX, UserCheck, RefreshCw, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Search, UserPlus, Pencil, UserX, UserCheck, RefreshCw, Loader2, Users, ArrowRight } from 'lucide-react';
 import { AddUserDialog } from './AddUserDialog';
 import { EditUserDialog } from './EditUserDialog';
+import { MoveToTeamDialog } from './MoveToTeamDialog';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { SyncBadge } from '@/components/ui/sync-badge';
 
@@ -41,6 +42,7 @@ export function UsersTable() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithDetails | null>(null);
+  const [movingToTeamUser, setMovingToTeamUser] = useState<UserWithDetails | null>(null);
 
   // Fetch agencies
   const { data: agencies = [], isLoading: agenciesLoading } = useActiveAgencies();
@@ -224,7 +226,21 @@ export function UsersTable() {
                             <Pencil className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setMovingToTeamUser(user)}>
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                            Mover para Equipa
+                          </DropdownMenuItem>
                         </PermissionGuard>
+                        {user.teamId && (
+                          <DropdownMenuItem onClick={() => {
+                            // Navigate to teams tab with team highlighted
+                            const tabsTrigger = document.querySelector('[value="teams"]') as HTMLButtonElement;
+                            if (tabsTrigger) tabsTrigger.click();
+                          }}>
+                            <Users className="h-4 w-4 mr-2" />
+                            Ver Equipa
+                          </DropdownMenuItem>
+                        )}
                         <PermissionGuard permission="admin.users.disable">
                           <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
                             {user.isActive ? (
@@ -257,6 +273,16 @@ export function UsersTable() {
           user={convertToRBACUser(editingUser)} 
           open={!!editingUser} 
           onOpenChange={(open) => !open && setEditingUser(null)} 
+        />
+      )}
+      {movingToTeamUser && (
+        <MoveToTeamDialog
+          userId={movingToTeamUser.id}
+          userName={movingToTeamUser.name}
+          agencyId={movingToTeamUser.agencyId}
+          currentTeamId={movingToTeamUser.teamId}
+          open={!!movingToTeamUser}
+          onOpenChange={(open) => !open && setMovingToTeamUser(null)}
         />
       )}
     </div>
