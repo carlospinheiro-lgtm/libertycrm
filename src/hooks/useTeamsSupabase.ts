@@ -89,6 +89,8 @@ export function useUpsertTeam() {
             agency_id: agencyId,
             external_id: externalId,
             name: data.name || '',
+            nickname: data.nickname,
+            team_type: data.team_type,
             leader_user_id: data.leader_user_id,
             is_active: data.is_active ?? true,
             is_synced: true,

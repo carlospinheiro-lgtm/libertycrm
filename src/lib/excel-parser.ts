@@ -141,7 +141,10 @@ export function parseTeamRows(rawRows: Record<string, unknown>[]): ImportTeamRow
     // Extract values with extended fallbacks for MAXWORK variations
     const externalId = findValue('external_id', 'id_externo', 'id', 'team_id', 'teamid', 'codigo', 'code');
     const nomeEquipa = findValue('nome_equipa', 'equipa', 'name', 'nome', 'team_name', 'team', 'nome_da_equipa', 'teamname', 'grupo', 'group');
+    const nickname = findValue('nickname', 'alcunha', 'apelido', 'sigla', 'short_name');
+    const tipoEquipa = findValue('tipo_equipa', 'tipo', 'type', 'team_type', 'categoria');
     const liderEquipa = findValue('lider_equipa', 'líder', 'lider', 'leader', 'leader_id', 'responsavel', 'responsável', 'chefe', 'manager', 'team_leader');
+    const membrosRaw = findValue('membros', 'members', 'elementos', 'team_members', 'utilizadores', 'users', 'agentes');
     const estadoRaw = findValue('estado', 'status', 'ativo', 'active', 'is_active', 'activo') || 'ativo';
     
     const estado = ['inativo', 'inactive', 'false', '0', 'não', 'nao', 'no', 'disabled'].includes(estadoRaw.toLowerCase()) 
@@ -151,10 +154,27 @@ export function parseTeamRows(rawRows: Record<string, unknown>[]): ImportTeamRow
     return {
       external_id: externalId,
       nome_equipa: nomeEquipa,
+      nickname: nickname || undefined,
+      tipo_equipa: tipoEquipa || undefined,
       lider_equipa: liderEquipa || undefined,
+      membros: membrosRaw || undefined,
       estado,
     };
   });
+}
+
+/**
+ * Parse members string into array of external_ids
+ * Supports separators: , ; |
+ */
+export function parseMembersString(membersStr: string | undefined): string[] {
+  if (!membersStr) return [];
+  
+  // Split by common separators and clean up
+  return membersStr
+    .split(/[,;|]/)
+    .map(id => id.trim())
+    .filter(id => id.length > 0);
 }
 
 export function normalizeRole(funcao: string): string | null {

@@ -257,3 +257,152 @@ export function useTeamMembersCount(teamId: string | null) {
     },
   });
 }
+
+/**
+ * Sync team memberships during import
+ * - Creates new memberships for users in the list
+ * - Updates existing memberships
+ * - Deactivates memberships for users not in the list (if is_synced)
+ */
+export function useSyncTeamMemberships() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      teamId, 
+      agencyId,
+      memberExternalIds,
+      leaderExternalId
+    }: { 
+      teamId: string;
+      agencyId: string;
+      memberExternalIds: string[];
+      leaderExternalId?: string;
+    }) => {
+      const result = {
+        created: 0,
+        updated: 0,
+        deactivated: 0,
+        errors: [] as string[],
+      };
+      
+      // Get user_agencies for the agency to map external_ids to user_ids
+      const { data: userAgencies, error: uaError } = await supabase
+        .from('user_agencies')
+        .select('user_id, external_id')
+        .eq('agency_id', agencyId)
+        .eq('is_active', true);
+      
+      if (uaError) throw uaError;
+      
+      const externalIdToUserId = new Map<string, string>();
+      userAgencies?.forEach(ua => {
+        if (ua.external_id && ua.user_id) {
+          externalIdToUserId.set(ua.external_id, ua.user_id);
+        }
+      });
+      
+      const processedUserIds = new Set<string>();
+      
+      // Process each member
+      for (const extId of memberExternalIds) {
+        const userId = externalIdToUserId.get(extId);
+        if (!userId) {
+          result.errors.push(`Membro com external_id ${extId} não encontrado na agência`);
+          continue;
+        }
+        
+        processedUserIds.add(userId);
+        const isLeader = extId === leaderExternalId;
+        
+        // Check if membership exists
+        const { data: existing } = await supabase
+          .from('team_memberships')
+          .select('id, is_leader, status')
+          .eq('team_id', teamId)
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (existing) {
+          // Update if needed
+          const needsUpdate = 
+            existing.status !== 'active' || 
+            existing.is_leader !== isLeader;
+          
+          if (needsUpdate) {
+            const { error: updateError } = await supabase
+              .from('team_memberships')
+              .update({
+                status: 'active',
+                is_leader: isLeader,
+                relation_type: isLeader ? 'leader' : 'member',
+                is_synced: true,
+                last_synced_at: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+            
+            if (updateError) {
+              result.errors.push(`Erro ao atualizar membro ${extId}: ${updateError.message}`);
+            } else {
+              result.updated++;
+            }
+          }
+        } else {
+          // Insert new membership
+          const { error: insertError } = await supabase
+            .from('team_memberships')
+            .insert({
+              team_id: teamId,
+              user_id: userId,
+              is_leader: isLeader,
+              relation_type: isLeader ? 'leader' : 'member',
+              status: 'active',
+              is_synced: true,
+              last_synced_at: new Date().toISOString(),
+            });
+          
+          if (insertError) {
+            result.errors.push(`Erro ao adicionar membro ${extId}: ${insertError.message}`);
+          } else {
+            result.created++;
+          }
+        }
+      }
+      
+      // Deactivate synced memberships that are not in the list
+      if (processedUserIds.size > 0) {
+        const userIdArray = Array.from(processedUserIds);
+        
+        const { data: toDeactivate, error: fetchError } = await supabase
+          .from('team_memberships')
+          .select('id')
+          .eq('team_id', teamId)
+          .eq('is_synced', true)
+          .eq('status', 'active')
+          .not('user_id', 'in', `(${userIdArray.map(id => `"${id}"`).join(',')})`);
+        
+        if (!fetchError && toDeactivate && toDeactivate.length > 0) {
+          const ids = toDeactivate.map(m => m.id);
+          
+          const { error: deactivateError } = await supabase
+            .from('team_memberships')
+            .update({ 
+              status: 'inactive',
+              last_synced_at: new Date().toISOString(),
+            })
+            .in('id', ids);
+          
+          if (!deactivateError) {
+            result.deactivated = toDeactivate.length;
+          }
+        }
+      }
+      
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+}

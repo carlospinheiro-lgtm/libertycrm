@@ -18,13 +18,15 @@ import {
   parseExcelFile, 
   parseTeamRows, 
   validateTeamRow,
+  parseMembersString,
 } from '@/lib/excel-parser';
 import { ImportTeamRow, ImportPreviewTeam, ImportResult, FieldDiff } from '@/types/import';
 import { useUpsertTeam, useDeactivateMissingTeams, useTeamsByAgency } from '@/hooks/useTeamsSupabase';
+import { useSyncTeamMemberships } from '@/hooks/useTeamMemberships';
 import { useCreateImportJob } from '@/hooks/useImportJobs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Upload, FileSpreadsheet, Loader2, CheckCircle, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { Upload, FileSpreadsheet, Loader2, CheckCircle, RefreshCcw, AlertTriangle, Users } from 'lucide-react';
 
 interface ImportTeamsDialogProps {
   open: boolean;
@@ -51,6 +53,7 @@ export function ImportTeamsDialog({
   const { data: existingTeams } = useTeamsByAgency(agencyId);
   const upsertTeam = useUpsertTeam();
   const deactivateMissing = useDeactivateMissingTeams();
+  const syncMemberships = useSyncTeamMemberships();
   const createImportJob = useCreateImportJob();
 
   const resetState = useCallback(() => {
@@ -67,44 +70,6 @@ export function ImportTeamsDialog({
     onOpenChange(false);
   };
 
-  // Detetar diferenças entre dados existentes e novos
-  const detectDiffs = (
-    row: ImportTeamRow,
-    existing: { name: string; leader?: string | null; isActive: boolean }
-  ): FieldDiff[] => {
-    const diffs: FieldDiff[] = [];
-    
-    if (row.nome_equipa !== existing.name) {
-      diffs.push({
-        field: 'name',
-        fieldLabel: 'Nome',
-        currentValue: existing.name,
-        newValue: row.nome_equipa,
-      });
-    }
-    
-    if (row.lider_equipa !== existing.leader) {
-      diffs.push({
-        field: 'leader',
-        fieldLabel: 'Líder',
-        currentValue: existing.leader || null,
-        newValue: row.lider_equipa || '-',
-      });
-    }
-    
-    const isActive = row.estado === 'ativo';
-    if (isActive !== existing.isActive) {
-      diffs.push({
-        field: 'status',
-        fieldLabel: 'Estado',
-        currentValue: existing.isActive ? 'Ativo' : 'Inativo',
-        newValue: isActive ? 'Ativo' : 'Inativo',
-      });
-    }
-    
-    return diffs;
-  };
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -117,9 +82,28 @@ export function ImportTeamsDialog({
       const parsedRows = parseTeamRows(rawRows);
       setRawData(parsedRows);
       
+      // Get user_agencies to validate member external_ids
+      const { data: userAgencies } = await supabase
+        .from('user_agencies')
+        .select('external_id')
+        .eq('agency_id', agencyId)
+        .eq('is_active', true);
+      
+      const validExternalIds = new Set(userAgencies?.map(ua => ua.external_id).filter(Boolean) || []);
+      
       // Validate and create preview with difference detection
       const preview: ImportPreviewTeam[] = parsedRows.map((row, index) => {
         const validationError = validateTeamRow(row, index);
+        
+        // Parse members
+        const membersList = parseMembersString(row.membros);
+        
+        // Validate member external_ids
+        const invalidMembers = membersList.filter(id => !validExternalIds.has(id));
+        let memberError = '';
+        if (invalidMembers.length > 0) {
+          memberError = `Membros não encontrados: ${invalidMembers.slice(0, 3).join(', ')}${invalidMembers.length > 3 ? '...' : ''}`;
+        }
         
         // Check if team exists
         const existingTeam = existingTeams?.find(t => t.external_id === row.external_id);
@@ -133,20 +117,31 @@ export function ImportTeamsDialog({
         } else if (row.estado === 'inativo') {
           action = 'deactivate';
         } else if (existingTeam) {
-          // Detetar diferenças
-          const existingData = {
-            name: existingTeam.name,
-            leader: existingTeam.external_id, // Would need to lookup leader external_id
-            isActive: existingTeam.is_active || false,
-          };
-          
-          // Simplified diff - compare name and status
+          // Detect differences
           if (row.nome_equipa !== existingTeam.name) {
             diffs.push({
               field: 'name',
               fieldLabel: 'Nome',
               currentValue: existingTeam.name,
               newValue: row.nome_equipa,
+            });
+          }
+          
+          if (row.nickname !== existingTeam.nickname) {
+            diffs.push({
+              field: 'nickname',
+              fieldLabel: 'Nickname',
+              currentValue: existingTeam.nickname || null,
+              newValue: row.nickname || '-',
+            });
+          }
+          
+          if (row.tipo_equipa !== existingTeam.team_type) {
+            diffs.push({
+              field: 'team_type',
+              fieldLabel: 'Tipo',
+              currentValue: existingTeam.team_type || null,
+              newValue: row.tipo_equipa || '-',
             });
           }
           
@@ -168,16 +163,22 @@ export function ImportTeamsDialog({
           }
         }
         
+        const combinedError = [validationError, memberError].filter(Boolean).join('; ');
+        
         return {
           external_id: row.external_id,
           name: row.nome_equipa,
+          nickname: row.nickname,
+          teamType: row.tipo_equipa,
           leader: row.lider_equipa,
+          members: membersList,
+          membersCount: membersList.length,
           isActive: row.estado === 'ativo',
           action,
           diffs,
           requiresConfirmation,
           confirmed: false,
-          error: validationError || undefined,
+          error: combinedError || undefined,
           existingId: existingTeam?.id,
         };
       });
@@ -217,17 +218,21 @@ export function ImportTeamsDialog({
       deactivated: 0,
       unchanged: 0,
       errors: [],
+      membersCreated: 0,
+      membersUpdated: 0,
+      membersDeactivated: 0,
     };
     
     try {
       const activeExternalIds: string[] = [];
+      const teamsWithMembers: { teamId: string; preview: ImportPreviewTeam; row: ImportTeamRow }[] = [];
       
       for (let i = 0; i < rawData.length; i++) {
         const row = rawData[i];
         const preview = previewData[i];
         
-        // Ignorar se tem erro
-        if (preview.error) {
+        // Skip if has error
+        if (preview.error && preview.action === 'skip') {
           result.errors.push(preview.error);
           continue;
         }
@@ -237,11 +242,15 @@ export function ImportTeamsDialog({
           if (row.estado === 'ativo') {
             activeExternalIds.push(row.external_id);
           }
+          // Still need to sync members for unchanged teams
+          if (preview.existingId && preview.members && preview.members.length > 0) {
+            teamsWithMembers.push({ teamId: preview.existingId, preview, row });
+          }
           continue;
         }
         
         if (preview.action === 'update' && preview.requiresConfirmation && !preview.confirmed) {
-          // Não atualizar se não foi confirmado
+          // Don't update if not confirmed
           if (row.estado === 'ativo') {
             activeExternalIds.push(row.external_id);
           }
@@ -266,11 +275,13 @@ export function ImportTeamsDialog({
             leaderUserId = leaderAgency?.user_id;
           }
           
-          const { action } = await upsertTeam.mutateAsync({
+          const { action, data: teamData } = await upsertTeam.mutateAsync({
             agencyId,
             externalId: row.external_id,
             data: {
               name: row.nome_equipa,
+              nickname: row.nickname,
+              team_type: row.tipo_equipa,
               leader_user_id: leaderUserId,
               is_active: row.estado === 'ativo',
             },
@@ -282,8 +293,35 @@ export function ImportTeamsDialog({
             result.updated++;
           }
           
+          // Add to list for member sync
+          if (preview.members && preview.members.length > 0) {
+            teamsWithMembers.push({ teamId: teamData.id, preview, row });
+          }
+          
         } catch (error: any) {
           result.errors.push(`Erro ao importar equipa ${row.nome_equipa}: ${error.message}`);
+        }
+      }
+      
+      // Sync team memberships
+      for (const { teamId, preview, row } of teamsWithMembers) {
+        try {
+          const syncResult = await syncMemberships.mutateAsync({
+            teamId,
+            agencyId,
+            memberExternalIds: preview.members || [],
+            leaderExternalId: row.lider_equipa,
+          });
+          
+          result.membersCreated = (result.membersCreated || 0) + syncResult.created;
+          result.membersUpdated = (result.membersUpdated || 0) + syncResult.updated;
+          result.membersDeactivated = (result.membersDeactivated || 0) + syncResult.deactivated;
+          
+          if (syncResult.errors.length > 0) {
+            result.errors.push(...syncResult.errors);
+          }
+        } catch (error: any) {
+          result.errors.push(`Erro ao sincronizar membros de ${row.nome_equipa}: ${error.message}`);
         }
       }
       
@@ -306,6 +344,7 @@ export function ImportTeamsDialog({
         .map(p => ({
           external_id: p.external_id,
           changes: p.diffs || [],
+          members: p.members,
           appliedAt: new Date().toISOString(),
         }));
       
@@ -320,6 +359,9 @@ export function ImportTeamsDialog({
           updated: result.updated,
           deactivated: result.deactivated,
           unchanged: result.unchanged,
+          membersCreated: result.membersCreated,
+          membersUpdated: result.membersUpdated,
+          membersDeactivated: result.membersDeactivated,
           errors: result.errors,
         },
         diff_json: diffJson.length > 0 ? diffJson : undefined,
@@ -343,7 +385,7 @@ export function ImportTeamsDialog({
     }
   };
 
-  // Categorizar registos
+  // Categorize records
   const newRecords = previewData.filter(p => p.action === 'create');
   const updateRecords = previewData.filter(p => p.action === 'update');
   const noChangeRecords = previewData.filter(p => p.action === 'no_change');
@@ -352,6 +394,9 @@ export function ImportTeamsDialog({
   
   const hasUpdates = updateRecords.length > 0;
   const confirmedUpdates = updateRecords.filter(r => r.confirmed);
+  
+  // Total members count
+  const totalMembers = previewData.reduce((acc, p) => acc + (p.membersCount || 0), 0);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -371,7 +416,10 @@ export function ImportTeamsDialog({
           <div className="space-y-4">
             <Alert>
               <AlertDescription>
-                O ficheiro Excel deve conter as colunas: <strong>external_id</strong> (ou id), <strong>nome_equipa</strong>, <strong>lider_equipa</strong> (external_id do líder, opcional), <strong>estado</strong> (ativo/inativo)
+                O ficheiro Excel deve conter as colunas: <strong>external_id</strong>, <strong>nome_equipa</strong>, 
+                <strong> nickname</strong> (opcional), <strong>tipo_equipa</strong> (opcional), 
+                <strong> lider_equipa</strong> (external_id, opcional), <strong>membros</strong> (lista separada por vírgulas, opcional), 
+                <strong> estado</strong>
               </AlertDescription>
             </Alert>
 
@@ -381,14 +429,14 @@ export function ImportTeamsDialog({
                 <div className="space-y-2">
                   <p className="font-medium">Clique para selecionar ficheiro</p>
                   <p className="text-sm text-muted-foreground">
-                    Suporta ficheiros .xlsx
+                    Suporta ficheiros .xlsx, .xls, .csv
                   </p>
                 </div>
               </Label>
               <Input
                 id="team-file-upload"
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.csv"
                 className="hidden"
                 onChange={handleFileUpload}
                 disabled={isProcessing}
@@ -405,8 +453,8 @@ export function ImportTeamsDialog({
 
         {step === 'preview' && (
           <div className="space-y-4">
-            {/* Resumo */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {/* Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                 <CheckCircle className="h-5 w-5 text-emerald-600" />
                 <div>
@@ -436,6 +484,14 @@ export function ImportTeamsDialog({
                 <div>
                   <p className="text-xs text-muted-foreground">Desativar</p>
                   <p className="text-lg font-semibold text-red-700">{deactivateRecords.length}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                <Users className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Membros</p>
+                  <p className="text-lg font-semibold text-blue-700">{totalMembers}</p>
                 </div>
               </div>
               
@@ -523,12 +579,38 @@ export function ImportTeamsDialog({
         {step === 'importing' && (
           <div className="py-12 text-center">
             <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin text-primary" />
-            <p className="text-muted-foreground">A importar equipas...</p>
+            <p className="text-muted-foreground">A importar equipas e membros...</p>
           </div>
         )}
 
         {step === 'result' && importResult && (
-          <ImportResultSummary result={importResult} />
+          <div className="space-y-4">
+            <ImportResultSummary result={importResult} />
+            
+            {/* Extended result for members */}
+            {(importResult.membersCreated || importResult.membersUpdated || importResult.membersDeactivated) && (
+              <div className="border rounded-lg p-4 bg-blue-50/50 dark:bg-blue-950/20">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Membros de Equipa
+                </h4>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Adicionados:</span>
+                    <span className="ml-2 font-medium text-emerald-600">{importResult.membersCreated || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Atualizados:</span>
+                    <span className="ml-2 font-medium text-amber-600">{importResult.membersUpdated || 0}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Removidos:</span>
+                    <span className="ml-2 font-medium text-red-600">{importResult.membersDeactivated || 0}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         <DialogFooter>
@@ -550,10 +632,10 @@ export function ImportTeamsDialog({
               ) : (
                 <Button 
                   onClick={handleImport} 
-                  disabled={newRecords.length === 0 && deactivateRecords.length === 0}
+                  disabled={newRecords.length === 0 && deactivateRecords.length === 0 && noChangeRecords.length === 0}
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Confirmar Importação ({newRecords.length})
+                  Confirmar Importação ({newRecords.length} equipas, {totalMembers} membros)
                 </Button>
               )}
             </>

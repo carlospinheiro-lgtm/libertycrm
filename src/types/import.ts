@@ -13,7 +13,10 @@ export interface ImportUserRow {
 export interface ImportTeamRow {
   external_id: string;
   nome_equipa: string;
-  lider_equipa?: string; // leader external_id
+  nickname?: string;           // apelido/nickname da equipa
+  tipo_equipa?: string;        // 'comercial', 'suporte', etc.
+  lider_equipa?: string;       // leader external_id
+  membros?: string;            // lista de external_ids separados por vírgula ou ;
   estado: 'ativo' | 'inativo';
 }
 
@@ -23,6 +26,10 @@ export interface ImportResult {
   deactivated: number;
   unchanged: number;
   errors: string[];
+  // Team member sync results (optional)
+  membersCreated?: number;
+  membersUpdated?: number;
+  membersDeactivated?: number;
 }
 
 // Tipo para diferenças entre valores atuais e novos
@@ -55,7 +62,11 @@ export interface ImportPreviewUser {
 export interface ImportPreviewTeam {
   external_id: string;
   name: string;
-  leader?: string;
+  nickname?: string;           // apelido
+  teamType?: string;           // tipo de equipa
+  leader?: string;             // external_id do líder
+  members?: string[];          // array de external_ids dos membros
+  membersCount?: number;       // contagem de membros
   isActive: boolean;
   action: ImportAction;
   diffs?: FieldDiff[];
