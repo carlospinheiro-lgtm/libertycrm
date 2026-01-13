@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { AlertCircle, CheckCircle, RefreshCcw, XCircle, ChevronDown, ChevronRight, Minus } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCcw, XCircle, ChevronDown, ChevronRight, Minus, Users } from 'lucide-react';
 import { ImportPreviewUser, ImportPreviewTeam, FieldDiff } from '@/types/import';
 import { cn } from '@/lib/utils';
 
@@ -196,7 +196,9 @@ export function ImportPreviewTable({
             <TableHead className="w-10"></TableHead>
             <TableHead>ID</TableHead>
             <TableHead>Nome</TableHead>
+            <TableHead>Tipo</TableHead>
             <TableHead>Líder</TableHead>
+            <TableHead>Membros</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Ação</TableHead>
           </TableRow>
@@ -241,8 +243,28 @@ export function ImportPreviewTable({
                       )}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{team.external_id}</TableCell>
-                    <TableCell className="font-medium">{team.name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <span className="font-medium">{team.name}</span>
+                        {team.nickname && (
+                          <span className="ml-1 text-xs text-muted-foreground">({team.nickname})</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {team.teamType || '-'}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{team.leader || '-'}</TableCell>
+                    <TableCell>
+                      {team.membersCount && team.membersCount > 0 ? (
+                        <Badge variant="secondary" className="gap-1">
+                          <Users className="h-3 w-3" />
+                          {team.membersCount}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={team.isActive ? 'default' : 'outline'}>
                         {team.isActive ? 'Ativo' : 'Inativo'}
@@ -258,7 +280,7 @@ export function ImportPreviewTable({
                   {hasDiffs && (
                     <CollapsibleContent asChild>
                       <tr>
-                        <td colSpan={showConfirmation ? 8 : 7} className="p-0">
+                        <td colSpan={showConfirmation ? 10 : 9} className="p-0">
                           <div className="px-4 py-2 bg-muted/30">
                             {renderDiffs(team.diffs!)}
                           </div>

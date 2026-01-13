@@ -17,6 +17,9 @@ export interface ImportJob {
     deactivated: number;
     unchanged: number;
     errors: string[];
+    membersCreated?: number;
+    membersUpdated?: number;
+    membersDeactivated?: number;
   } | null;
   diff_json?: Array<{
     external_id: string;
