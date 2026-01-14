@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useAgenciesWithStats, useToggleAgencyActive } from '@/hooks/useAgenciesCrud';
+import { useAgenciesWithStats, useToggleAgencyActive, useDeleteAgency } from '@/hooks/useAgenciesCrud';
 import { useTeamsByAgency } from '@/hooks/useTeamsSupabase';
 import { useUserAgenciesByAgency } from '@/hooks/useUsersSupabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -34,9 +35,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SyncBadge } from '@/components/ui/sync-badge';
-import { Building2, Users, UserCircle, Plus, ChevronDown, UserPlus } from 'lucide-react';
+import { Building2, Users, UserCircle, Plus, ChevronDown, UserPlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddAgencyDialog } from './AddAgencyDialog';
+import { DeleteAgencyDialog } from './DeleteAgencyDialog';
 
 interface TeamWithMembers {
   id: string;
@@ -236,9 +238,14 @@ function AgencyPanelContent({ agencyId, agencyName, isActive }: AgencyPanelConte
 export function AgenciesTeamsPanel() {
   const { data: agencies, isLoading } = useAgenciesWithStats();
   const toggleActive = useToggleAgencyActive();
+  const deleteAgency = useDeleteAgency();
+  const { hasPermission } = useAuth();
+  
+  const canDeleteAgency = hasPermission('admin.settings.update');
   
   const [addAgencyOpen, setAddAgencyOpen] = useState(false);
   const [toggleConfirm, setToggleConfirm] = useState<{id: string; name: string; newState: boolean} | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{id: string; name: string} | null>(null);
 
   const handleToggleAgency = async () => {
     if (!toggleConfirm) return;
@@ -257,6 +264,18 @@ export function AgenciesTeamsPanel() {
       toast.error(`Erro: ${error.message}`);
     } finally {
       setToggleConfirm(null);
+    }
+  };
+
+  const handleDeleteAgency = async () => {
+    if (!deleteConfirm) return;
+    
+    try {
+      await deleteAgency.mutateAsync(deleteConfirm.id);
+      toast.success(`Agência "${deleteConfirm.name}" eliminada com sucesso`);
+      setDeleteConfirm(null);
+    } catch (error: any) {
+      toast.error(`Erro ao eliminar: ${error.message}`);
     }
   };
 
@@ -319,28 +338,46 @@ export function AgenciesTeamsPanel() {
                   </div>
                 </div>
                 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        {agency.is_active ? 'Ativa' : 'Inativa'}
-                      </span>
-                      <Switch
-                        checked={agency.is_active ?? false}
-                        onCheckedChange={(checked) => {
-                          setToggleConfirm({
-                            id: agency.id,
-                            name: agency.name,
-                            newState: checked,
-                          });
-                        }}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {agency.is_active ? 'Desativar agência' : 'Ativar agência'}
-                  </TooltipContent>
-                </Tooltip>
+                <div className="flex items-center gap-3">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {agency.is_active ? 'Ativa' : 'Inativa'}
+                        </span>
+                        <Switch
+                          checked={agency.is_active ?? false}
+                          onCheckedChange={(checked) => {
+                            setToggleConfirm({
+                              id: agency.id,
+                              name: agency.name,
+                              newState: checked,
+                            });
+                          }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {agency.is_active ? 'Desativar agência' : 'Ativar agência'}
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  {canDeleteAgency && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleteConfirm({ id: agency.id, name: agency.name })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Eliminar agência</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -398,6 +435,18 @@ export function AgenciesTeamsPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Agency Dialog */}
+      {deleteConfirm && (
+        <DeleteAgencyDialog
+          open={!!deleteConfirm}
+          onOpenChange={(open) => !open && setDeleteConfirm(null)}
+          agencyId={deleteConfirm.id}
+          agencyName={deleteConfirm.name}
+          onConfirmDelete={handleDeleteAgency}
+          isDeleting={deleteAgency.isPending}
+        />
+      )}
     </div>
   );
 }

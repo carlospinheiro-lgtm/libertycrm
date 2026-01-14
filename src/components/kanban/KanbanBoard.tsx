@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/select';
 import { useKanbanState, KanbanLead, KanbanColumn as KanbanColumnType } from '@/hooks/useKanbanState';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLeadSettings, LeadMovePopupMode } from '@/hooks/useAgencySettings';
 import type { LeadTemperature } from '@/types';
 
 export interface Column {
@@ -41,6 +43,7 @@ export interface Lead {
   phone: string;
   email: string;
   agentName: string;
+  agentId?: string;
   agency: string;
   source: string;
   entryDate: string;
@@ -57,6 +60,7 @@ interface KanbanBoardProps {
   leads: Lead[];
   onAddLead?: () => void;
   isRecruitment?: boolean;
+  agencyId?: string;
 }
 
 export function KanbanBoard({
@@ -65,13 +69,17 @@ export function KanbanBoard({
   leads: initialLeads,
   onAddLead,
   isRecruitment = false,
+  agencyId,
 }: KanbanBoardProps) {
+  const { currentUser } = useAuth();
+  const { data: leadSettings } = useLeadSettings(agencyId);
   const [agentFilter, setAgentFilter] = useState('all');
   const [agencyFilter, setAgencyFilter] = useState('all');
 
   // Convert leads to include required fields
   const leadsWithTemperature: KanbanLead[] = initialLeads.map(lead => ({
     ...lead,
+    agentId: (lead as any).agentId,
     temperature: lead.temperature || 'undefined',
     sourceId: (lead as any).sourceId || '11',
     sourceCategory: (lead as any).sourceCategory || 'espontaneo',
@@ -130,6 +138,19 @@ export function KanbanBoard({
     setDraggedLead(lead || null);
   };
 
+  // Determine if popup should be shown based on agency settings
+  const shouldShowMovePopup = (targetColumnId: string): boolean => {
+    const popupMode: LeadMovePopupMode = leadSettings?.popupMode ?? 'always';
+    
+    if (popupMode === 'always') return true;
+    if (popupMode === 'never') return false;
+    if (popupMode === 'critical') {
+      const criticalColumns = leadSettings?.criticalColumns || [];
+      return criticalColumns.includes(targetColumnId);
+    }
+    return true;
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
@@ -141,8 +162,13 @@ export function KanbanBoard({
       
       // Check if dropping on a column
       if (lead && columns.some(c => c.id === targetColumnId) && lead.columnId !== targetColumnId) {
-        setPendingMove({ leadId: lead.id, targetColumnId });
-        setMoveDialogOpen(true);
+        if (shouldShowMovePopup(targetColumnId)) {
+          setPendingMove({ leadId: lead.id, targetColumnId });
+          setMoveDialogOpen(true);
+        } else {
+          // Direct move without popup
+          moveLead(lead.id, targetColumnId);
+        }
       }
     }
   };
@@ -261,6 +287,7 @@ export function KanbanBoard({
                     isDragging={activeId === lead.id}
                     onClick={() => handleCardClick(lead)}
                     onMove={(targetColumnId) => handleMoveViaButton(lead, targetColumnId)}
+                    currentUserId={currentUser?.id}
                   />
                 ))}
               </KanbanColumn>

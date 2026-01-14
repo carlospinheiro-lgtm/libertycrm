@@ -19,6 +19,7 @@ interface KanbanCardProps {
   isDragging: boolean;
   onClick: () => void;
   onMove: (targetColumnId: string) => void;
+  currentUserId?: string;
 }
 
 const temperatureConfig: Record<string, { label: string; className: string }> = {
@@ -35,7 +36,7 @@ const temperatureClasses: Record<string, string> = {
   undefined: 'lead-undefined',
 };
 
-export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: KanbanCardProps) {
+export function KanbanCard({ lead, columns, isDragging, onClick, onMove, currentUserId }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: lead.id,
   });
@@ -47,7 +48,7 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
   const availableColumns = columns.filter(c => c.id !== lead.columnId);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button, a')) return;
+    if ((e.target as HTMLElement).closest('button, a, [data-no-drag]')) return;
     onClick();
   };
 
@@ -57,13 +58,18 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
   };
 
   const temp = temperatureConfig[lead.temperature || 'undefined'];
+  
+  // Only show agent name when viewing leads from other agents
+  const shouldShowAgent = !currentUserId || lead.agentId !== currentUserId;
 
   return (
     <Card
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       className={cn(
-        'cursor-pointer card-interactive bg-card transition-all',
+        'kanban-card-draggable card-interactive bg-card transition-all touch-none',
         temperatureClasses[lead.temperature || 'undefined'],
         isDragging && 'opacity-50'
       )}
@@ -78,16 +84,8 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
           </div>
         )}
 
-        {/* Header: Drag + Name + Temperature Badge */}
+        {/* Header: Name + Temperature Badge */}
         <div className="flex items-center gap-2">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-0.5 text-muted-foreground hover:text-foreground"
-          >
-            <GripVertical className="h-4 w-4" />
-          </div>
-          
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm truncate">{lead.clientName}</p>
           </div>
@@ -98,10 +96,11 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
         </div>
 
         {/* Contact Buttons + Move */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" data-no-drag>
           <a
             href={`tel:${lead.phone}`}
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
             title="Ligar"
           >
@@ -112,6 +111,7 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
             title="WhatsApp"
           >
@@ -120,6 +120,7 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
           <a
             href={`mailto:${lead.email}`}
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             className="inline-flex items-center justify-center h-8 w-8 rounded-md bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors"
             title="Email"
           >
@@ -130,7 +131,12 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
                 <MoveHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -171,11 +177,13 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove }: Kanba
           </div>
         </div>
 
-        {/* Agent */}
-        <div className="text-xs">
-          <span className="text-muted-foreground">Agente: </span>
-          <span className="font-medium">{lead.agentName}</span>
-        </div>
+        {/* Agent - only show when viewing other agents' leads */}
+        {shouldShowAgent && (
+          <div className="text-xs">
+            <span className="text-muted-foreground">Agente: </span>
+            <span className="font-medium">{lead.agentName}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
