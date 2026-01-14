@@ -7,6 +7,7 @@ export interface KanbanLead {
   phone: string;
   email: string;
   agentName: string;
+  agentId?: string;
   agency: string;
   source: string;
   sourceId: string;

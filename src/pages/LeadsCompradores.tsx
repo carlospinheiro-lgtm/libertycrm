@@ -19,6 +19,7 @@ const sampleLeads: Lead[] = [
     phone: '+351 912 345 678',
     email: 'maria.santos@email.com',
     agentName: 'Pedro Costa',
+    agentId: 'agent-1',
     agency: 'Braga',
     source: 'Portal Imobiliário',
     entryDate: '05/12/2024',

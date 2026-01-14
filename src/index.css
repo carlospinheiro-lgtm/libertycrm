@@ -188,4 +188,13 @@
   .kanban-column-over {
     @apply ring-2 ring-primary ring-offset-2;
   }
+  
+  /* Kanban card drag styles */
+  .kanban-card-draggable {
+    cursor: grab;
+  }
+  
+  .kanban-card-draggable:active {
+    cursor: grabbing;
+  }
 }
