@@ -10,11 +10,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Save, Bell, Mail, Shield, Clock } from 'lucide-react';
+import { LeadSettingsCard } from './LeadSettingsCard';
+import { useAgencies } from '@/hooks/useAgencies';
 
 export function SettingsPanel() {
+  const { data: agencies } = useAgencies();
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string | undefined>();
+  
   // Estado das configurações (em produção, viria da API)
   const [settings, setSettings] = useState({
     // Notificações
@@ -59,6 +71,32 @@ export function SettingsPanel() {
           Guardar Alterações
         </Button>
       </div>
+
+      {/* Configurações de Leads */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Configurações de Leads por Agência</CardTitle>
+          <CardDescription>Selecione uma agência para configurar</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma agência" />
+            </SelectTrigger>
+            <SelectContent>
+              {agencies?.map(agency => (
+                <SelectItem key={agency.id} value={agency.id}>
+                  {agency.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {selectedAgencyId && (
+            <LeadSettingsCard agencyId={selectedAgencyId} />
+          )}
+        </CardContent>
+      </Card>
 
       {/* Notificações */}
       <Card>

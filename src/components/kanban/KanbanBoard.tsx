@@ -13,11 +13,12 @@ import {
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { MoveLeadDialog } from './MoveLeadDialog';
-import { LeadDetailsSheet } from './LeadDetailsSheet';
+import { LeadDetailsDialog } from './LeadDetailsDialog';
+import { LeadsListView } from './LeadsListView';
 import { AddColumnDialog } from './AddColumnDialog';
 import { AddLeadDialog } from './AddLeadDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, LayoutGrid, List } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useKanbanState, KanbanLead, KanbanColumn as KanbanColumnType } from '@/hooks/useKanbanState';
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,6 +77,7 @@ export function KanbanBoard({
   const { data: leadSettings } = useLeadSettings(agencyId);
   const [agentFilter, setAgentFilter] = useState('all');
   const [agencyFilter, setAgencyFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
 
   // Convert leads to include required fields
   const leadsWithTemperature: KanbanLead[] = initialLeads.map(lead => ({
@@ -251,6 +254,15 @@ export function KanbanBoard({
               </SelectContent>
             </Select>
 
+            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as 'cards' | 'list')}>
+              <ToggleGroupItem value="cards" aria-label="Vista Cartões">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="Vista Lista">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+
             <Button variant="outline" size="icon">
               <Download className="h-4 w-4" />
             </Button>
@@ -262,8 +274,9 @@ export function KanbanBoard({
           </div>
         </div>
 
-        {/* Board */}
-        <div className="flex gap-4 overflow-x-auto pb-4 kanban-scroll">
+        {/* Board or List */}
+        {viewMode === 'cards' ? (
+          <div className="flex gap-4 overflow-x-auto pb-4 kanban-scroll">
           {columns.map((column, index) => {
             const columnLeads = filteredLeads.filter(
               (lead) => lead.columnId === column.id
@@ -306,6 +319,14 @@ export function KanbanBoard({
             </Button>
           </div>
         </div>
+        ) : (
+          <LeadsListView
+            leads={filteredLeads}
+            columns={columns}
+            onLeadClick={handleCardClick}
+            currentUserId={currentUser?.id}
+          />
+        )}
       </div>
 
       {/* Drag Overlay */}
@@ -335,8 +356,8 @@ export function KanbanBoard({
         onCancel={handleMoveCancel}
       />
 
-      {/* Details Sheet */}
-      <LeadDetailsSheet
+      {/* Details Dialog - Centered */}
+      <LeadDetailsDialog
         open={detailsSheetOpen}
         onOpenChange={setDetailsSheetOpen}
         lead={selectedLead}
