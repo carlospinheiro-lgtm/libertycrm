@@ -13,6 +13,8 @@ import Processos from "./pages/Processos";
 import Objetivos from "./pages/Objetivos";
 import Origens from "./pages/Origens";
 import Administracao from "./pages/Administracao";
+import Projetos from "./pages/Projetos";
+import ProjetoDetalhe from "./pages/ProjetoDetalhe";
 import ComingSoon from "./pages/ComingSoon";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -39,6 +41,8 @@ const App = () => (
             <Route path="/origens" element={<ProtectedRoute><Origens /></ProtectedRoute>} />
             <Route path="/agenda" element={<ProtectedRoute><ComingSoon title="Agenda" /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Administracao /></ProtectedRoute>} />
+            <Route path="/projetos" element={<ProtectedRoute><Projetos /></ProtectedRoute>} />
+            <Route path="/projetos/:id" element={<ProtectedRoute><ProjetoDetalhe /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
