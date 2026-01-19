@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { useCreateProject } from '@/hooks/useProjects';
-import { useUsersSupabase } from '@/hooks/useUsersSupabase';
+import { useUsersWithDetails } from '@/hooks/useUsersSupabase';
 import { ProjectStatus, projectStatusLabels } from '@/types/projects';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -30,7 +30,7 @@ export function AddProjectDialog({ open, onOpenChange, agencyId }: AddProjectDia
   const [endDate, setEndDate] = useState<Date | undefined>();
 
   const createProject = useCreateProject();
-  const { data: users } = useUsersSupabase();
+  const { data: users } = useUsersWithDetails(agencyId || null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

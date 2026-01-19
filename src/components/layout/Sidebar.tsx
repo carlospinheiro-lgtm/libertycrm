@@ -15,6 +15,7 @@ import {
   Building2,
   X,
   Tag,
+  FolderKanban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +37,7 @@ const menuItems: MenuItem[] = [
   { icon: CalendarDays, label: 'Mapa de Atividades', path: '/atividades', permissions: ['execution.create', 'execution.edit'] },
   { icon: Wallet, label: 'Contas Correntes', path: '/contas', permissions: ['finance.read.agency', 'finance.read.group'] },
   { icon: Target, label: 'Objetivos', path: '/objetivos', permissions: ['objectives.read.own', 'objectives.read.team', 'objectives.read.agency', 'objectives.read.group'] },
+  { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: Calendar, label: 'Agenda', path: '/agenda' },
   { icon: Settings, label: 'Administração', path: '/admin', permissions: ['admin.users.read', 'admin.settings.read'] },
 ];
