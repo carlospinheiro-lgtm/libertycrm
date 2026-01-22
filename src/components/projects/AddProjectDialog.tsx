@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { useCreateProject } from '@/hooks/useProjects';
-import { useUsersWithDetails } from '@/hooks/useUsersSupabase';
+import { useAgencyActiveUsers } from '@/hooks/useAgencyActiveUsers';
 import { ProjectStatus, projectStatusLabels } from '@/types/projects';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -30,7 +30,7 @@ export function AddProjectDialog({ open, onOpenChange, agencyId }: AddProjectDia
   const [endDate, setEndDate] = useState<Date | undefined>();
 
   const createProject = useCreateProject();
-  const { data: users } = useUsersWithDetails(agencyId || null);
+  const { data: users = [], isLoading: isLoadingUsers } = useAgencyActiveUsers(agencyId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +61,10 @@ export function AddProjectDialog({ open, onOpenChange, agencyId }: AddProjectDia
     setStartDate(undefined);
     setEndDate(undefined);
   };
+
+  // Only block submit if users exist but none selected
+  const hasUsers = users.length > 0;
+  const isSubmitDisabled = createProject.isPending || !name || (hasUsers && !pmUserId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,15 +112,27 @@ export function AddProjectDialog({ open, onOpenChange, agencyId }: AddProjectDia
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pm">Gestor de Projeto *</Label>
-              <Select value={pmUserId} onValueChange={setPmUserId} required>
+              <Label htmlFor="pm">Gestor de Projeto {hasUsers && '*'}</Label>
+              <Select 
+                value={pmUserId} 
+                onValueChange={setPmUserId}
+                disabled={isLoadingUsers || users.length === 0}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecionar..." />
+                  <SelectValue placeholder={isLoadingUsers ? "A carregar..." : "Selecionar..."} />
                 </SelectTrigger>
                 <SelectContent>
-                  {users?.map(user => (
-                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                  ))}
+                  {users.length > 0 ? (
+                    users.map(user => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      Sem utilizadores disponíveis
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -181,7 +197,7 @@ export function AddProjectDialog({ open, onOpenChange, agencyId }: AddProjectDia
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createProject.isPending || !name || !pmUserId}>
+            <Button type="submit" disabled={isSubmitDisabled}>
               {createProject.isPending ? 'A criar...' : 'Criar Projeto'}
             </Button>
           </DialogFooter>
