@@ -209,7 +209,7 @@ export interface CreateProjectInput {
   status?: ProjectStatus;
   start_date?: string;
   end_date?: string;
-  pm_user_id: string;
+  pm_user_id?: string; // Opcional - fallback para utilizador atual
 }
 
 export interface UpdateProjectInput {

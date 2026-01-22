@@ -147,10 +147,14 @@ export function useCreateProject() {
 
   return useMutation({
     mutationFn: async (input: CreateProjectInput) => {
+      // Se não houver PM selecionado, usa o utilizador atual
+      const finalPmId = input.pm_user_id || user?.id;
+
       const { data, error } = await supabase
         .from('projects')
         .insert({
           ...input,
+          pm_user_id: finalPmId,
           created_by: user?.id,
         })
         .select()
@@ -158,14 +162,16 @@ export function useCreateProject() {
 
       if (error) throw error;
 
-      // Adicionar o PM como membro com role 'pm'
-      await supabase
-        .from('project_members')
-        .insert({
-          project_id: data.id,
-          user_id: input.pm_user_id,
-          role: 'pm',
-        });
+      // Adicionar o PM como membro com role 'pm' apenas se tivermos um ID
+      if (finalPmId) {
+        await supabase
+          .from('project_members')
+          .insert({
+            project_id: data.id,
+            user_id: finalPmId,
+            role: 'pm',
+          });
+      }
 
       return data;
     },

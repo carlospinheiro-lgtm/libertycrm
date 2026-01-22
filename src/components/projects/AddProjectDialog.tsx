@@ -14,7 +14,15 @@ import { ProjectStatus, projectStatusLabels } from '@/types/projects';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
+// Função auxiliar para formatar data local (evita desvio de fuso horário)
+const formatDateLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 interface AddProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,16 +43,24 @@ export function AddProjectDialog({ open, onOpenChange, agencyId }: AddProjectDia
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !pmUserId || !agencyId) return;
+    if (!name.trim()) {
+      toast.error('O nome do projeto é obrigatório');
+      return;
+    }
+    
+    if (!agencyId) {
+      toast.error('Erro: agência não identificada');
+      return;
+    }
 
     createProject.mutate({
       agency_id: agencyId,
-      name,
+      name: name.trim(),
       description: description || undefined,
       status,
-      pm_user_id: pmUserId,
-      start_date: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
-      end_date: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
+      pm_user_id: pmUserId || undefined, // Agora é opcional
+      start_date: startDate ? formatDateLocal(startDate) : undefined,
+      end_date: endDate ? formatDateLocal(endDate) : undefined,
     }, {
       onSuccess: () => {
         onOpenChange(false);
@@ -62,9 +78,9 @@ export function AddProjectDialog({ open, onOpenChange, agencyId }: AddProjectDia
     setEndDate(undefined);
   };
 
-  // Only block submit if users exist but none selected
+  // Bloquear apenas se não houver nome ou se existem utilizadores e nenhum selecionado
   const hasUsers = users.length > 0;
-  const isSubmitDisabled = createProject.isPending || !name || (hasUsers && !pmUserId);
+  const isSubmitDisabled = createProject.isPending || !name.trim() || (hasUsers && !pmUserId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
