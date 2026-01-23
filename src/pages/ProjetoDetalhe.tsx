@@ -12,15 +12,18 @@ import { useCurrentUserProjectRole } from '@/hooks/useProjectMembers';
 import { ProjectTasksTab } from '@/components/projects/ProjectTasksTab';
 import { ProjectBudgetTab } from '@/components/projects/ProjectBudgetTab';
 import { ProjectReportTab } from '@/components/projects/ProjectReportTab';
+import { ProjectMembersDialog } from '@/components/projects/ProjectMembersDialog';
+import { AddProjectMemberDialog } from '@/components/projects/AddProjectMemberDialog';
 import { projectStatusLabels, projectStatusColors, ProjectStatus } from '@/types/projects';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
-
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tarefas');
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false);
+  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   
   const { data: project, isLoading } = useProject(id);
   const { data: userRole } = useCurrentUserProjectRole(id);
@@ -115,7 +118,7 @@ export default function ProjetoDetalhe() {
             
             {userRole === 'pm' && (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setMembersDialogOpen(true)}>
                   <Users className="h-4 w-4 mr-2" />
                   Membros
                 </Button>
@@ -159,6 +162,22 @@ export default function ProjetoDetalhe() {
             />
           </TabsContent>
         </Tabs>
+
+        {/* Dialogs */}
+        <ProjectMembersDialog
+          open={membersDialogOpen}
+          onOpenChange={setMembersDialogOpen}
+          projectId={project.id}
+          onAddMember={() => {
+            setMembersDialogOpen(false);
+            setAddMemberDialogOpen(true);
+          }}
+        />
+        <AddProjectMemberDialog
+          open={addMemberDialogOpen}
+          onOpenChange={setAddMemberDialogOpen}
+          projectId={project.id}
+        />
       </div>
     </DashboardLayout>
   );
