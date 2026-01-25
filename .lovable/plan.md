@@ -1,135 +1,151 @@
 
+## Diagnóstico (o que se passa)
 
-# Plano de Correção: Botão "Criar Projeto"
+O problema de “não consigo criar projetos / clico em criar e não acontece nada” está a acontecer porque a política de segurança do backend (RLS) na tabela **`projects`** está a chamar a função **`has_agency_access`** com os parâmetros trocados.
 
-## Contexto do Problema
+- A função está definida como:  
+  `has_agency_access(_user_id uuid, _agency_id uuid)`
+- Mas a política (criada numa migração) está a chamar assim:  
+  `has_agency_access(agency_id, auth.uid())`
 
-O botão "Criar Projeto" não funciona porque existe uma inconsistência na validação:
-- **Validação do botão**: Permite submeter se não há utilizadores na agência
-- **Validação do `handleSubmit`**: Bloqueia silenciosamente se não há gestor selecionado
+Isto faz com que a verificação de acesso falhe sempre e o backend bloqueia o INSERT com o erro típico:  
+**“new row violates row-level security policy for table "projects"”**
 
-A agência actual ("Liberty Barcelos") não tem utilizadores associados, expondo este bug.
+Além disso, a função `has_agency_access` deve também considerar acesso via **roles** (`user_roles`) e não apenas por vínculo em `user_agencies`, para evitar que quem tem role na agência fique bloqueado.
 
-## Solução Proposta
+---
 
-Alinhar a lógica de validação: se não há gestor de projeto selecionado (e existem utilizadores), bloquear. Se não existem utilizadores, permitir criar o projeto sem PM (ou exigir seleccionar outra agência).
+## Objectivo
 
-## Alterações a Efectuar
+1) Corrigir a ordem dos parâmetros nas políticas RLS que usam `has_agency_access`.  
+2) Reforçar `has_agency_access` para também validar acesso via `user_roles`.  
+3) Garantir que a criação de projetos volta a funcionar imediatamente (sem “cliques que não fazem nada”).
 
-### 1. Corrigir `src/components/projects/AddProjectDialog.tsx`
+---
 
-**Opção A - Permitir projetos sem PM (recomendado para MVP)**
+## Implementação (backend)
 
-```typescript
-// Linha 38 - Remover validação obrigatória de pmUserId
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (!name || !agencyId) return;
-  
-  // pmUserId pode ser vazio se não há utilizadores
-  createProject.mutate({
-    agency_id: agencyId,
-    name,
-    description: description || undefined,
-    status,
-    pm_user_id: pmUserId || undefined, // Permitir undefined
-    start_date: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
-    end_date: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
-  }, {
-    onSuccess: () => {
-      onOpenChange(false);
-      resetForm();
-    },
-  });
-};
+### A) Corrigir a função `has_agency_access`
+
+Actualizar a função para devolver `true` se:
+- for admin global, OU
+- tiver vínculo activo em `user_agencies`, OU
+- tiver qualquer role em `user_roles` para essa agência
+
+SQL (a aplicar numa alteração ao backend):
+
+```sql
+CREATE OR REPLACE FUNCTION public.has_agency_access(_user_id uuid, _agency_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT
+    public.is_global_admin(_user_id)
+    OR EXISTS (
+      SELECT 1
+      FROM public.user_agencies
+      WHERE user_id = _user_id
+        AND agency_id = _agency_id
+        AND is_active = true
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM public.user_roles
+      WHERE user_id = _user_id
+        AND agency_id = _agency_id
+    );
+$$;
 ```
 
-**Opção B - Bloquear sempre que não há PM**
+> Nota: Não vamos guardar roles em `profiles` nem em “client-side”; fica tudo na tabela `user_roles` (seguro).
 
-```typescript
-// Linha 67 - Alterar validação do botão
-const isSubmitDisabled = createProject.isPending || !name || !pmUserId;
+---
 
-// Adicionar mensagem de aviso na UI quando não há utilizadores
+### B) Corrigir as políticas da tabela `projects`
+
+Precisamos de garantir que passam a usar a assinatura certa:
+
+- `USING ( has_agency_access(auth.uid(), agency_id) )`
+- `WITH CHECK ( has_agency_access(auth.uid(), agency_id) )`
+
+SQL:
+
+```sql
+DROP POLICY IF EXISTS "Users can view projects in their agency" ON public.projects;
+CREATE POLICY "Users can view projects in their agency"
+ON public.projects
+FOR SELECT
+TO authenticated
+USING ( public.has_agency_access(auth.uid(), agency_id) );
+
+DROP POLICY IF EXISTS "Users can create projects in their agency" ON public.projects;
+CREATE POLICY "Users can create projects in their agency"
+ON public.projects
+FOR INSERT
+TO authenticated
+WITH CHECK ( public.has_agency_access(auth.uid(), agency_id) );
 ```
 
-### 2. Corrigir `src/hooks/useProjects.ts`
+---
 
-Actualizar a mutação para aceitar `pm_user_id` opcional:
+### C) Corrigir a política de leitura da tabela `project_members` (importante para o ecrã de membros)
 
-```typescript
-// Linha 149-169 - Ajustar para PM opcional
-mutationFn: async (input: CreateProjectInput) => {
-  const { data, error } = await supabase
-    .from('projects')
-    .insert({
-      ...input,
-      pm_user_id: input.pm_user_id || user?.id, // Fallback para o utilizador actual
-      created_by: user?.id,
-    })
-    .select()
-    .single();
+Há uma política em `project_members` que também tem a chamada com ordem errada:
 
-  if (error) throw error;
+Onde está hoje (errado):
+- `has_agency_access(p.agency_id, auth.uid())`
 
-  // Só adicionar membro PM se tiver pm_user_id
-  if (input.pm_user_id) {
-    await supabase
-      .from('project_members')
-      .insert({
-        project_id: data.id,
-        user_id: input.pm_user_id,
-        role: 'pm',
-      });
-  }
+Deve ficar (certo):
+- `has_agency_access(auth.uid(), p.agency_id)`
 
-  return data;
-},
+SQL:
+
+```sql
+DROP POLICY IF EXISTS "Project members can view members" ON public.project_members;
+CREATE POLICY "Project members can view members"
+ON public.project_members
+FOR SELECT
+TO authenticated
+USING (
+  public.is_project_member(auth.uid(), project_id)
+  OR EXISTS (
+    SELECT 1
+    FROM public.projects p
+    WHERE p.id = project_id
+      AND public.has_agency_access(auth.uid(), p.agency_id)
+  )
+);
 ```
 
-### 3. Verificar schema da base de dados
+---
 
-A coluna `pm_user_id` está definida como `NOT NULL`. Precisamos decidir:
-- **Opção 1**: Manter NOT NULL e usar o utilizador actual como fallback
-- **Opção 2**: Alterar para permitir NULL (requer migração)
+## Verificação (passos de teste)
 
-**Recomendação**: Usar Opção 1 - fazer fallback para o utilizador logado se não houver PM selecionado.
+1) Fazer login normalmente.
+2) Ir a **/projetos**.
+3) Clicar **Adicionar Projeto** → preencher nome → **Criar**.
+4) Confirmar:
+   - o projeto aparece na lista
+   - não surge erro de RLS
+5) Ir ao detalhe do projeto → abrir **Membros** e validar que:
+   - a lista carrega
+   - o PM consegue adicionar/remover/alterar papéis conforme as regras
 
-### 4. Melhorar feedback ao utilizador
+---
 
-Adicionar toast de erro quando a validação falha (em vez de retorno silencioso):
+## Riscos / Notas
 
-```typescript
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (!name) {
-    toast.error('O nome do projeto é obrigatório');
-    return;
-  }
-  
-  if (!agencyId) {
-    toast.error('Erro: agência não identificada');
-    return;
-  }
-  
-  // Continuar com a criação...
-};
-```
+- Esta correção é “cirúrgica”: não muda tabelas nem dados; apenas ajusta função e políticas.
+- Se existirem outras políticas noutros módulos com `has_agency_access(agency_id, auth.uid())`, devemos procurar e corrigir da mesma forma (na prática, é uma pesquisa simples e repetimos o padrão).
 
-## Ficheiros a Modificar
+---
 
-| Ficheiro | Alteração |
-|----------|-----------|
-| `src/components/projects/AddProjectDialog.tsx` | Corrigir validação e adicionar feedback |
-| `src/hooks/useProjects.ts` | Ajustar mutação para PM opcional com fallback |
-| `src/types/projects.ts` | Marcar `pm_user_id` como opcional no `CreateProjectInput` |
+## Resultado esperado
 
-## Resultado Esperado
-
-Após a correção:
-- Se há utilizadores disponíveis e nenhum selecionado → Botão desativado
-- Se não há utilizadores → Projeto criado com o utilizador actual como PM
-- Mensagens de erro claras quando validação falha
-
+Depois destas alterações:
+- Criar projetos em **/projetos** deixa de falhar silenciosamente.
+- Utilizadores com **role na agência** passam a conseguir criar/ver projetos mesmo sem registo em `user_agencies`.
+- A gestão de membros funciona de forma consistente com as permissões do projeto e da agência.
