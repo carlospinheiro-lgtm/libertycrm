@@ -1,151 +1,131 @@
 
-## Diagnóstico (o que se passa)
 
-O problema de “não consigo criar projetos / clico em criar e não acontece nada” está a acontecer porque a política de segurança do backend (RLS) na tabela **`projects`** está a chamar a função **`has_agency_access`** com os parâmetros trocados.
+## Objetivo
 
-- A função está definida como:  
-  `has_agency_access(_user_id uuid, _agency_id uuid)`
-- Mas a política (criada numa migração) está a chamar assim:  
-  `has_agency_access(agency_id, auth.uid())`
+Implementar três funcionalidades na área de Projetos:
 
-Isto faz com que a verificação de acesso falhe sempre e o backend bloqueia o INSERT com o erro típico:  
-**“new row violates row-level security policy for table "projects"”**
-
-Além disso, a função `has_agency_access` deve também considerar acesso via **roles** (`user_roles`) e não apenas por vínculo em `user_agencies`, para evitar que quem tem role na agência fique bloqueado.
+1. **Correção de bug**: O EditTaskDialog tem o mesmo erro que o AddTaskDialog (SelectItem com value="")
+2. **Gestão de membros**: Garantir acesso fácil à funcionalidade de adicionar membros
+3. **Edição de projetos**: Permitir editar o nome, descrição e outras propriedades dos projetos
+4. **Dashboard de estatísticas**: Mostrar cartões resumo no topo da página de projetos
 
 ---
 
-## Objectivo
+## Implementação
 
-1) Corrigir a ordem dos parâmetros nas políticas RLS que usam `has_agency_access`.  
-2) Reforçar `has_agency_access` para também validar acesso via `user_roles`.  
-3) Garantir que a criação de projetos volta a funcionar imediatamente (sem “cliques que não fazem nada”).
+### A) Corrigir bug no EditTaskDialog
 
----
+O ficheiro `src/components/projects/EditTaskDialog.tsx` tem o mesmo problema que já corrigimos no AddTaskDialog: usa `value=""` no SelectItem, o que causa o erro do Radix UI.
 
-## Implementação (backend)
-
-### A) Corrigir a função `has_agency_access`
-
-Actualizar a função para devolver `true` se:
-- for admin global, OU
-- tiver vínculo activo em `user_agencies`, OU
-- tiver qualquer role em `user_roles` para essa agência
-
-SQL (a aplicar numa alteração ao backend):
-
-```sql
-CREATE OR REPLACE FUNCTION public.has_agency_access(_user_id uuid, _agency_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT
-    public.is_global_admin(_user_id)
-    OR EXISTS (
-      SELECT 1
-      FROM public.user_agencies
-      WHERE user_id = _user_id
-        AND agency_id = _agency_id
-        AND is_active = true
-    )
-    OR EXISTS (
-      SELECT 1
-      FROM public.user_roles
-      WHERE user_id = _user_id
-        AND agency_id = _agency_id
-    );
-$$;
-```
-
-> Nota: Não vamos guardar roles em `profiles` nem em “client-side”; fica tudo na tabela `user_roles` (seguro).
+**Alteração (linha 135-141)**:
+- Mudar o valor do Select para usar `_none` internamente
+- Converter `_none` de volta para string vazia no onValueChange
+- Inicializar o valor corretamente no useEffect
 
 ---
 
-### B) Corrigir as políticas da tabela `projects`
+### B) Adicionar botão de "Membros" acessível para o PM
 
-Precisamos de garantir que passam a usar a assinatura certa:
+A funcionalidade de adicionar membros já existe e está implementada, mas só aparece quando o utilizador é PM e clica em "Membros". Verificar que o botão está visível para o PM na página de detalhe do projeto.
 
-- `USING ( has_agency_access(auth.uid(), agency_id) )`
-- `WITH CHECK ( has_agency_access(auth.uid(), agency_id) )`
+- **Nota**: Esta funcionalidade já está operacional no `ProjetoDetalhe.tsx` (linha 121-124)
+- O PM pode clicar em "Membros" e depois "Adicionar" no diálogo
 
-SQL:
+---
 
-```sql
-DROP POLICY IF EXISTS "Users can view projects in their agency" ON public.projects;
-CREATE POLICY "Users can view projects in their agency"
-ON public.projects
-FOR SELECT
-TO authenticated
-USING ( public.has_agency_access(auth.uid(), agency_id) );
+### C) Criar funcionalidade para editar projeto (cabeçalho dos cartões)
 
-DROP POLICY IF EXISTS "Users can create projects in their agency" ON public.projects;
-CREATE POLICY "Users can create projects in their agency"
-ON public.projects
-FOR INSERT
-TO authenticated
-WITH CHECK ( public.has_agency_access(auth.uid(), agency_id) );
+Criar um novo componente `EditProjectDialog.tsx` que permita ao PM editar:
+- Nome do projeto
+- Descrição
+- Status
+- Gestor de Projeto
+- Datas de início/fim
+
+**Novos ficheiros**:
+- `src/components/projects/EditProjectDialog.tsx`
+
+**Alterações**:
+- `src/pages/ProjetoDetalhe.tsx`: Adicionar botão de edição e integrar o diálogo
+- `src/pages/Projetos.tsx`: Adicionar opção de edição rápida nos cartões
+
+---
+
+### D) Dashboard de estatísticas no topo de /projetos
+
+Criar um novo hook e componentes para mostrar resumos agregados:
+
+**Novo hook** `useProjectsAggregatedStats`:
+- Total de orçamento planeado dos projetos ativos (status: planning, active, at_risk)
+- Total de custos reais dos projetos concluídos (status: done)
+- Total de receitas reais dos projetos concluídos
+- Margem/Resultado dos projetos concluídos
+- Número de projetos por status
+
+**Novo componente** `ProjectsStatsCards.tsx`:
+- Cartão "Orçamento em Curso" - soma dos custos planeados dos projetos ativos
+- Cartão "Custos Fechados" - soma dos custos reais dos projetos concluídos
+- Cartão "Receitas Fechadas" - soma das receitas reais dos projetos concluídos  
+- Cartão "Resultado Fechados" - margem (receitas - custos) dos concluídos
+
+---
+
+## Estrutura de Ficheiros
+
+```text
+src/
+├── components/projects/
+│   ├── EditProjectDialog.tsx      [NOVO]
+│   ├── ProjectsStatsCards.tsx     [NOVO]
+│   └── EditTaskDialog.tsx         [CORRIGIR]
+├── hooks/
+│   └── useProjects.ts             [ALTERAR - adicionar hook agregado]
+└── pages/
+    ├── Projetos.tsx               [ALTERAR - adicionar stats + edição]
+    └── ProjetoDetalhe.tsx         [ALTERAR - adicionar edição]
 ```
 
 ---
 
-### C) Corrigir a política de leitura da tabela `project_members` (importante para o ecrã de membros)
+## Detalhes Técnicos
 
-Há uma política em `project_members` que também tem a chamada com ordem errada:
+### Hook useProjectsAggregatedStats
 
-Onde está hoje (errado):
-- `has_agency_access(p.agency_id, auth.uid())`
-
-Deve ficar (certo):
-- `has_agency_access(auth.uid(), p.agency_id)`
-
-SQL:
-
-```sql
-DROP POLICY IF EXISTS "Project members can view members" ON public.project_members;
-CREATE POLICY "Project members can view members"
-ON public.project_members
-FOR SELECT
-TO authenticated
-USING (
-  public.is_project_member(auth.uid(), project_id)
-  OR EXISTS (
-    SELECT 1
-    FROM public.projects p
-    WHERE p.id = project_id
-      AND public.has_agency_access(auth.uid(), p.agency_id)
-  )
-);
+```typescript
+// Query que soma valores financeiros por status de projeto
+export function useProjectsAggregatedStats(agencyId?: string) {
+  return useQuery({
+    queryKey: ['projects-aggregated-stats', agencyId],
+    queryFn: async () => {
+      // 1. Buscar todos os projetos da agência
+      // 2. Para cada grupo (ativos vs concluídos):
+      //    - Somar planned_cost de itens financeiros (projetos ativos)
+      //    - Somar actual_cost e actual_revenue (projetos concluídos)
+      // 3. Retornar objeto com totais
+    },
+    enabled: !!agencyId,
+  });
+}
 ```
 
----
+### Cartões de Estatísticas
 
-## Verificação (passos de teste)
+Usar o componente `StatCard` já existente para manter consistência visual com o dashboard principal.
 
-1) Fazer login normalmente.
-2) Ir a **/projetos**.
-3) Clicar **Adicionar Projeto** → preencher nome → **Criar**.
-4) Confirmar:
-   - o projeto aparece na lista
-   - não surge erro de RLS
-5) Ir ao detalhe do projeto → abrir **Membros** e validar que:
-   - a lista carrega
-   - o PM consegue adicionar/remover/alterar papéis conforme as regras
+Ícones sugeridos:
+- Orçamento em Curso: `Wallet` ou `TrendingUp`
+- Custos Fechados: `ArrowDownCircle`
+- Receitas Fechadas: `ArrowUpCircle`
+- Resultado: `Calculator` ou `BarChart3`
 
 ---
 
-## Riscos / Notas
+## Fluxo de Utilização
 
-- Esta correção é “cirúrgica”: não muda tabelas nem dados; apenas ajusta função e políticas.
-- Se existirem outras políticas noutros módulos com `has_agency_access(agency_id, auth.uid())`, devemos procurar e corrigir da mesma forma (na prática, é uma pesquisa simples e repetimos o padrão).
+1. O utilizador acede a `/projetos`
+2. No topo, vê 4 cartões com estatísticas agregadas
+3. Nos cartões de projeto, pode clicar no ícone de edição (lápis) para editar rapidamente
+4. Na página de detalhe, o PM pode:
+   - Clicar em "Configurações" para editar o projeto
+   - Clicar em "Membros" para gerir a equipa
 
----
-
-## Resultado esperado
-
-Depois destas alterações:
-- Criar projetos em **/projetos** deixa de falhar silenciosamente.
-- Utilizadores com **role na agência** passam a conseguir criar/ver projetos mesmo sem registo em `user_agencies`.
-- A gestão de membros funciona de forma consistente com as permissões do projeto e da agência.
