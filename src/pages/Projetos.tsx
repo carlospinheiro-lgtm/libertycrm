@@ -13,7 +13,10 @@ import { useProjects, useProjectStats, useArchiveProject } from '@/hooks/useProj
 import { useAgencies } from '@/hooks/useAgencies';
 import { useAuth } from '@/contexts/AuthContext';
 import { AddProjectDialog } from '@/components/projects/AddProjectDialog';
+import { EditProjectDialog } from '@/components/projects/EditProjectDialog';
+import { ProjectsStatsCards } from '@/components/projects/ProjectsStatsCards';
 import { 
+  Project,
   ProjectStatus, 
   projectStatusLabels, 
   projectStatusColors 
@@ -23,7 +26,12 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 
-function ProjectCard({ project }: { project: { id: string; name: string; status: string; pm_user?: { name: string } | null; end_date?: string | null; agency_id: string } }) {
+interface ProjectCardProps {
+  project: Project;
+  onEdit: (project: Project) => void;
+}
+
+function ProjectCard({ project, onEdit }: ProjectCardProps) {
   const { data: stats, isLoading: statsLoading } = useProjectStats(project.id);
   const archiveProject = useArchiveProject();
   const navigate = useNavigate();
@@ -31,6 +39,11 @@ function ProjectCard({ project }: { project: { id: string; name: string; status:
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
     archiveProject.mutate(project.id);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(project);
   };
 
   const formatCurrency = (value: number) => {
@@ -62,6 +75,9 @@ function ProjectCard({ project }: { project: { id: string; name: string; status:
             </div>
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEdit}>
+              <Pencil className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); navigate(`/projetos/${project.id}`); }}>
               <ExternalLink className="h-4 w-4" />
             </Button>
@@ -154,6 +170,8 @@ export default function Projetos() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
   const { data: agencies } = useAgencies();
   const { user } = useAuth();
@@ -169,6 +187,11 @@ export default function Projetos() {
   const filteredProjects = projects?.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase())
   ) || [];
+
+  const handleEditProject = (project: Project) => {
+    setSelectedProject(project);
+    setEditDialogOpen(true);
+  };
 
   return (
     <DashboardLayout>
@@ -191,6 +214,9 @@ export default function Projetos() {
             Novo Projeto
           </Button>
         </div>
+
+        {/* Stats Cards */}
+        <ProjectsStatsCards agencyId={selectedAgencyId} />
 
         {/* Filtros */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -255,7 +281,11 @@ export default function Projetos() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredProjects.map(project => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard 
+                key={project.id} 
+                project={project as Project}
+                onEdit={handleEditProject}
+              />
             ))}
           </div>
         )}
@@ -265,6 +295,12 @@ export default function Projetos() {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         agencyId={selectedAgencyId}
+      />
+
+      <EditProjectDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        project={selectedProject}
       />
     </DashboardLayout>
   );
