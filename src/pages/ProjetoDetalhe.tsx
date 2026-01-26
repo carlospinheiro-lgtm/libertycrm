@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Settings, Users, Clock } from 'lucide-react';
+import { ArrowLeft, Settings, Users, Clock, Pencil } from 'lucide-react';
 import { useProject } from '@/hooks/useProjects';
 import { useCurrentUserProjectRole } from '@/hooks/useProjectMembers';
 import { ProjectTasksTab } from '@/components/projects/ProjectTasksTab';
@@ -14,16 +14,19 @@ import { ProjectBudgetTab } from '@/components/projects/ProjectBudgetTab';
 import { ProjectReportTab } from '@/components/projects/ProjectReportTab';
 import { ProjectMembersDialog } from '@/components/projects/ProjectMembersDialog';
 import { AddProjectMemberDialog } from '@/components/projects/AddProjectMemberDialog';
-import { projectStatusLabels, projectStatusColors, ProjectStatus } from '@/types/projects';
+import { EditProjectDialog } from '@/components/projects/EditProjectDialog';
+import { projectStatusLabels, projectStatusColors, ProjectStatus, Project } from '@/types/projects';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
+
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tarefas');
   const [membersDialogOpen, setMembersDialogOpen] = useState(false);
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const { data: project, isLoading } = useProject(id);
   const { data: userRole } = useCurrentUserProjectRole(id);
@@ -93,6 +96,16 @@ export default function ProjetoDetalhe() {
                   <Badge className={cn('text-xs', projectStatusColors[status])}>
                     {projectStatusLabels[status]}
                   </Badge>
+                  {userRole === 'pm' && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7"
+                      onClick={() => setEditDialogOpen(true)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 {project.description && (
                   <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
@@ -122,7 +135,7 @@ export default function ProjetoDetalhe() {
                   <Users className="h-4 w-4 mr-2" />
                   Membros
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
                   <Settings className="h-4 w-4 mr-2" />
                   Configurações
                 </Button>
@@ -177,6 +190,11 @@ export default function ProjetoDetalhe() {
           open={addMemberDialogOpen}
           onOpenChange={setAddMemberDialogOpen}
           projectId={project.id}
+        />
+        <EditProjectDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          project={project as Project}
         />
       </div>
     </DashboardLayout>

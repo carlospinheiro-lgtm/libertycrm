@@ -130,14 +130,17 @@ export function EditTaskDialog({ open, onOpenChange, task, projectId }: EditTask
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="space-y-2">
               <Label>Responsável</Label>
-              <Select value={assigneeId} onValueChange={setAssigneeId}>
+              <Select 
+                value={assigneeId || "_none"} 
+                onValueChange={(v) => setAssigneeId(v === "_none" ? "" : v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem responsável</SelectItem>
+                  <SelectItem value="_none">Sem responsável</SelectItem>
                   {members?.map(member => (
                     <SelectItem key={member.user_id} value={member.user_id}>
                       {member.user?.name}
