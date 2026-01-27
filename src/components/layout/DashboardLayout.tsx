@@ -15,20 +15,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Desktop: expanded; Tablet: collapsed; Mobile: hidden
+  // Desktop: expanded; Mobile/Tablet: collapsed (icons only)
   useEffect(() => {
     if (isDesktop) {
-      // Desktop (> 1024px): sidebar always expanded
       setSidebarCollapsed(false);
-    } else if (isMobile) {
-      // Mobile (< 768px): sidebar hidden by default
-      setSidebarOpen(false);
-      setSidebarCollapsed(true);
     } else {
-      // Tablet (768px - 1024px): sidebar collapsed (icons only)
       setSidebarCollapsed(true);
     }
-  }, [isMobile, isTablet, isDesktop]);
+  }, [isDesktop]);
 
   const handleToggleSidebar = () => {
     if (isMobile) {
@@ -46,36 +40,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Overlay for mobile - closes sidebar when clicking outside */}
-      {isMobile && sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity"
-          onClick={handleCloseSidebar}
-          aria-hidden="true"
-        />
-      )}
-
       {/* Sidebar */}
       <Sidebar
-        collapsed={isMobile ? false : sidebarCollapsed}
+        collapsed={sidebarCollapsed}
         onToggle={handleToggleSidebar}
-        isOpen={isMobile ? sidebarOpen : true}
-        isMobile={isMobile}
-        onClose={handleCloseSidebar}
       />
 
       {/* TopBar */}
       <TopBar 
-        sidebarCollapsed={isMobile ? true : sidebarCollapsed} 
-        onMenuClick={handleToggleSidebar}
-        showMenuButton={isMobile}
+        sidebarCollapsed={sidebarCollapsed} 
       />
 
       {/* Main Content */}
       <main
         className={cn(
           'pt-16 min-h-screen transition-all duration-300',
-          isMobile ? 'pl-0' : (sidebarCollapsed ? 'pl-16' : 'pl-64')
+          sidebarCollapsed ? 'pl-16' : 'pl-64'
         )}
       >
         <div className="p-4 md:p-6">{children}</div>
