@@ -1,131 +1,140 @@
 
-
 ## Objetivo
 
-Implementar três funcionalidades na área de Projetos:
+Corrigir dois problemas de responsividade identificados na imagem:
 
-1. **Correção de bug**: O EditTaskDialog tem o mesmo erro que o AddTaskDialog (SelectItem com value="")
-2. **Gestão de membros**: Garantir acesso fácil à funcionalidade de adicionar membros
-3. **Edição de projetos**: Permitir editar o nome, descrição e outras propriedades dos projetos
-4. **Dashboard de estatísticas**: Mostrar cartões resumo no topo da página de projetos
+1. **Números cortados nos cartões financeiros** - Os valores monetários nos cartões de resumo P&L estão truncados em ecrãs mais pequenos
+2. **Sidebar não minimiza em tablet** - A barra lateral deveria colapsar automaticamente em tablets (768px-1024px) mas mantém-se aberta
+
+---
+
+## Análise dos Problemas
+
+### Problema 1: Cartões P&L com números cortados
+
+Nos cartões de "Receitas", "Custos" e "Resultado" do `ProjectBudgetTab.tsx`, o layout atual:
+- Usa texto `text-2xl` para valores que podem ser longos (ex: "-110,00 €")
+- Não ajusta o tamanho do texto em breakpoints menores
+- Os cartões ficam demasiado apertados em tablets/ecrãs médios
+
+### Problema 2: Sidebar em tablets
+
+O hook `useIsMobile` apenas deteta ecrãs < 768px:
+- Tablets (768px - 1024px) são tratados como "desktop"
+- A sidebar mantém-se expandida (w-64) ocupando espaço precioso
+- Deveria colapsar automaticamente em tablets e expandir apenas em desktop (> 1024px)
 
 ---
 
 ## Implementação
 
-### A) Corrigir bug no EditTaskDialog
+### A) Criar hook `useIsTablet` ou modificar `useIsMobile`
 
-O ficheiro `src/components/projects/EditTaskDialog.tsx` tem o mesmo problema que já corrigimos no AddTaskDialog: usa `value=""` no SelectItem, o que causa o erro do Radix UI.
-
-**Alteração (linha 135-141)**:
-- Mudar o valor do Select para usar `_none` internamente
-- Converter `_none` de volta para string vazia no onValueChange
-- Inicializar o valor corretamente no useEffect
-
----
-
-### B) Adicionar botão de "Membros" acessível para o PM
-
-A funcionalidade de adicionar membros já existe e está implementada, mas só aparece quando o utilizador é PM e clica em "Membros". Verificar que o botão está visível para o PM na página de detalhe do projeto.
-
-- **Nota**: Esta funcionalidade já está operacional no `ProjetoDetalhe.tsx` (linha 121-124)
-- O PM pode clicar em "Membros" e depois "Adicionar" no diálogo
-
----
-
-### C) Criar funcionalidade para editar projeto (cabeçalho dos cartões)
-
-Criar um novo componente `EditProjectDialog.tsx` que permita ao PM editar:
-- Nome do projeto
-- Descrição
-- Status
-- Gestor de Projeto
-- Datas de início/fim
-
-**Novos ficheiros**:
-- `src/components/projects/EditProjectDialog.tsx`
-
-**Alterações**:
-- `src/pages/ProjetoDetalhe.tsx`: Adicionar botão de edição e integrar o diálogo
-- `src/pages/Projetos.tsx`: Adicionar opção de edição rápida nos cartões
-
----
-
-### D) Dashboard de estatísticas no topo de /projetos
-
-Criar um novo hook e componentes para mostrar resumos agregados:
-
-**Novo hook** `useProjectsAggregatedStats`:
-- Total de orçamento planeado dos projetos ativos (status: planning, active, at_risk)
-- Total de custos reais dos projetos concluídos (status: done)
-- Total de receitas reais dos projetos concluídos
-- Margem/Resultado dos projetos concluídos
-- Número de projetos por status
-
-**Novo componente** `ProjectsStatsCards.tsx`:
-- Cartão "Orçamento em Curso" - soma dos custos planeados dos projetos ativos
-- Cartão "Custos Fechados" - soma dos custos reais dos projetos concluídos
-- Cartão "Receitas Fechadas" - soma das receitas reais dos projetos concluídos  
-- Cartão "Resultado Fechados" - margem (receitas - custos) dos concluídos
-
----
-
-## Estrutura de Ficheiros
-
-```text
-src/
-├── components/projects/
-│   ├── EditProjectDialog.tsx      [NOVO]
-│   ├── ProjectsStatsCards.tsx     [NOVO]
-│   └── EditTaskDialog.tsx         [CORRIGIR]
-├── hooks/
-│   └── useProjects.ts             [ALTERAR - adicionar hook agregado]
-└── pages/
-    ├── Projetos.tsx               [ALTERAR - adicionar stats + edição]
-    └── ProjetoDetalhe.tsx         [ALTERAR - adicionar edição]
-```
-
----
-
-## Detalhes Técnicos
-
-### Hook useProjectsAggregatedStats
+Adicionar deteção de tablet para permitir comportamento diferenciado:
 
 ```typescript
-// Query que soma valores financeiros por status de projeto
-export function useProjectsAggregatedStats(agencyId?: string) {
-  return useQuery({
-    queryKey: ['projects-aggregated-stats', agencyId],
-    queryFn: async () => {
-      // 1. Buscar todos os projetos da agência
-      // 2. Para cada grupo (ativos vs concluídos):
-      //    - Somar planned_cost de itens financeiros (projetos ativos)
-      //    - Somar actual_cost e actual_revenue (projetos concluídos)
-      // 3. Retornar objeto com totais
-    },
-    enabled: !!agencyId,
-  });
+// src/hooks/use-mobile.tsx
+const MOBILE_BREAKPOINT = 768;
+const TABLET_BREAKPOINT = 1024;
+
+export function useIsMobile() { ... } // mantém < 768
+
+export function useIsTablet() {
+  // retorna true se 768 <= width < 1024
+}
+
+export function useIsDesktop() {
+  // retorna true se width >= 1024
 }
 ```
 
-### Cartões de Estatísticas
+---
 
-Usar o componente `StatCard` já existente para manter consistência visual com o dashboard principal.
+### B) Atualizar `DashboardLayout.tsx`
 
-Ícones sugeridos:
-- Orçamento em Curso: `Wallet` ou `TrendingUp`
-- Custos Fechados: `ArrowDownCircle`
-- Receitas Fechadas: `ArrowUpCircle`
-- Resultado: `Calculator` ou `BarChart3`
+Modificar a lógica para colapsar sidebar automaticamente em tablets:
+
+```typescript
+const isMobile = useIsMobile();
+const isTablet = useIsTablet(); // NOVO
+
+useEffect(() => {
+  if (isMobile) {
+    setSidebarOpen(false);
+    setSidebarCollapsed(true);
+  } else if (isTablet) {
+    // Em tablet: sidebar visível mas colapsada
+    setSidebarCollapsed(true);
+  } else {
+    // Em desktop: sidebar expandida
+    setSidebarCollapsed(false);
+  }
+}, [isMobile, isTablet]);
+```
 
 ---
 
-## Fluxo de Utilização
+### C) Melhorar responsividade dos cartões P&L em `ProjectBudgetTab.tsx`
 
-1. O utilizador acede a `/projetos`
-2. No topo, vê 4 cartões com estatísticas agregadas
-3. Nos cartões de projeto, pode clicar no ícone de edição (lápis) para editar rapidamente
-4. Na página de detalhe, o PM pode:
-   - Clicar em "Configurações" para editar o projeto
-   - Clicar em "Membros" para gerir a equipa
+Ajustar o layout dos cartões de resumo financeiro para ecrãs menores:
 
+**Alterações no grid (linha 240)**:
+```tsx
+<div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+```
+
+**Alterações nos valores (exemplos)**:
+- Reduzir tamanho do texto em mobile/tablet
+- Usar classes responsivas: `text-base md:text-lg lg:text-2xl`
+- Permitir quebra de linha se necessário
+
+**Exemplo de cartão ajustado**:
+```tsx
+<Card>
+  <CardContent className="pt-4 md:pt-6">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div>
+        <p className="text-xs sm:text-sm font-medium text-muted-foreground">Receitas</p>
+        <div className="flex flex-col mt-1">
+          <span className="text-xs text-muted-foreground">Previsto</span>
+          <span className="text-sm md:text-lg font-semibold">{formatCurrency(...)}</span>
+        </div>
+      </div>
+      <div className="text-left sm:text-right">
+        <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-green-500 opacity-50 hidden sm:block" />
+        <span className="text-xs text-muted-foreground">Real</span>
+        <span className="text-sm md:text-lg font-bold text-green-600">{formatCurrency(...)}</span>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+---
+
+## Ficheiros a Alterar
+
+| Ficheiro | Alteração |
+|----------|-----------|
+| `src/hooks/use-mobile.tsx` | Adicionar `useIsTablet` e `useIsDesktop` |
+| `src/components/layout/DashboardLayout.tsx` | Colapsar sidebar em tablet |
+| `src/components/projects/ProjectBudgetTab.tsx` | Melhorar responsividade dos cartões P&L |
+
+---
+
+## Resultado Esperado
+
+1. **Em Mobile (< 768px)**:
+   - Sidebar escondida (abre com botão hamburger)
+   - Cartões P&L empilhados verticalmente (2 por linha)
+   - Texto ajustado para caber
+
+2. **Em Tablet (768px - 1024px)**:
+   - Sidebar visível mas colapsada (w-16, só ícones)
+   - Cartões P&L em grelha 2x2
+   - Texto com tamanho médio
+
+3. **Em Desktop (> 1024px)**:
+   - Sidebar expandida (w-64, ícones + texto)
+   - Cartões P&L em grelha 1x4
+   - Texto com tamanho completo
