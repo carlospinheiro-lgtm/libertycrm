@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { cn } from '@/lib/utils';
-import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
+import { useIsMobile, useIsTablet, useIsDesktop } from '@/hooks/use-mobile';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,22 +11,24 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
+  const isDesktop = useIsDesktop();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // On mobile: sidebar hidden; on tablet: sidebar collapsed; on desktop: sidebar expanded
+  // Desktop: expanded; Tablet: collapsed; Mobile: hidden
   useEffect(() => {
-    if (isMobile) {
+    if (isDesktop) {
+      // Desktop (> 1024px): sidebar always expanded
+      setSidebarCollapsed(false);
+    } else if (isMobile) {
+      // Mobile (< 768px): sidebar hidden by default
       setSidebarOpen(false);
       setSidebarCollapsed(true);
-    } else if (isTablet) {
-      // Tablet: sidebar visible but collapsed (icons only)
-      setSidebarCollapsed(true);
     } else {
-      // Desktop: sidebar expanded
-      setSidebarCollapsed(false);
+      // Tablet (768px - 1024px): sidebar collapsed (icons only)
+      setSidebarCollapsed(true);
     }
-  }, [isMobile, isTablet]);
+  }, [isMobile, isTablet, isDesktop]);
 
   const handleToggleSidebar = () => {
     if (isMobile) {
