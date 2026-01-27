@@ -2,37 +2,88 @@
 
 ## Objetivo
 
-Reduzir o breakpoint de desktop de **1024px para 900px** para que a sidebar fique expandida em ecrãs médios.
+Alterar o comportamento em **telemóvel (< 768px)** para mostrar a sidebar sempre visível mas colapsada (apenas ícones), em vez de a esconder completamente com menu hamburger.
+
+**Nota:** PC e tablet permanecem exatamente como estão.
 
 ---
 
-## Alteração Necessária
+## Alterações Necessárias
 
-### Ficheiro: `src/hooks/use-mobile.tsx`
+### Ficheiro: `src/components/layout/DashboardLayout.tsx`
 
-Alterar apenas a constante `TABLET_BREAKPOINT`:
+**1. Simplificar o useEffect (linhas 18-31):**
 
-**Antes (linha 4):**
+O mobile passa a ter o mesmo comportamento do tablet (sidebar colapsada):
+
 ```typescript
-const TABLET_BREAKPOINT = 1024;
+useEffect(() => {
+  if (isDesktop) {
+    // Desktop (≥ 900px): sidebar expandida
+    setSidebarCollapsed(false);
+  } else {
+    // Mobile e Tablet: sidebar colapsada (só ícones)
+    setSidebarCollapsed(true);
+  }
+}, [isMobile, isTablet, isDesktop]);
 ```
 
-**Depois:**
+**2. Remover o overlay (linhas 49-56):**
+
+Já não é necessário porque a sidebar fica sempre visível em mobile.
+
+**3. Simplificar as props do Sidebar (linhas 59-65):**
+
 ```typescript
-const TABLET_BREAKPOINT = 900;
+<Sidebar
+  collapsed={sidebarCollapsed}
+  onToggle={handleToggleSidebar}
+/>
 ```
+
+**4. Simplificar a TopBar (linhas 68-72):**
+
+```typescript
+<TopBar 
+  sidebarCollapsed={sidebarCollapsed} 
+  onMenuClick={handleToggleSidebar}
+  showMenuButton={false}
+/>
+```
+
+**5. Ajustar o padding do main (linha 78):**
+
+```typescript
+isMobile ? 'pl-16' : (sidebarCollapsed ? 'pl-16' : 'pl-64')
+```
+
+O mobile agora tem `pl-16` porque a sidebar colapsada tem largura `w-16`.
 
 ---
 
-## Impacto da Alteração
+### Ficheiro: `src/components/layout/Sidebar.tsx`
 
-Esta única mudança afeta automaticamente todos os hooks:
+**1. Remover a lógica de esconder em mobile (linhas 71-73):**
 
-| Hook | Comportamento Anterior | Novo Comportamento |
-|------|------------------------|-------------------|
-| `useIsMobile()` | < 768px | < 768px (sem alteração) |
-| `useIsTablet()` | 768px - 1023px | 768px - 899px |
-| `useIsDesktop()` | ≥ 1024px | ≥ 900px |
+Remover este bloco que esconde a sidebar em mobile:
+```typescript
+if (isMobile && !isOpen) {
+  return null;
+}
+```
+
+**2. Simplificar a largura da sidebar (linhas 77-82):**
+
+```typescript
+className={cn(
+  'fixed left-0 top-0 z-50 h-screen bg-sidebar transition-all duration-300 flex flex-col',
+  collapsed ? 'w-16' : 'w-64'
+)}
+```
+
+**3. Simplificar condições de texto (várias linhas):**
+
+Onde está `(isMobile || !collapsed)` passa a ser apenas `!collapsed`.
 
 ---
 
@@ -40,9 +91,9 @@ Esta única mudança afeta automaticamente todos os hooks:
 
 | Dispositivo | Largura | Sidebar |
 |-------------|---------|---------|
-| Mobile | < 768px | Escondida |
-| Tablet | 768px - 899px | Colapsada (só ícones) |
-| Desktop | ≥ 900px | Expandida (ícones + texto) |
+| Mobile | < 768px | Visível, colapsada (só ícones) |
+| Tablet | 768px - 899px | Visível, colapsada (só ícones) |
+| Desktop | ≥ 900px | Visível, expandida (ícones + texto) |
 
-Desta forma, em ecrãs com 900px ou mais de largura, a sidebar ficará totalmente aberta com ícones e texto.
+A experiência fica consistente em todos os dispositivos móveis/tablet, com a sidebar sempre visível mas compacta.
 
