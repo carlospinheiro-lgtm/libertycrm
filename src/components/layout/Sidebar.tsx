@@ -19,6 +19,12 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { PermissionKey } from '@/types/rbac';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface MenuItem {
   icon: typeof LayoutDashboard;
@@ -50,6 +56,44 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
+interface SidebarMenuItemProps {
+  item: MenuItem;
+  collapsed: boolean;
+}
+
+function SidebarMenuItem({ item, collapsed }: SidebarMenuItemProps) {
+  const linkContent = (
+    <NavLink
+      to={item.path}
+      className={cn(
+        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sidebar-foreground/80 transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground',
+        collapsed && 'justify-center px-2'
+      )}
+      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+    >
+      <item.icon className="h-5 w-5 flex-shrink-0" />
+      {!collapsed && (
+        <span className="text-sm truncate">{item.label}</span>
+      )}
+    </NavLink>
+  );
+
+  if (collapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          {linkContent}
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return linkContent;
+}
+
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { hasAnyPermission } = useAuth();
 
@@ -65,90 +109,77 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const visibleAdminItems = filterMenuItems(adminMenuItems);
 
   return (
-    <aside
-      className={cn(
-        'fixed left-0 top-0 z-50 h-screen bg-sidebar transition-all duration-300 flex flex-col',
-        collapsed ? 'w-16' : 'w-64'
-      )}
-    >
-      {/* Logo Area */}
-      <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-4">
-        {!collapsed ? (
-          <div className="flex items-center gap-2">
-            <Building2 className="h-8 w-8 text-sidebar-foreground" />
-            <span className="font-heading text-lg font-bold text-sidebar-foreground">
-              Liberty
-            </span>
-          </div>
-        ) : (
-          <Building2 className="h-8 w-8 text-sidebar-foreground" />
+    <TooltipProvider>
+      <aside
+        className={cn(
+          'fixed left-0 top-0 z-50 h-screen bg-sidebar transition-all duration-300 flex flex-col',
+          collapsed ? 'w-16' : 'w-64'
         )}
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-1 px-2">
-          {visibleMenuItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sidebar-foreground/80 transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                  collapsed && 'justify-center px-2'
-                )}
-                activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                {!collapsed && (
-                  <span className="text-sm truncate">{item.label}</span>
-                )}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-        
-        {/* Admin Section - só mostra se há itens visíveis */}
-        {visibleAdminItems.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-sidebar-border">
-            {!collapsed && (
-              <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase mb-2">
-                Configurações
-              </p>
-            )}
-            <ul className="space-y-1 px-2">
-              {visibleAdminItems.map((item) => (
-                <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sidebar-foreground/80 transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      collapsed && 'justify-center px-2'
-                    )}
-                    activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
-                  >
-                    <item.icon className="h-5 w-5 flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="text-sm truncate">{item.label}</span>
-                    )}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </nav>
-
-      {/* Toggle Button */}
-      <button
-        onClick={onToggle}
-        className="flex h-12 items-center justify-center border-t border-sidebar-border text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
       >
-        {collapsed ? (
-          <ChevronRight className="h-5 w-5" />
-        ) : (
-          <ChevronLeft className="h-5 w-5" />
-        )}
-      </button>
-    </aside>
+        {/* Logo Area */}
+        <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-4">
+          {!collapsed ? (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-8 w-8 text-sidebar-foreground" />
+              <span className="font-heading text-lg font-bold text-sidebar-foreground">
+                Liberty
+              </span>
+            </div>
+          ) : (
+            <Building2 className="h-8 w-8 text-sidebar-foreground" />
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          <ul className="space-y-1 px-2">
+            {visibleMenuItems.map((item) => (
+              <li key={item.path}>
+                <SidebarMenuItem item={item} collapsed={collapsed} />
+              </li>
+            ))}
+          </ul>
+          
+          {/* Admin Section - só mostra se há itens visíveis */}
+          {visibleAdminItems.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-sidebar-border">
+              {!collapsed && (
+                <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase mb-2">
+                  Configurações
+                </p>
+              )}
+              <ul className="space-y-1 px-2">
+                {visibleAdminItems.map((item) => (
+                  <li key={item.path}>
+                    <SidebarMenuItem item={item} collapsed={collapsed} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </nav>
+
+        {/* Toggle Button */}
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onToggle}
+              className="flex h-12 items-center justify-center border-t border-sidebar-border text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
+            >
+              {collapsed ? (
+                <ChevronRight className="h-5 w-5" />
+              ) : (
+                <ChevronLeft className="h-5 w-5" />
+              )}
+            </button>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right" sideOffset={8}>
+              Expandir menu
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </aside>
+    </TooltipProvider>
   );
 }
