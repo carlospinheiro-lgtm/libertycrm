@@ -237,53 +237,53 @@ export function ProjectBudgetTab({ projectId, canEdit, canManageFinance, userRol
   return (
     <div className="space-y-6">
       {/* Resumo P&L */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="pt-4 md:pt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Receitas</p>
-                <p className="text-xs text-muted-foreground mt-1">Previsto</p>
-                <p className="text-lg font-semibold">{formatCurrency(totals.plannedRevenue)}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Receitas</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Previsto</p>
+                <p className="text-sm md:text-base lg:text-lg font-semibold truncate">{formatCurrency(totals.plannedRevenue)}</p>
               </div>
-              <div className="text-right">
-                <TrendingUp className="h-8 w-8 text-green-500 opacity-50" />
-                <p className="text-xs text-muted-foreground mt-1">Real</p>
-                <p className="text-lg font-bold text-green-600">{formatCurrency(totals.actualRevenue)}</p>
+              <div className="text-left sm:text-right">
+                <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-green-500 opacity-50 hidden sm:block" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Real</p>
+                <p className="text-sm md:text-base lg:text-lg font-bold text-green-600 truncate">{formatCurrency(totals.actualRevenue)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="pt-4 md:pt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Custos</p>
-                <p className="text-xs text-muted-foreground mt-1">Previsto</p>
-                <p className="text-lg font-semibold">{formatCurrency(totals.plannedCost)}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Custos</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Previsto</p>
+                <p className="text-sm md:text-base lg:text-lg font-semibold truncate">{formatCurrency(totals.plannedCost)}</p>
               </div>
-              <div className="text-right">
-                <TrendingDown className="h-8 w-8 text-red-500 opacity-50" />
-                <p className="text-xs text-muted-foreground mt-1">Real</p>
-                <p className="text-lg font-bold text-red-600">{formatCurrency(totals.actualCost)}</p>
+              <div className="text-left sm:text-right">
+                <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-500 opacity-50 hidden sm:block" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Real</p>
+                <p className="text-sm md:text-base lg:text-lg font-bold text-red-600 truncate">{formatCurrency(totals.actualCost)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+          <CardContent className="pt-4 md:pt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Resultado</p>
-                <p className="text-xs text-muted-foreground mt-1">Previsto</p>
-                <p className="text-lg font-semibold">{formatCurrency(totals.plannedResult)}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Resultado</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Previsto</p>
+                <p className="text-sm md:text-base lg:text-lg font-semibold truncate">{formatCurrency(totals.plannedResult)}</p>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground mt-1">Real</p>
+              <div className="text-left sm:text-right">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Real</p>
                 <p className={cn(
-                  "text-2xl font-bold",
+                  "text-base md:text-lg lg:text-xl font-bold truncate",
                   totals.actualResult >= 0 ? "text-green-600" : "text-red-600"
                 )}>
                   {formatCurrency(totals.actualResult)}
@@ -294,20 +294,20 @@ export function ProjectBudgetTab({ projectId, canEdit, canManageFinance, userRol
         </Card>
 
         <Card className={cn(totals.isOverBudget && "border-orange-300 bg-orange-50")}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center h-full">
+          <CardContent className="pt-4 md:pt-6">
+            <div className="flex items-center justify-center h-full min-h-[60px]">
               {totals.isOverBudget ? (
                 <div className="text-center">
-                  <AlertTriangle className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-orange-700">Overbudget</p>
-                  <p className="text-xs text-orange-600">
+                  <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-orange-500 mx-auto mb-1 md:mb-2" />
+                  <p className="text-xs sm:text-sm font-medium text-orange-700">Overbudget</p>
+                  <p className="text-[10px] sm:text-xs text-orange-600 truncate">
                     +{formatCurrency(totals.actualCost - totals.plannedCost)}
                   </p>
                 </div>
               ) : (
                 <div className="text-center">
-                  <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-green-700">Dentro do orçamento</p>
+                  <CheckCircle className="h-6 w-6 md:h-8 md:w-8 text-green-500 mx-auto mb-1 md:mb-2" />
+                  <p className="text-xs sm:text-sm font-medium text-green-700">Dentro do orçamento</p>
                 </div>
               )}
             </div>
