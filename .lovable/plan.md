@@ -2,75 +2,47 @@
 
 ## Objetivo
 
-Corrigir a sidebar para que fique **totalmente aberta (expandida)** em desktop (> 1024px), mantendo o comportamento colapsado em tablet e telemóvel.
+Reduzir o breakpoint de desktop de **1024px para 900px** para que a sidebar fique expandida em ecrãs médios.
 
 ---
 
-## Análise do Problema
+## Alteração Necessária
 
-O código atual no `DashboardLayout.tsx` está correto em teoria:
+### Ficheiro: `src/hooks/use-mobile.tsx`
 
+Alterar apenas a constante `TABLET_BREAKPOINT`:
+
+**Antes (linha 4):**
 ```typescript
-if (isMobile) {
-  setSidebarCollapsed(true);
-} else if (isTablet) {
-  setSidebarCollapsed(true);
-} else {
-  setSidebarCollapsed(false); // Desktop - deveria expandir
-}
+const TABLET_BREAKPOINT = 1024;
 ```
 
-**Problema identificado**: O estado inicial de `sidebarCollapsed` é `useState(false)`, mas durante a hidratação inicial:
-- Os hooks `useIsMobile` e `useIsTablet` retornam `undefined` convertido para `false`
-- O `useEffect` corre com esses valores iniciais
-- Se houver qualquer inconsistência na deteção, a sidebar pode ficar no estado errado
-
-**Solução**: Usar o hook `useIsDesktop` diretamente para uma deteção mais explícita e robusta do estado desktop.
+**Depois:**
+```typescript
+const TABLET_BREAKPOINT = 900;
+```
 
 ---
 
-## Alterações Necessárias
+## Impacto da Alteração
 
-### Ficheiro: `src/components/layout/DashboardLayout.tsx`
+Esta única mudança afeta automaticamente todos os hooks:
 
-**1. Importar `useIsDesktop`:**
-```typescript
-import { useIsMobile, useIsTablet, useIsDesktop } from '@/hooks/use-mobile';
-```
-
-**2. Usar o hook no componente:**
-```typescript
-const isMobile = useIsMobile();
-const isTablet = useIsTablet();
-const isDesktop = useIsDesktop(); // NOVO
-```
-
-**3. Reescrever o useEffect com lógica mais explícita:**
-```typescript
-useEffect(() => {
-  if (isDesktop) {
-    // Desktop (> 1024px): sidebar expandida
-    setSidebarCollapsed(false);
-  } else if (isMobile) {
-    // Mobile (< 768px): sidebar escondida por defeito
-    setSidebarOpen(false);
-    setSidebarCollapsed(true);
-  } else {
-    // Tablet (768px - 1024px): sidebar colapsada (só ícones)
-    setSidebarCollapsed(true);
-  }
-}, [isMobile, isTablet, isDesktop]);
-```
-
-**Nota importante**: A ordem das condições agora prioriza `isDesktop` primeiro, garantindo que em ecrãs grandes a sidebar fica sempre expandida.
+| Hook | Comportamento Anterior | Novo Comportamento |
+|------|------------------------|-------------------|
+| `useIsMobile()` | < 768px | < 768px (sem alteração) |
+| `useIsTablet()` | 768px - 1023px | 768px - 899px |
+| `useIsDesktop()` | ≥ 1024px | ≥ 900px |
 
 ---
 
-## Resultado Esperado
+## Resultado Final
 
 | Dispositivo | Largura | Sidebar |
 |-------------|---------|---------|
-| Mobile | < 768px | Escondida (abre com hamburger) |
-| Tablet | 768px - 1024px | Visível, colapsada (só ícones) |
-| Desktop | > 1024px | Visível, expandida (ícones + texto) |
+| Mobile | < 768px | Escondida |
+| Tablet | 768px - 899px | Colapsada (só ícones) |
+| Desktop | ≥ 900px | Expandida (ícones + texto) |
+
+Desta forma, em ecrãs com 900px ou mais de largura, a sidebar ficará totalmente aberta com ícones e texto.
 
