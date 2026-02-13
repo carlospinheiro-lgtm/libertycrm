@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { KanbanBoard, Column, Lead } from '@/components/kanban/KanbanBoard';
+import { LeadsExcelDialog } from '@/components/kanban/LeadsExcelDialog';
 import { useLeads } from '@/hooks/useLeads';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +21,7 @@ const sellerColumns: Column[] = [
 export default function LeadsVendedores() {
   const { leads, isLoading, addLead, updateLead, deleteLead, moveLead } = useLeads('seller');
   const { currentUser } = useAuth();
+  const [excelDialogOpen, setExcelDialogOpen] = useState(false);
 
   const mappedLeads: Lead[] = leads.map((lead) => ({
     id: lead.id,
@@ -92,12 +95,22 @@ export default function LeadsVendedores() {
           title="Leads Vendedores"
           columns={sellerColumns}
           leads={mappedLeads}
+          onExcelClick={() => setExcelDialogOpen(true)}
           onLeadMoved={handleLeadMoved}
           onLeadUpdated={handleLeadUpdated}
           onLeadAdded={handleLeadAdded}
           onLeadDeleted={handleLeadDeleted}
         />
       </div>
+
+      <LeadsExcelDialog
+        open={excelDialogOpen}
+        onOpenChange={setExcelDialogOpen}
+        leads={mappedLeads}
+        columns={sellerColumns}
+        agencyId={currentUser?.agencyId}
+        leadType="seller"
+      />
     </DashboardLayout>
   );
 }

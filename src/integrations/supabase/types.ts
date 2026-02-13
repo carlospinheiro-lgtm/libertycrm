@@ -200,6 +200,11 @@ export type Database = {
           email: string | null
           entry_date: string
           id: string
+          import_batch_id: string | null
+          import_file_name: string | null
+          import_source: string | null
+          imported_at: string | null
+          imported_by_user_id: string | null
           is_active: boolean | null
           lead_type: string
           next_activity_date: string | null
@@ -221,6 +226,11 @@ export type Database = {
           email?: string | null
           entry_date?: string
           id?: string
+          import_batch_id?: string | null
+          import_file_name?: string | null
+          import_source?: string | null
+          imported_at?: string | null
+          imported_by_user_id?: string | null
           is_active?: boolean | null
           lead_type: string
           next_activity_date?: string | null
@@ -242,6 +252,11 @@ export type Database = {
           email?: string | null
           entry_date?: string
           id?: string
+          import_batch_id?: string | null
+          import_file_name?: string | null
+          import_source?: string | null
+          imported_at?: string | null
+          imported_by_user_id?: string | null
           is_active?: boolean | null
           lead_type?: string
           next_activity_date?: string | null
