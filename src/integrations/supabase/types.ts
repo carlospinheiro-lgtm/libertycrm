@@ -190,6 +190,80 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          agency_id: string
+          client_name: string
+          column_id: string
+          created_at: string
+          cv_url: string | null
+          email: string | null
+          entry_date: string
+          id: string
+          is_active: boolean | null
+          lead_type: string
+          next_activity_date: string | null
+          next_activity_description: string | null
+          notes: string | null
+          phone: string | null
+          source: string | null
+          source_category: string | null
+          temperature: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          client_name: string
+          column_id: string
+          created_at?: string
+          cv_url?: string | null
+          email?: string | null
+          entry_date?: string
+          id?: string
+          is_active?: boolean | null
+          lead_type: string
+          next_activity_date?: string | null
+          next_activity_description?: string | null
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          source_category?: string | null
+          temperature?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          client_name?: string
+          column_id?: string
+          created_at?: string
+          cv_url?: string | null
+          email?: string | null
+          entry_date?: string
+          id?: string
+          is_active?: boolean | null
+          lead_type?: string
+          next_activity_date?: string | null
+          next_activity_description?: string | null
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          source_category?: string | null
+          temperature?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

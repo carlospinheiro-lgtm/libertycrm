@@ -63,6 +63,11 @@ interface KanbanBoardProps {
   onAddLead?: () => void;
   isRecruitment?: boolean;
   agencyId?: string;
+  // DB persistence callbacks
+  onLeadMoved?: (leadId: string, columnId: string, nextActivityDate?: string, nextActivityDescription?: string) => void;
+  onLeadUpdated?: (leadId: string, updates: Partial<KanbanLead>) => void;
+  onLeadAdded?: (lead: KanbanLead) => void;
+  onLeadDeleted?: (leadId: string) => void;
 }
 
 export function KanbanBoard({
@@ -72,6 +77,10 @@ export function KanbanBoard({
   onAddLead,
   isRecruitment = false,
   agencyId,
+  onLeadMoved,
+  onLeadUpdated,
+  onLeadAdded,
+  onLeadDeleted,
 }: KanbanBoardProps) {
   const { currentUser } = useAuth();
   const { data: leadSettings } = useLeadSettings(agencyId);
@@ -171,6 +180,7 @@ export function KanbanBoard({
         } else {
           // Direct move without popup
           moveLead(lead.id, targetColumnId);
+          onLeadMoved?.(lead.id, targetColumnId);
         }
       }
     }
@@ -179,6 +189,7 @@ export function KanbanBoard({
   const handleMoveConfirm = (columnId: string, nextActivityDate: string, nextActivityDescription: string) => {
     if (pendingMove) {
       moveLead(pendingMove.leadId, columnId, nextActivityDate, nextActivityDescription);
+      onLeadMoved?.(pendingMove.leadId, columnId, nextActivityDate, nextActivityDescription);
       
       const lead = leads.find(l => l.id === pendingMove.leadId);
       if (lead && nextActivityDate) {
@@ -215,6 +226,7 @@ export function KanbanBoard({
 
   const handleAddLead = (lead: KanbanLead) => {
     addLead(lead);
+    onLeadAdded?.(lead);
   };
 
   return (
@@ -361,8 +373,14 @@ export function KanbanBoard({
         open={detailsSheetOpen}
         onOpenChange={setDetailsSheetOpen}
         lead={selectedLead}
-        onSave={updateLead}
-        onDelete={deleteLead}
+        onSave={(leadId, updates) => {
+          updateLead(leadId, updates);
+          onLeadUpdated?.(leadId, updates);
+        }}
+        onDelete={(leadId) => {
+          deleteLead(leadId);
+          onLeadDeleted?.(leadId);
+        }}
         isRecruitment={isRecruitment}
       />
 

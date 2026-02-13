@@ -1,5 +1,9 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { KanbanBoard, Column, Lead } from '@/components/kanban/KanbanBoard';
+import { useLeads } from '@/hooks/useLeads';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { KanbanLead } from '@/hooks/useKanbanState';
 
 const buyerColumns: Column[] = [
   { id: 'new', title: 'Novo Contacto', color: 'blue' },
@@ -12,114 +16,86 @@ const buyerColumns: Column[] = [
   { id: 'lost', title: 'Fechado - Perdemos', color: 'red' },
 ];
 
-const sampleLeads: Lead[] = [
-  {
-    id: '1',
-    clientName: 'Maria Santos',
-    phone: '+351 912 345 678',
-    email: 'maria.santos@email.com',
-    agentName: 'Pedro Costa',
-    agentId: 'agent-1',
-    agency: 'Braga',
-    source: 'Portal Imobiliário',
-    entryDate: '05/12/2024',
-    columnId: 'new',
-    temperature: 'hot',
-  },
-  {
-    id: '2',
-    clientName: 'João Ferreira',
-    phone: '+351 923 456 789',
-    email: 'joao.ferreira@email.com',
-    agentName: 'Ana Lopes',
-    agency: 'Barcelos',
-    source: 'Referência',
-    entryDate: '04/12/2024',
-    columnId: 'new',
-    temperature: 'warm',
-  },
-  {
-    id: '3',
-    clientName: 'Ana Oliveira',
-    phone: '+351 934 567 890',
-    email: 'ana.oliveira@email.com',
-    agentName: 'Pedro Costa',
-    agency: 'Braga',
-    source: 'Facebook',
-    entryDate: '03/12/2024',
-    columnId: 'first-contact',
-    temperature: 'cold',
-  },
-  {
-    id: '4',
-    clientName: 'Carlos Mendes',
-    phone: '+351 945 678 901',
-    email: 'carlos.mendes@email.com',
-    agentName: 'Sofia Almeida',
-    agency: 'Braga',
-    source: 'Site RE/MAX',
-    entryDate: '02/12/2024',
-    columnId: 'qualifying',
-    temperature: 'hot',
-  },
-  {
-    id: '5',
-    clientName: 'Rita Sousa',
-    phone: '+351 956 789 012',
-    email: 'rita.sousa@email.com',
-    agentName: 'Ana Lopes',
-    agency: 'Barcelos',
-    source: 'Campanha Google',
-    entryDate: '01/12/2024',
-    columnId: 'visits',
-    temperature: 'warm',
-  },
-  {
-    id: '6',
-    clientName: 'Bruno Pereira',
-    phone: '+351 967 890 123',
-    email: 'bruno.pereira@email.com',
-    agentName: 'Ricardo Santos',
-    agency: 'Braga',
-    source: 'Portal Imobiliário',
-    entryDate: '30/11/2024',
-    columnId: 'proposal',
-    temperature: 'hot',
-  },
-  {
-    id: '7',
-    clientName: 'Inês Rodrigues',
-    phone: '+351 978 901 234',
-    email: 'ines.rodrigues@email.com',
-    agentName: 'Sofia Almeida',
-    agency: 'Barcelos',
-    source: 'Referência',
-    entryDate: '28/11/2024',
-    columnId: 'negotiation',
-    temperature: 'hot',
-  },
-  {
-    id: '8',
-    clientName: 'Manuel Silva',
-    phone: '+351 989 012 345',
-    email: 'manuel.silva@email.com',
-    agentName: 'Pedro Costa',
-    agency: 'Braga',
-    source: 'Facebook',
-    entryDate: '25/11/2024',
-    columnId: 'won',
-    temperature: 'undefined',
-  },
-];
-
 export default function LeadsCompradores() {
+  const { leads, isLoading, addLead, updateLead, deleteLead, moveLead } = useLeads('buyer');
+  const { currentUser } = useAuth();
+
+  const mappedLeads: Lead[] = leads.map((lead) => ({
+    id: lead.id,
+    clientName: lead.client_name,
+    phone: lead.phone || '',
+    email: lead.email || '',
+    agentName: lead.agent_name || '',
+    agency: lead.agency_name || '',
+    source: lead.source || '',
+    entryDate: new Date(lead.entry_date).toLocaleDateString('pt-PT'),
+    notes: lead.notes || undefined,
+    columnId: lead.column_id,
+    temperature: (lead.temperature as Lead['temperature']) || 'undefined',
+    nextActivityDate: lead.next_activity_date || undefined,
+    nextActivityDescription: lead.next_activity_description || undefined,
+  }));
+
+  const handleLeadMoved = (leadId: string, columnId: string, nextActivityDate?: string, nextActivityDescription?: string) => {
+    moveLead.mutate({ id: leadId, column_id: columnId, next_activity_date: nextActivityDate, next_activity_description: nextActivityDescription });
+  };
+
+  const handleLeadUpdated = (leadId: string, updates: Partial<KanbanLead>) => {
+    updateLead.mutate({
+      id: leadId,
+      ...(updates.clientName !== undefined && { client_name: updates.clientName }),
+      ...(updates.phone !== undefined && { phone: updates.phone }),
+      ...(updates.email !== undefined && { email: updates.email }),
+      ...(updates.notes !== undefined && { notes: updates.notes }),
+      ...(updates.temperature !== undefined && { temperature: updates.temperature }),
+      ...(updates.columnId !== undefined && { column_id: updates.columnId }),
+    });
+  };
+
+  const handleLeadAdded = (lead: KanbanLead) => {
+    if (!currentUser?.agencyId) return;
+    addLead.mutate({
+      client_name: lead.clientName,
+      email: lead.email || undefined,
+      phone: lead.phone || undefined,
+      source: lead.source || undefined,
+      column_id: lead.columnId,
+      temperature: lead.temperature,
+      notes: lead.notes || undefined,
+      agency_id: currentUser.agencyId,
+    });
+  };
+
+  const handleLeadDeleted = (leadId: string) => {
+    deleteLead.mutate(leadId);
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="flex gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-96 w-72 flex-shrink-0" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="animate-fade-in">
         <KanbanBoard
           title="Leads Compradores"
           columns={buyerColumns}
-          leads={sampleLeads}
+          leads={mappedLeads}
+          onLeadMoved={handleLeadMoved}
+          onLeadUpdated={handleLeadUpdated}
+          onLeadAdded={handleLeadAdded}
+          onLeadDeleted={handleLeadDeleted}
         />
       </div>
     </DashboardLayout>
