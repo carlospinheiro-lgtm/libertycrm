@@ -1,5 +1,8 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { KanbanBoard, Column, Lead } from '@/components/kanban/KanbanBoard';
+import { useLeads, DbLead } from '@/hooks/useLeads';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const recruitmentColumns: Column[] = [
   { id: 'new', title: 'Novo Contacto', color: 'blue' },
@@ -12,102 +15,56 @@ const recruitmentColumns: Column[] = [
   { id: 'rejected', title: 'Não Avançou', color: 'red' },
 ];
 
-const sampleCandidates: Lead[] = [
-  {
-    id: '1',
-    clientName: 'Miguel Correia',
-    phone: '+351 912 999 111',
-    email: 'miguel.correia@email.com',
-    agentName: 'João Diretor',
-    agency: 'Braga',
-    source: 'LinkedIn',
-    entryDate: '06/12/2024',
-    columnId: 'new',
-    temperature: 'warm',
-  },
-  {
-    id: '2',
-    clientName: 'Sandra Vieira',
-    phone: '+351 923 888 222',
-    email: 'sandra.vieira@email.com',
-    agentName: 'Maria Recrutadora',
-    agency: 'Barcelos',
-    source: 'Facebook Jobs',
-    entryDate: '05/12/2024',
-    columnId: 'first-contact',
-    temperature: 'hot',
-  },
-  {
-    id: '3',
-    clientName: 'David Moreira',
-    phone: '+351 934 777 333',
-    email: 'david.moreira@email.com',
-    agentName: 'João Diretor',
-    agency: 'Braga',
-    source: 'Referência Interna',
-    entryDate: '04/12/2024',
-    columnId: 'interview-scheduled',
-    temperature: 'hot',
-  },
-  {
-    id: '4',
-    clientName: 'Catarina Matos',
-    phone: '+351 945 666 444',
-    email: 'catarina.matos@email.com',
-    agentName: 'Maria Recrutadora',
-    agency: 'Braga',
-    source: 'Indeed',
-    entryDate: '03/12/2024',
-    columnId: 'interview-done',
-    temperature: 'warm',
-  },
-  {
-    id: '5',
-    clientName: 'Tiago Fernandes',
-    phone: '+351 956 555 555',
-    email: 'tiago.fernandes@email.com',
-    agentName: 'João Diretor',
-    agency: 'Barcelos',
-    source: 'LinkedIn',
-    entryDate: '02/12/2024',
-    columnId: 'decision',
-    temperature: 'hot',
-  },
-  {
-    id: '6',
-    clientName: 'Mariana Costa',
-    phone: '+351 967 444 666',
-    email: 'mariana.costa@email.com',
-    agentName: 'Maria Recrutadora',
-    agency: 'Braga',
-    source: 'Candidatura Espontânea',
-    entryDate: '28/11/2024',
-    columnId: 'training',
-    temperature: 'undefined',
-  },
-  {
-    id: '7',
-    clientName: 'André Barbosa',
-    phone: '+351 978 333 777',
-    email: 'andre.barbosa@email.com',
-    agentName: 'João Diretor',
-    agency: 'Braga',
-    source: 'Referência Interna',
-    entryDate: '15/11/2024',
-    columnId: 'active',
-    temperature: 'undefined',
-  },
-];
-
 export default function Recrutamento() {
+  const { currentUser } = useAuth();
+  // Use 'recruitment' as the lead type - we need to support this in the hook
+  const { leads: candidates, isLoading, moveLead } = useLeads('recruitment' as any);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <div className="grid grid-cols-8 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-96 w-full" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Convert DbLead to Lead format
+  const convertedCandidates: Lead[] = candidates.map((candidate: DbLead) => ({
+    id: candidate.id,
+    clientName: candidate.client_name,
+    phone: candidate.phone || '',
+    email: candidate.email || '',
+    agentName: candidate.agent_name || 'Desconhecido',
+    agentId: candidate.user_id,
+    agency: candidate.agency_name || 'Desconhecida',
+    source: candidate.source || 'Sem Origem',
+    entryDate: new Date(candidate.entry_date).toLocaleDateString('pt-PT'),
+    columnId: candidate.column_id,
+    temperature: (candidate.temperature as any) || 'warm',
+    notes: candidate.notes || undefined,
+    nextActivityDate: candidate.next_activity_date || undefined,
+    nextActivityDescription: candidate.next_activity_description || undefined,
+  }));
+
   return (
     <DashboardLayout>
       <div className="animate-fade-in">
         <KanbanBoard
           title="Recrutamento de Agentes"
           columns={recruitmentColumns}
-          leads={sampleCandidates}
+          leads={convertedCandidates}
           isRecruitment={true}
+          agencyId={currentUser?.agencyId}
+          onLeadMoved={(leadId, columnId, nextActivityDate, nextActivityDescription) => {
+            moveLead.mutate({ id: leadId, column_id: columnId, next_activity_date: nextActivityDate, next_activity_description: nextActivityDescription });
+          }}
         />
       </div>
     </DashboardLayout>
