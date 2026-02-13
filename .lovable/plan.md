@@ -1,99 +1,109 @@
 
 
-## Objetivo
+# Funcionalidade Excel para Leads Vendedores (Export + Import)
 
-Alterar o comportamento em **telemóvel (< 768px)** para mostrar a sidebar sempre visível mas colapsada (apenas ícones), em vez de a esconder completamente com menu hamburger.
+## Resumo
 
-**Nota:** PC e tablet permanecem exatamente como estão.
-
----
-
-## Alterações Necessárias
-
-### Ficheiro: `src/components/layout/DashboardLayout.tsx`
-
-**1. Simplificar o useEffect (linhas 18-31):**
-
-O mobile passa a ter o mesmo comportamento do tablet (sidebar colapsada):
-
-```typescript
-useEffect(() => {
-  if (isDesktop) {
-    // Desktop (≥ 900px): sidebar expandida
-    setSidebarCollapsed(false);
-  } else {
-    // Mobile e Tablet: sidebar colapsada (só ícones)
-    setSidebarCollapsed(true);
-  }
-}, [isMobile, isTablet, isDesktop]);
-```
-
-**2. Remover o overlay (linhas 49-56):**
-
-Já não é necessário porque a sidebar fica sempre visível em mobile.
-
-**3. Simplificar as props do Sidebar (linhas 59-65):**
-
-```typescript
-<Sidebar
-  collapsed={sidebarCollapsed}
-  onToggle={handleToggleSidebar}
-/>
-```
-
-**4. Simplificar a TopBar (linhas 68-72):**
-
-```typescript
-<TopBar 
-  sidebarCollapsed={sidebarCollapsed} 
-  onMenuClick={handleToggleSidebar}
-  showMenuButton={false}
-/>
-```
-
-**5. Ajustar o padding do main (linha 78):**
-
-```typescript
-isMobile ? 'pl-16' : (sidebarCollapsed ? 'pl-16' : 'pl-64')
-```
-
-O mobile agora tem `pl-16` porque a sidebar colapsada tem largura `w-16`.
+Ligar o botao de Download (icone vermelho) na pagina /leads-vendedores a um modal com duas tabs: **Exportar** (download Excel) e **Importar** (upload com preview, detecao de duplicados e confirmacao).
 
 ---
 
-### Ficheiro: `src/components/layout/Sidebar.tsx`
+## 1. Alteracoes na Base de Dados
 
-**1. Remover a lógica de esconder em mobile (linhas 71-73):**
+Adicionar colunas de metadados de importacao a tabela `leads`:
 
-Remover este bloco que esconde a sidebar em mobile:
-```typescript
-if (isMobile && !isOpen) {
-  return null;
-}
-```
-
-**2. Simplificar a largura da sidebar (linhas 77-82):**
-
-```typescript
-className={cn(
-  'fixed left-0 top-0 z-50 h-screen bg-sidebar transition-all duration-300 flex flex-col',
-  collapsed ? 'w-16' : 'w-64'
-)}
-```
-
-**3. Simplificar condições de texto (várias linhas):**
-
-Onde está `(isMobile || !collapsed)` passa a ser apenas `!collapsed`.
+- `import_batch_id` (uuid, nullable) - ID do lote de importacao
+- `imported_at` (timestamptz, nullable) - data da importacao
+- `import_source` (text, nullable) - origem (ex: 'excel')
+- `import_file_name` (text, nullable) - nome do ficheiro
+- `imported_by_user_id` (uuid, nullable) - quem importou
 
 ---
 
-## Resultado Final
+## 2. Novos Ficheiros
 
-| Dispositivo | Largura | Sidebar |
-|-------------|---------|---------|
-| Mobile | < 768px | Visível, colapsada (só ícones) |
-| Tablet | 768px - 899px | Visível, colapsada (só ícones) |
-| Desktop | ≥ 900px | Visível, expandida (ícones + texto) |
+### `src/components/kanban/LeadsExcelDialog.tsx`
+Modal reutilizavel com duas tabs:
 
-A experiência fica consistente em todos os dispositivos móveis/tablet, com a sidebar sempre visível mas compacta.
+**Tab Exportar:**
+- Botao "Descarregar Excel"
+- Busca leads do tipo atual (seller) filtradas pela agencia
+- Gera ficheiro .xlsx com colunas: Nome Cliente, Email, Telefone, Origem, Coluna, Temperatura, Notas, Data Entrada
+- Nome do ficheiro: `leads_vendedores_<agencia>_<yyyy-mm-dd>.xlsx`
+
+**Tab Importar:**
+- Upload de .xlsx / .csv (reutiliza `parseFile` de `src/lib/excel-parser.ts`)
+- Apos upload, mostra preview com contadores: total, validas, invalidas, novos, duplicados
+- Detecao de duplicados por prioridade:
+  1. Telefone
+  2. Email
+  3. Nome + Telefone
+- Para cada duplicado, mostra comparacao "Atual vs Excel" com acoes: Atualizar / Ignorar / Criar Novo
+- Opcao "Aplicar a todos"
+- Botao "Confirmar Importacao" so aparece apos decisoes tomadas
+- Ao confirmar, faz upsert/insert conforme decisoes e preenche campos de metadados de importacao
+
+---
+
+## 3. Alteracoes em Ficheiros Existentes
+
+### `src/components/kanban/KanbanBoard.tsx`
+- Adicionar prop `onExcelClick?: () => void` ao `KanbanBoardProps`
+- Ligar o `onClick` do botao Download (linha 278) a esta prop
+
+### `src/pages/LeadsVendedores.tsx`
+- Adicionar estado `excelDialogOpen`
+- Passar `onExcelClick={() => setExcelDialogOpen(true)}` ao KanbanBoard
+- Renderizar `<LeadsExcelDialog>` com props: open, onOpenChange, agencyId, leadType, leads, columns
+
+---
+
+## 4. Detalhes Tecnicos
+
+### Exportacao
+- Utiliza a biblioteca `xlsx` (ja instalada) para gerar o ficheiro
+- Busca leads ja carregadas no estado do componente (sem query adicional)
+- Mapeia campos da DB para nomes de colunas em portugues
+
+### Importacao - Fluxo
+```text
+Upload ficheiro
+      |
+      v
+Parse com parseFile()
+      |
+      v
+Normalizar colunas (reutilizar padrao de excel-parser.ts)
+      |
+      v
+Para cada linha:
+  - Validar campos obrigatorios (client_name)
+  - Procurar duplicado na BD por telefone > email > nome+telefone
+  - Classificar: novo / duplicado / invalido
+      |
+      v
+Mostrar preview com contadores e tabela
+      |
+      v
+Utilizador decide duplicados
+      |
+      v
+"Confirmar Importacao"
+      |
+      v
+Insert novos + Update/Ignore duplicados conforme decisao
+Preencher import_batch_id, imported_at, etc.
+      |
+      v
+Mostrar resumo final (criados, atualizados, ignorados, erros)
+```
+
+### Detecao de Duplicados
+A pesquisa de duplicados e feita client-side contra as leads ja carregadas (filtradas por agencia e lead_type), sem queries adicionais. Prioridade:
+1. Match por `phone` (exato, apos limpeza de espacos)
+2. Match por `email` (case-insensitive)
+3. Match por `client_name` + `phone`
+
+### Logging
+Cada importacao cria um registo em `import_jobs` com type='leads', summary_json com contadores e diff_json com alteracoes aplicadas.
 
