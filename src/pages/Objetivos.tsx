@@ -17,297 +17,32 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useObjectives, DbObjective } from '@/hooks/useObjectives';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Mock data - TODO: Connect to database
-const objectivesMock: Objective[] = [
-  // Vendedores - Atividade
-  {
-    id: '1',
-    flow: 'vendedores',
-    objectiveCategory: 'activity',
-    activityType: 'posicionamento_vendedores',
-    currentValue: 45,
-    targetValue: 60,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agent',
-    targetId: 'agent-1',
-    targetName: 'João Silva',
-    sourceFilter: ['2', '3'],
-  },
-  {
-    id: '2',
-    flow: 'vendedores',
-    objectiveCategory: 'activity',
-    activityType: 'leads_vendedores',
-    currentValue: 18,
-    targetValue: 25,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Braga',
-    sourceFilter: 'all',
-  },
-  // Vendedores - Resultado
-  {
-    id: '3',
-    flow: 'vendedores',
-    objectiveCategory: 'result',
-    resultType: 'angariacao_reservada',
-    currentValue: 8,
-    targetValue: 10,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agent',
-    targetId: 'agent-1',
-    targetName: 'João Silva',
-    sourceFilter: 'all',
-  },
-  // Compradores - Atividade
-  {
-    id: '4',
-    flow: 'compradores',
-    objectiveCategory: 'activity',
-    activityType: 'visitas',
-    currentValue: 32,
-    targetValue: 50,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agent',
-    targetId: 'agent-2',
-    targetName: 'Maria Santos',
-    sourceFilter: 'all',
-  },
-  // Compradores - Resultado
-  {
-    id: '5',
-    flow: 'compradores',
-    objectiveCategory: 'result',
-    resultType: 'reserva_comprador',
-    currentValue: 5,
-    targetValue: 8,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agent',
-    targetId: 'agent-2',
-    targetName: 'Maria Santos',
-    sourceFilter: 'all',
-  },
-  // Recrutamento - Atividade
-  {
-    id: '6',
-    flow: 'recrutamento',
-    objectiveCategory: 'activity',
-    activityType: 'entrevistas_realizadas',
-    currentValue: 12,
-    targetValue: 20,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Braga',
-    sourceFilter: 'all',
-  },
-  // Recrutamento - Resultado (Agentes Recrutados)
-  {
-    id: '7',
-    flow: 'recrutamento',
-    objectiveCategory: 'result',
-    resultType: 'agentes_recrutados',
-    currentValue: 4,
-    targetValue: 8,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  // Recrutamento - Resultado (Agentes Integrados)
-  {
-    id: '7b',
-    flow: 'recrutamento',
-    objectiveCategory: 'result',
-    resultType: 'agentes_integrados',
-    currentValue: 3,
-    targetValue: 6,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  // Recrutamento - Atividades Completas
-  {
-    id: '7c',
-    flow: 'recrutamento',
-    objectiveCategory: 'activity',
-    activityType: 'prospeccao_leads_recrutamento',
-    currentValue: 35,
-    targetValue: 50,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  {
-    id: '7d',
-    flow: 'recrutamento',
-    objectiveCategory: 'activity',
-    activityType: 'leads_obtidas_recrutamento',
-    currentValue: 22,
-    targetValue: 30,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  {
-    id: '7e',
-    flow: 'recrutamento',
-    objectiveCategory: 'activity',
-    activityType: 'contactos_leads_recrutamento',
-    currentValue: 28,
-    targetValue: 40,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  {
-    id: '7f',
-    flow: 'recrutamento',
-    objectiveCategory: 'activity',
-    activityType: 'marcar_entrevistas_recrutamento',
-    currentValue: 15,
-    targetValue: 20,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  {
-    id: '7g',
-    flow: 'recrutamento',
-    objectiveCategory: 'activity',
-    activityType: 'entrevistas_realizadas',
-    currentValue: 12,
-    targetValue: 20,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  {
-    id: '7h',
-    flow: 'recrutamento',
-    objectiveCategory: 'activity',
-    activityType: 'seguimentos_recrutamento',
-    currentValue: 8,
-    targetValue: 15,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  // Intermediação de Crédito - Resultado (Crédito não tem atividades)
-  {
-    id: '8',
-    flow: 'intermediacao_credito',
-    objectiveCategory: 'result',
-    resultType: 'creditos_aprovados',
-    currentValue: 8,
-    targetValue: 15,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  // Vendedores - Angariações Exclusivo
-  {
-    id: '10',
-    flow: 'vendedores',
-    objectiveCategory: 'result',
-    resultType: 'angariacao_exclusiva',
-    currentValue: 8,
-    targetValue: 12,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  // Vendedores - Angariações Exclusivo de Rede
-  {
-    id: '10b',
-    flow: 'vendedores',
-    objectiveCategory: 'result',
-    resultType: 'angariacao_exclusiva_rede',
-    currentValue: 5,
-    targetValue: 8,
-    unit: 'number',
-    unitSymbol: '',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-  {
-    id: '11',
-    flow: 'geral',
-    objectiveCategory: 'result',
-    resultType: 'faturacao_vendas',
-    currentValue: 125000,
-    targetValue: 150000,
-    unit: 'currency',
-    unitSymbol: '€',
-    startDate: new Date('2024-10-01'),
-    endDate: new Date('2024-12-31'),
-    targetType: 'agency',
-    targetName: 'Todas',
-    sourceFilter: 'all',
-  },
-];
+// Helper to convert DB objectives to UI format
+function dbToUiObjective(db: DbObjective): Objective {
+  return {
+    id: db.id,
+    flow: db.flow,
+    objectiveCategory: db.objective_category as any,
+    activityType: db.activity_type as any,
+    resultType: db.result_type as any,
+    currentValue: Number(db.current_value),
+    targetValue: Number(db.target_value),
+    unit: db.unit as any,
+    unitSymbol: db.unit_symbol,
+    startDate: new Date(db.start_date),
+    endDate: new Date(db.end_date),
+    targetType: db.target_type as any,
+    targetId: db.target_id || undefined,
+    targetName: db.target_name || undefined,
+    sourceFilter: db.source_filter === 'all' ? 'all' : db.source_filter,
+  };
+}
 
 export default function Objetivos() {
+  const { objectives: dbObjectives, isLoading } = useObjectives();
   const [addObjectiveOpen, setAddObjectiveOpen] = useState(false);
   const [addResultOpen, setAddResultOpen] = useState(false);
   const [addActivityOpen, setAddActivityOpen] = useState(false);
@@ -319,6 +54,9 @@ export default function Objetivos() {
   const [customDateRange, setCustomDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [flowFilter, setFlowFilter] = useState<ObjectiveFlow | 'all'>('all');
   const isMobile = useIsMobile();
+
+  // Convert DB objectives to UI format
+  const allObjectives: Objective[] = dbObjectives.map(dbToUiObjective);
 
   // Calculate date range based on period filter
   const getDateRange = () => {
@@ -362,7 +100,7 @@ export default function Objetivos() {
     setDetailsOpen(true);
   };
 
-  const filteredObjectives = objectivesMock.filter(obj => {
+  const filteredObjectives = allObjectives.filter(obj => {
     if (flowFilter !== 'all' && obj.flow !== flowFilter) return false;
     return true;
   });
@@ -555,7 +293,7 @@ export default function Objetivos() {
       <AllObjectivesDialog
         open={allObjectivesOpen}
         onOpenChange={setAllObjectivesOpen}
-        objectives={objectivesMock}
+        objectives={allObjectives}
         onViewDetails={handleViewDetails}
       />
     </DashboardLayout>

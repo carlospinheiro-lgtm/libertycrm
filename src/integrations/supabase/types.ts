@@ -264,6 +264,90 @@ export type Database = {
           },
         ]
       }
+      objectives: {
+        Row: {
+          activity_type: string | null
+          agency_id: string
+          created_at: string
+          current_value: number
+          end_date: string
+          flow: string
+          id: string
+          is_active: boolean
+          objective_category: string
+          result_type: string | null
+          source_filter: Json | null
+          start_date: string
+          target_id: string | null
+          target_name: string | null
+          target_type: string
+          target_value: number
+          unit: string
+          unit_symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type?: string | null
+          agency_id: string
+          created_at?: string
+          current_value?: number
+          end_date: string
+          flow: string
+          id?: string
+          is_active?: boolean
+          objective_category: string
+          result_type?: string | null
+          source_filter?: Json | null
+          start_date: string
+          target_id?: string | null
+          target_name?: string | null
+          target_type?: string
+          target_value?: number
+          unit?: string
+          unit_symbol?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string | null
+          agency_id?: string
+          created_at?: string
+          current_value?: number
+          end_date?: string
+          flow?: string
+          id?: string
+          is_active?: boolean
+          objective_category?: string
+          result_type?: string | null
+          source_filter?: Json | null
+          start_date?: string
+          target_id?: string | null
+          target_name?: string | null
+          target_type?: string
+          target_value?: number
+          unit?: string
+          unit_symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objectives_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objectives_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
