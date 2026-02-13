@@ -63,6 +63,7 @@ interface KanbanBoardProps {
   onAddLead?: () => void;
   isRecruitment?: boolean;
   agencyId?: string;
+  onExcelClick?: () => void;
   // DB persistence callbacks
   onLeadMoved?: (leadId: string, columnId: string, nextActivityDate?: string, nextActivityDescription?: string) => void;
   onLeadUpdated?: (leadId: string, updates: Partial<KanbanLead>) => void;
@@ -77,6 +78,7 @@ export function KanbanBoard({
   onAddLead,
   isRecruitment = false,
   agencyId,
+  onExcelClick,
   onLeadMoved,
   onLeadUpdated,
   onLeadAdded,
@@ -275,7 +277,7 @@ export function KanbanBoard({
               </ToggleGroupItem>
             </ToggleGroup>
 
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" onClick={onExcelClick}>
               <Download className="h-4 w-4" />
             </Button>
 
