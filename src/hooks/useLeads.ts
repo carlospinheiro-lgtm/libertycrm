@@ -10,7 +10,7 @@ export interface DbLead {
   client_name: string;
   email: string | null;
   phone: string | null;
-  lead_type: 'buyer' | 'seller' | 'both';
+  lead_type: 'buyer' | 'seller' | 'recruitment';
   source: string | null;
   source_category: string | null;
   entry_date: string;
@@ -28,7 +28,7 @@ export interface DbLead {
   agency_name?: string;
 }
 
-export function useLeads(leadType: 'buyer' | 'seller') {
+export function useLeads(leadType: 'buyer' | 'seller' | 'recruitment') {
   const { user, currentUser } = useAuth();
   const queryClient = useQueryClient();
 
