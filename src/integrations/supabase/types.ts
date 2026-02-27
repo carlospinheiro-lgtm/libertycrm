@@ -832,6 +832,443 @@ export type Database = {
           },
         ]
       }
+      properties: {
+        Row: {
+          address: string | null
+          agency_id: string
+          area_m2: number | null
+          asking_price: number
+          assigned_agent: string | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          commission_percentage: number | null
+          contract_duration_months: number | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          contract_type: string
+          cover_photo_url: string | null
+          created_at: string | null
+          created_by: string | null
+          current_stage: string
+          energy_certificate: string | null
+          floor: string | null
+          garage: boolean | null
+          id: string
+          lead_id: string | null
+          minimum_price: number | null
+          parish: string | null
+          property_type: string
+          reference: string
+          rooms: number | null
+          stage_entered_at: string | null
+          status: string | null
+          updated_at: string | null
+          video_url: string | null
+          virtual_tour_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          agency_id: string
+          area_m2?: number | null
+          asking_price?: number
+          assigned_agent?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          commission_percentage?: number | null
+          contract_duration_months?: number | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          contract_type?: string
+          cover_photo_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stage?: string
+          energy_certificate?: string | null
+          floor?: string | null
+          garage?: boolean | null
+          id?: string
+          lead_id?: string | null
+          minimum_price?: number | null
+          parish?: string | null
+          property_type?: string
+          reference: string
+          rooms?: number | null
+          stage_entered_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          agency_id?: string
+          area_m2?: number | null
+          asking_price?: number
+          assigned_agent?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          commission_percentage?: number | null
+          contract_duration_months?: number | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          contract_type?: string
+          cover_photo_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stage?: string
+          energy_certificate?: string | null
+          floor?: string | null
+          garage?: boolean | null
+          id?: string
+          lead_id?: string | null
+          minimum_price?: number | null
+          parish?: string | null
+          property_type?: string
+          reference?: string
+          rooms?: number | null
+          stage_entered_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_assigned_agent_fkey"
+            columns: ["assigned_agent"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_activities: {
+        Row: {
+          activity_type: string
+          agency_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          property_id: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          agency_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          property_id: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          agency_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          property_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_activities_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_activities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_checklist_items: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          id: string
+          is_completed: boolean | null
+          is_optional: boolean | null
+          item_key: string
+          label: string
+          order_index: number | null
+          property_id: string
+          stage: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_optional?: boolean | null
+          item_key: string
+          label: string
+          order_index?: number | null
+          property_id: string
+          stage: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_optional?: boolean | null
+          item_key?: string
+          label?: string
+          order_index?: number | null
+          property_id?: string
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_checklist_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_checklist_items_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_documents: {
+        Row: {
+          created_at: string | null
+          document_type: string
+          expiry_date: string | null
+          file_name: string | null
+          file_url: string
+          id: string
+          property_id: string
+          uploaded_by: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type: string
+          expiry_date?: string | null
+          file_name?: string | null
+          file_url: string
+          id?: string
+          property_id: string
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type?: string
+          expiry_date?: string | null
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          property_id?: string
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_documents_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_photos: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_cover: boolean | null
+          order_index: number | null
+          property_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_cover?: boolean | null
+          order_index?: number | null
+          property_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_cover?: boolean | null
+          order_index?: number | null
+          property_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_photos_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_portals: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_published: boolean | null
+          last_updated: string | null
+          portal_name: string
+          portal_url: string | null
+          property_id: string
+          publish_date: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          last_updated?: string | null
+          portal_name: string
+          portal_url?: string | null
+          property_id: string
+          publish_date?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          last_updated?: string | null
+          portal_name?: string
+          portal_url?: string | null
+          property_id?: string
+          publish_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_portals_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_visits: {
+        Row: {
+          agency_id: string
+          agent_id: string | null
+          buyer_contact: string | null
+          buyer_name: string | null
+          created_at: string | null
+          feedback: string | null
+          follow_up_created: boolean | null
+          id: string
+          outcome: string | null
+          property_id: string
+          visit_date: string
+        }
+        Insert: {
+          agency_id: string
+          agent_id?: string | null
+          buyer_contact?: string | null
+          buyer_name?: string | null
+          created_at?: string | null
+          feedback?: string | null
+          follow_up_created?: boolean | null
+          id?: string
+          outcome?: string | null
+          property_id: string
+          visit_date: string
+        }
+        Update: {
+          agency_id?: string
+          agent_id?: string | null
+          buyer_contact?: string | null
+          buyer_name?: string | null
+          created_at?: string | null
+          feedback?: string | null
+          follow_up_created?: boolean | null
+          id?: string
+          outcome?: string | null
+          property_id?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_visits_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_visits_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_visits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           agency_id: string
