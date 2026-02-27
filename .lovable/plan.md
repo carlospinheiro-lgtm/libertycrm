@@ -1,134 +1,86 @@
 
-# Plano de Implementacao — Renomear Menus, Atualizar Colunas CRM Compradores, Melhorar Cards e Filtro Global de Agente
 
----
+# Seed Data Plan — Realistic Portuguese Test Data
 
-## 1. Renomear itens do sidebar e titulos internos
+## Overview
 
-### Ficheiros a modificar
+Insert realistic Portuguese seed data across all DB-backed CRM modules. The Processos (CRM Processual) page currently uses hardcoded sample data and is not backed by a database table, so it will be skipped.
 
-**`src/components/layout/Sidebar.tsx`** (linhas 38-42):
-- "Leads Compradores" -> "CRM Compradores"
-- "Leads Vendedores" -> "CRM Vendedores"
-- "Angariacoes" -> "CRM Angariacoes"
-- "Recrutamento" -> "CRM Recrutamento"
-- "Gestao Processual" -> "CRM Processual"
+## Data to Insert
 
-**`src/pages/LeadsCompradores.tsx`** (linha 101):
-- KanbanBoard title: "Leads Compradores" -> "CRM Compradores"
+### 1. CRM Compradores — 15 leads (lead_type = 'buyer')
 
-**`src/pages/LeadsVendedores.tsx`** (linha 100):
-- KanbanBoard title: "Leads Vendedores" -> "CRM Vendedores"
+Distribution across columns:
+- 2x `new` (Novo Contacto)
+- 2x `first-contact` (Primeiro Contacto)
+- 2x `qualifying` (Em Qualificacao)
+- 2x `visits` (Visitas Agendadas)
+- 2x `proposal` (Proposta Apresentada)
+- 1x `negotiation` (Em Negociacao)
+- 1x `won` (Fechado - Ganhamos)
+- 1x `followup-0-3` (Follow-up 0-3 Meses)
+- 1x `no-interest` (Sem Interesse)
+- 1x `disqualified` (Lead Desqualificada)
 
-**`src/pages/Recrutamento.tsx`** (linha 60):
-- KanbanBoard title: "Recrutamento de Agentes" -> "CRM Recrutamento"
+### 2. CRM Vendedores — 12 leads (lead_type = 'seller')
 
-**`src/pages/Processos.tsx`** (linha 70):
-- Titulo h1: "Gestao Processual & Credito" -> "CRM Processual & Credito"
+Distribution across columns:
+- 2x `new` (Novo Proprietario)
+- 2x `first-contact` (Primeiro Contacto)
+- 2x `meeting` (Reuniao Captacao)
+- 2x `evaluation` (Em Avaliacao)
+- 2x `proposal-sent` (Proposta Enviada)
+- 1x `decision` (Em Decisao)
+- 1x `signed` (Fechado - Ganhamos)
 
-**`src/pages/Angariacoes.tsx`** (linha 22):
-- Titulo h1: "Angariacoes" -> "CRM Angariacoes"
+### 3. CRM Angariacoes — 6 property records
 
-Nota: Todos os outros menus (Dashboard, Mapa de Atividades, Contas Correntes, Objetivos, Projetos, Agenda, Administracao, Origens) ficam INALTERADOS.
+Distribution across stages:
+- 1x `documentos` (Recolha de Documentos)
+- 2x `avaliacao` (Avaliacao)
+- 1x `publicacao` (Publicacao)
+- 1x `visitas` (Visitas)
+- 1x `negociacao` (Negociacao)
 
----
+Each property gets default checklist items for its current stage, with some items marked as completed to show progress.
 
-## 2. CRM Compradores — Atualizar colunas do Kanban
+### 4. CRM Recrutamento — 8 leads (lead_type = 'recruitment')
 
-**`src/pages/LeadsCompradores.tsx`** — Substituir o array `buyerColumns`:
+Distribution across columns:
+- 2x `new` (Candidatura Recebida)
+- 2x `interview-scheduled` (Entrevista Agendada)
+- 1x `interview-done` (Entrevista Realizada)
+- 1x `decision` (Em Avaliacao)
+- 1x `training` (Proposta Enviada - maps to training column)
+- 1x `active` (Integrado)
 
-Colunas finais (12 colunas):
-```text
-new          -> Novo Contacto (blue)
-first-contact -> Primeiro Contacto (cyan)
-qualifying   -> Em Qualificacao (cyan)
-visits       -> Visitas Agendadas (yellow)
-proposal     -> Proposta Apresentada (yellow)
-negotiation  -> Em Negociacao (yellow)
-won          -> Fechado - Ganhamos (green)
-followup-0-3 -> Follow-up 0-3 Meses (purple)
-followup-3-6 -> Follow-up 3-6 Meses (purple)
-followup-6+  -> Follow-up +6 Meses (purple)
-no-interest  -> Sem Interesse (red)
-disqualified -> Lead Desqualificada (grey)
-```
+### 5. Activity Logs — 1-3 per lead
 
-A coluna `lost` sera removida e substituida por `no-interest` e `disqualified`.
+Each lead gets 1-3 `lead_activities` entries (types: call, email, note) with varied timestamps to trigger aging indicators.
 
-Para as cores lilac/purple, criar entradas custom no KanbanColumn component ou usar o valor `purple` existente. Adicionar suporte para cores especificas via propriedades opcionais `bgTint` e `borderColor` no tipo Column.
+### 6. CRM Processual — Skipped
 
-**`src/components/kanban/KanbanColumn.tsx`** — Adicionar suporte para cores `purple` e `grey` no mapeamento de cores (se nao existir).
+The Processos page uses hardcoded `sampleProcesses` array, not a database table. No SQL insert needed.
 
----
+## Data Characteristics
 
-## 3. Kanban Cards — Adicionar "Ultimo contacto" indicator
+- **Agency:** Liberty Braga (`fbeac105-6278-442a-8986-ad56fb4f89e4`)
+- **Agents (rotating):** 6 agents from existing user_agencies records
+- **Names:** Common Portuguese names (Ana, Joao, Rui, Margarida, etc.)
+- **Phones:** +351 9XX XXX XXX format
+- **Emails:** firstname.lastname@gmail.com / @hotmail.com
+- **Locations:** Braga, Porto, Guimaraes, Barcelos, Viana do Castelo
+- **Sources:** Idealista, Imovirtual, Referral, Website, Redes Sociais, Walk-in
+- **Priorities:** Mix of baixa, normal, alta, urgente
+- **Aging:** `column_entered_at` varied from 1 to 25 days ago
 
-Os cards ja incluem a maioria dos elementos pedidos (avatar com iniciais, telefone clicavel, badge de origem, budget range, agente, aging pill, borda de prioridade, acoes rapidas). Falta adicionar:
+## Technical Approach
 
-**`src/components/kanban/KanbanCard.tsx`**:
-- Adicionar indicador "Ultimo contacto: X dias" na parte inferior do card
-  - Usar dados de `lead_activities` ou `column_entered_at` como proxy
-  - Cores: verde <3 dias, amarelo 3-7 dias, vermelho >7 dias
-- Adicionar icone de tarefa (calendario) e nota (texto) nos quick actions
-- Renomear tooltips das acoes rapidas conforme especificado
+Single SQL insert operation via the data insert tool containing:
+1. INSERT INTO `leads` — 35 records (15 buyer + 12 seller + 8 recruitment)
+2. INSERT INTO `lead_activities` — ~60-80 activity log entries
+3. INSERT INTO `properties` — 6 records with references ANG-2026-0001 through 0006
+4. INSERT INTO `property_checklist_items` — default checklist items per property/stage
 
-Os quick actions atuais ja incluem telefone, WhatsApp, email e mover. Adicionar:
-- Calendario (Agendar tarefa)
-- Nota (Adicionar nota)
+No schema changes needed. All tables and columns already exist.
 
----
-
-## 4. Filtro Global de Agente — TopBar persistente
-
-### Novo contexto: `AgentFilterContext`
-
-Criar **`src/contexts/AgentFilterContext.tsx`**:
-- Estado: `selectedAgentId: string | 'all'`
-- Logica: se o utilizador tem role de agente (sem roles de diretor/admin), fixa o filtro no proprio ID e desabilita o dropdown
-- Se diretor/admin, mostra dropdown com todos os agentes da agencia
-- Persistencia via `useState` no contexto (persiste entre navegacao de paginas)
-
-### Modificar `src/components/layout/TopBar.tsx`:
-- Adicionar dropdown de filtro de agente entre a pesquisa e o seletor de agencia
-- Dropdown lista agentes ativos na agencia (query a `profiles` + `user_agencies`)
-- Para agentes: mostrar apenas o seu nome, dropdown desabilitado
-- Para diretores/admins: dropdown com "Todos os Agentes" + lista
-
-### Modificar `src/components/layout/DashboardLayout.tsx`:
-- Envolver com `AgentFilterProvider`
-
-### Modificar `src/pages/LeadsCompradores.tsx` e `src/pages/LeadsVendedores.tsx`:
-- Consumir `useAgentFilter()` do contexto
-- Filtrar leads por `agentId` quando filtro ativo
-- Remover o filtro de agente local do `KanbanBoard.tsx` (duplicado)
-
-### Modificar `src/components/kanban/KanbanBoard.tsx`:
-- Consumir o filtro global de agente do contexto em vez do filtro local
-- Manter o filtro de agencia local
-
----
-
-## Resumo de ficheiros
-
-### Criar
-| Ficheiro | Descricao |
-|----------|-----------|
-| `src/contexts/AgentFilterContext.tsx` | Contexto global para filtro de agente |
-
-### Modificar
-| Ficheiro | Alteracao |
-|----------|-----------|
-| `src/components/layout/Sidebar.tsx` | Renomear 5 labels |
-| `src/pages/LeadsCompradores.tsx` | Renomear titulo + atualizar colunas |
-| `src/pages/LeadsVendedores.tsx` | Renomear titulo |
-| `src/pages/Recrutamento.tsx` | Renomear titulo |
-| `src/pages/Processos.tsx` | Renomear titulo |
-| `src/pages/Angariacoes.tsx` | Renomear titulo |
-| `src/components/kanban/KanbanCard.tsx` | Adicionar "ultimo contacto" + acoes extras |
-| `src/components/kanban/KanbanColumn.tsx` | Suporte para cores purple/grey |
-| `src/components/layout/TopBar.tsx` | Adicionar dropdown filtro agente global |
-| `src/components/layout/DashboardLayout.tsx` | Envolver com AgentFilterProvider |
-| `src/components/kanban/KanbanBoard.tsx` | Usar filtro global de agente |
-
-### Sem alteracoes na base de dados
-Nao e necessaria nenhuma migracao SQL. Todas as alteracoes sao frontend.
