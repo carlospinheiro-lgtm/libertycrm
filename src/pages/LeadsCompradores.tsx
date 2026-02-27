@@ -69,6 +69,14 @@ async function logStageChange(leadId: string, agencyId: string, userId: string, 
 }
 
 export default function LeadsCompradores() {
+  return (
+    <DashboardLayout>
+      <LeadsCompradoresContent />
+    </DashboardLayout>
+  );
+}
+
+function LeadsCompradoresContent() {
   const { leads, isLoading, addLead, updateLead, deleteLead, moveLead } = useLeads('buyer');
   const { currentUser, user } = useAuth();
   const { selectedAgentId } = useAgentFilter();
@@ -219,21 +227,19 @@ export default function LeadsCompradores() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="space-y-4 p-4">
-          <Skeleton className="h-8 w-48" />
-          <div className="flex gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-96 w-72 flex-shrink-0" />
-            ))}
-          </div>
+      <div className="space-y-4 p-4">
+        <Skeleton className="h-8 w-48" />
+        <div className="flex gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-96 w-72 flex-shrink-0" />
+          ))}
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="space-y-4 animate-fade-in">
           {/* Header */}
@@ -326,6 +332,6 @@ export default function LeadsCompradores() {
           onAdd={handleAddLead}
         />
       </DndContext>
-    </DashboardLayout>
+    </>
   );
 }
