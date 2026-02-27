@@ -9,10 +9,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Phone, Mail, Calendar, MoveHorizontal, MessageCircle, Euro } from 'lucide-react';
+import { Phone, Mail, Calendar, MoveHorizontal, MessageCircle, Euro, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KanbanLead, KanbanColumn } from '@/hooks/useKanbanState';
 import { differenceInDays } from 'date-fns';
+
+const proposalStatusConfig: Record<string, { label: string; className: string }> = {
+  draft: { label: 'Rascunho', className: 'bg-muted text-muted-foreground' },
+  sent: { label: 'Enviada', className: 'bg-info/20 text-info' },
+  analysis: { label: 'Em Análise', className: 'bg-warning/20 text-warning' },
+  accepted: { label: 'Aceite', className: 'bg-success/20 text-success' },
+  rejected: { label: 'Recusada', className: 'bg-destructive/20 text-destructive' },
+  counter: { label: 'Contra-Proposta', className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+};
 
 interface KanbanCardProps {
   lead: KanbanLead;
@@ -78,8 +87,10 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove, current
   const budgetMin = (lead as any).budgetMin;
   const budgetMax = (lead as any).budgetMax;
   const columnEnteredAt = (lead as any).columnEnteredAt;
+  const proposalStatus = (lead as any).proposalStatus as string | undefined;
   const aging = getAgingInfo(lead.entryDate, columnEnteredAt);
   const shouldShowAgent = !currentUserId || lead.agentId !== currentUserId;
+  const isInProposalColumn = lead.columnId === 'proposal';
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a, [data-no-drag]')) return;
@@ -106,7 +117,8 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove, current
       className={cn(
         'kanban-card-draggable card-interactive bg-card transition-all touch-none border-l-4',
         priorityBorderColors[priority] || 'border-l-info',
-        isDragging && 'opacity-50'
+        isDragging && 'opacity-50',
+        isInProposalColumn && !proposalStatus && 'ring-2 ring-warning animate-pulse'
       )}
       onClick={handleCardClick}
     >
@@ -145,7 +157,16 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove, current
           )}
         </div>
 
-        {/* Next Activity */}
+        {/* Proposal Status Badge */}
+        {proposalStatus && proposalStatusConfig[proposalStatus] && (
+          <div className="flex items-center gap-1.5">
+            <FileText className="h-3 w-3 text-muted-foreground" />
+            <Badge className={cn('text-[10px] px-1.5 py-0', proposalStatusConfig[proposalStatus].className)}>
+              {proposalStatusConfig[proposalStatus].label}
+            </Badge>
+          </div>
+        )}
+
         {lead.nextActivityDate && (
           <div className="flex items-center gap-1.5 bg-warning/10 rounded px-2 py-1 text-xs text-warning-foreground">
             <Calendar className="h-3 w-3" />
