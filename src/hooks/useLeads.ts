@@ -23,6 +23,18 @@ export interface DbLead {
   is_active: boolean | null;
   created_at: string;
   updated_at: string;
+  budget_min?: number | null;
+  budget_max?: number | null;
+  column_entered_at?: string;
+  // Buyer-specific fields
+  zones?: string[];
+  typology?: string | null;
+  last_contact_at?: string | null;
+  next_action_text?: string | null;
+  next_action_at?: string | null;
+  buyer_motive?: string | null;
+  buyer_timeline?: string | null;
+  buyer_financing?: string | null;
   // joined profile data
   agent_name?: string;
   agency_name?: string;

@@ -76,6 +76,58 @@ export type Database = {
           },
         ]
       }
+      buyer_interactions: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          note: string | null
+          type: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          note?: string | null
+          type: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          note?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_interactions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_interactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           agency_id: string
@@ -307,6 +359,9 @@ export type Database = {
           agency_id: string
           budget_max: number | null
           budget_min: number | null
+          buyer_financing: string | null
+          buyer_motive: string | null
+          buyer_timeline: string | null
           client_name: string
           column_entered_at: string
           column_id: string
@@ -322,7 +377,10 @@ export type Database = {
           imported_by_user_id: string | null
           is_active: boolean | null
           language: string
+          last_contact_at: string | null
           lead_type: string
+          next_action_at: string | null
+          next_action_text: string | null
           next_activity_date: string | null
           next_activity_description: string | null
           nif: string | null
@@ -334,13 +392,18 @@ export type Database = {
           source: string | null
           source_category: string | null
           temperature: string
+          typology: string | null
           updated_at: string
           user_id: string
+          zones: string[] | null
         }
         Insert: {
           agency_id: string
           budget_max?: number | null
           budget_min?: number | null
+          buyer_financing?: string | null
+          buyer_motive?: string | null
+          buyer_timeline?: string | null
           client_name: string
           column_entered_at?: string
           column_id: string
@@ -356,7 +419,10 @@ export type Database = {
           imported_by_user_id?: string | null
           is_active?: boolean | null
           language?: string
+          last_contact_at?: string | null
           lead_type: string
+          next_action_at?: string | null
+          next_action_text?: string | null
           next_activity_date?: string | null
           next_activity_description?: string | null
           nif?: string | null
@@ -368,13 +434,18 @@ export type Database = {
           source?: string | null
           source_category?: string | null
           temperature?: string
+          typology?: string | null
           updated_at?: string
           user_id: string
+          zones?: string[] | null
         }
         Update: {
           agency_id?: string
           budget_max?: number | null
           budget_min?: number | null
+          buyer_financing?: string | null
+          buyer_motive?: string | null
+          buyer_timeline?: string | null
           client_name?: string
           column_entered_at?: string
           column_id?: string
@@ -390,7 +461,10 @@ export type Database = {
           imported_by_user_id?: string | null
           is_active?: boolean | null
           language?: string
+          last_contact_at?: string | null
           lead_type?: string
+          next_action_at?: string | null
+          next_action_text?: string | null
           next_activity_date?: string | null
           next_activity_description?: string | null
           nif?: string | null
@@ -402,8 +476,10 @@ export type Database = {
           source?: string | null
           source_category?: string | null
           temperature?: string
+          typology?: string | null
           updated_at?: string
           user_id?: string
+          zones?: string[] | null
         }
         Relationships: [
           {
