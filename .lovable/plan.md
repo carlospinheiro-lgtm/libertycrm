@@ -1,34 +1,38 @@
 
 
-## Problema Identificado
+## Problema
 
-As leads de compradores, vendedores e recrutamento **existem na base de dados** (foram inseridas com sucesso), mas **nao aparecem no ecra** porque o pedido ao servidor retorna erro 400:
+A tabela `leads` tem uma foreign key `leads_user_id_fkey` que aponta para `auth.users`, mas o codigo tenta fazer join com `public.profiles`. O PostgREST so reconhece relacoes baseadas em foreign keys existentes, por isso retorna erro 400.
 
-> "Could not find a relationship between 'leads' and 'profiles' in the schema cache"
-
-A tabela `leads` tem um campo `user_id` mas nao existe uma foreign key definida para a tabela `profiles`. O mesmo acontece com `agency_id` para `agencies`. Sem essas FK, o PostgREST nao consegue fazer o join automatico.
+A FK para `agencies` ja existe e esta correcta.
 
 ## Solucao
 
-### 1. Criar migracao com as foreign keys em falta
+### 1. Migracao: adicionar FK de leads.user_id para profiles.id
 
-Adicionar duas foreign keys na tabela `leads`:
-- `leads.user_id` -> `profiles.id`
-- `leads.agency_id` -> `agencies.id`
-
-### 2. Sem alteracoes de codigo necessarias
-
-O hook `useLeads` ja faz `.select('*, profiles(name), agencies(name)')` corretamente. Basta adicionar as FK para que o PostgREST reconheca a relacao e o join funcione.
-
-## Detalhes Tecnicos
+Adicionar uma segunda foreign key no campo `user_id` apontando para `profiles(id)`:
 
 ```sql
 ALTER TABLE public.leads
-  ADD CONSTRAINT leads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id);
-
-ALTER TABLE public.leads
-  ADD CONSTRAINT leads_agency_id_fkey FOREIGN KEY (agency_id) REFERENCES public.agencies(id);
+  ADD CONSTRAINT leads_user_id_profiles_fkey
+  FOREIGN KEY (user_id) REFERENCES public.profiles(id);
 ```
 
-Apos esta migracao, os 3 modulos CRM (Compradores, Vendedores, Recrutamento) passarao a mostrar os dados correctamente.
+### 2. Alterar a query no hook useLeads
+
+Com duas FKs no mesmo campo (`auth.users` e `profiles`), o PostgREST exige desambiguacao. Alterar o `.select()` para usar o hint de FK:
+
+```text
+De:  .select('*, profiles(name), agencies(name)')
+Para: .select('*, profiles!leads_user_id_profiles_fkey(name), agencies(name)')
+```
+
+### Ficheiros afetados
+
+- Nova migracao SQL (1 ficheiro)
+- `src/hooks/useLeads.ts` - alterar linha do `.select()` (1 linha)
+
+### Resultado
+
+Os 3 modulos CRM (Compradores, Vendedores, Recrutamento) passarao a mostrar os dados correctamente com o nome do agente e da agencia.
 
