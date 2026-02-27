@@ -1,283 +1,293 @@
 
-# Liberty CRM — Plano de Implementacao Faseado
+# Modulo Angariacoes — Plano de Implementacao
 
-Este pedido cobre 12+ modulos principais. Implementar tudo de uma vez seria arriscado e impossivel de testar. Proponho uma abordagem faseada, priorizando por impacto e dependencias.
-
----
-
-## Fase 1 — Kanban Cards Enriquecidos + Lead Detail Panel
-
-**Prioridade: Alta** | Impacto imediato na usabilidade dos modulos existentes.
-
-### 1A. Melhorar KanbanCard.tsx
-Adicionar ao cartao existente:
-- Avatar/iniciais do contacto (circulo colorido)
-- Badge da origem (Idealista, Website, etc.) — ja existe como `lead.source`
-- Budget range (novo campo `budget_min`, `budget_max` na tabela `leads`)
-- Aging pill: dias na coluna atual (calcular a partir de `entry_date` ou novo campo `column_entered_at`)
-  - Verde: menos de 7 dias, Amarelo: 7-14 dias, Vermelho: mais de 14 dias
-- Prioridade: borda esquerda colorida (novo campo `priority` na tabela `leads`)
-  - Cinza=Baixa, Azul=Normal, Vermelho=Alta, Preto=Urgente
-- Quick actions no hover: Registar chamada, Agendar, Nota, Mover
-
-### 1B. Lead Detail Panel (Sheet lateral)
-Substituir o `LeadDetailsDialog` atual (modal centrado) por um `Sheet` lateral direito com tabs:
-- **Resumo** — dados chave, budget, preferencias, RGPD, NIF
-- **Atividade** — timeline cronologica (novo — requer tabela `lead_activities`)
-- **Tarefas** — tarefas vinculadas (novo — requer tabela `lead_tasks`)
-- **Documentos** — ficheiros carregados (Storage bucket)
-- **Propostas** — lista de propostas (Fase 2)
-- **Notas** — notas com timestamp
-
-### 1C. Nova Lead Modal Melhorado (multi-step)
-Substituir `AddLeadDialog` por formulario em 4 passos:
-1. Identificacao: nome, telefone, email, NIF, idioma
-2. Origem e Classificacao: source, tipo, urgencia, budget, agente
-3. Preferencias do Imovel: tipologia, localizacao, quartos, area, features
-4. RGPD: checkbox consentimento + data
-
-### DB Changes (Fase 1):
-```text
-ALTER TABLE leads ADD COLUMN budget_min numeric DEFAULT NULL;
-ALTER TABLE leads ADD COLUMN budget_max numeric DEFAULT NULL;
-ALTER TABLE leads ADD COLUMN priority text DEFAULT 'normal';
-ALTER TABLE leads ADD COLUMN nif text DEFAULT NULL;
-ALTER TABLE leads ADD COLUMN language text DEFAULT 'pt';
-ALTER TABLE leads ADD COLUMN rgpd_consent boolean DEFAULT false;
-ALTER TABLE leads ADD COLUMN rgpd_consent_date timestamptz DEFAULT NULL;
-ALTER TABLE leads ADD COLUMN column_entered_at timestamptz DEFAULT now();
-
-CREATE TABLE lead_activities (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL,
-  activity_type text NOT NULL, -- 'call','email','note','stage_change','task','document'
-  description text,
-  metadata jsonb DEFAULT '{}',
-  created_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE lead_tasks (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  assigned_to uuid,
-  title text NOT NULL,
-  description text,
-  due_date date,
-  status text DEFAULT 'pending', -- 'pending','done','cancelled'
-  created_by uuid,
-  created_at timestamptz DEFAULT now(),
-  completed_at timestamptz
-);
-```
-- RLS policies baseadas em `has_agency_access` via join com leads
-- Storage bucket `lead-documents` para upload de ficheiros
-
-### Ficheiros a criar/modificar:
-- `src/components/kanban/KanbanCard.tsx` — redesign com novos campos
-- `src/components/kanban/LeadDetailsSheet.tsx` — substituir dialog por sheet com tabs
-- `src/components/kanban/AddLeadDialog.tsx` — multi-step form
-- `src/hooks/useLeadActivities.ts` — CRUD para atividades
-- `src/hooks/useLeadTasks.ts` — CRUD para tarefas
+Este modulo e o mais complexo ate agora: uma pagina de listagem, uma pagina de detalhe com Kanban interno de 5 colunas, checklists por etapa, gestao de media/portais, visitas, documentos e contratos. Proponho dividir em sub-fases dentro desta implementacao.
 
 ---
 
-## Fase 2 — Propostas (Leads Compradores)
+## Fase A — Base de Dados e Infraestrutura
 
-**Prioridade: Alta** | Funcionalidade core do negocio.
-
-### 2A. Trigger na coluna "Proposta Apresentada"
-- No `KanbanBoard.tsx`, interceptar drag para a coluna `proposal`
-- Card fica com borda pulsante amarela (CSS animation)
-- Modal obrigatorio de 5 passos abre automaticamente
-- Se cancelar, card volta a coluna anterior
-
-### 2B. Modal de Proposta (5 passos)
+### Tabela `properties` (imoveis angariados)
 ```text
-Step 1 — Dados da Proposta:
-  Numero auto (PROP-YYYY-XXXX), data, validade (+15d),
-  tipo (Venda/Arrendamento), valor, metodo pagamento,
-  financiamento, sinal, data escritura
-
-Step 2 — Dados do Cliente:
-  Auto-preenchido da lead, editavel, co-titular
-
-Step 3 — Dados do Imovel:
-  Pesquisa/selecao ou entrada manual,
-  tipologia, area, condicoes
-
-Step 4 — Condicoes Especiais:
-  Rich text + checklist configuravel
-
-Step 5 — Revisao e Acao:
-  Preview formatado
-  Botoes: Rascunho, PDF+Email, PDF+WhatsApp, Apenas PDF
-```
-
-### 2C. Badge de status no card
-- Rascunho (cinza), Enviada (azul), Em Analise (amarelo), Aceite (verde), Recusada (vermelho), Contra-Proposta (roxo)
-- Aceite: auto-avanca para "Em Negociacao"
-
-### DB Changes (Fase 2):
-```text
-CREATE TABLE proposals (
+CREATE TABLE properties (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id uuid NOT NULL REFERENCES leads(id),
   agency_id uuid NOT NULL,
-  proposal_number text UNIQUE NOT NULL,
-  proposal_date date NOT NULL DEFAULT CURRENT_DATE,
-  validity_date date,
-  deal_type text NOT NULL, -- 'venda','arrendamento'
-  proposed_value numeric NOT NULL,
-  payment_method text, -- 'comptado','financiamento','misto'
-  mortgage_amount numeric,
-  bank text,
-  approval_status text,
-  down_payment numeric,
-  down_payment_date date,
-  deed_date date,
-  -- Cliente
-  client_name text,
-  client_nif text,
-  client_address text,
-  client_email text,
-  client_phone text,
-  co_titular_name text,
-  co_titular_nif text,
-  -- Imovel
-  property_address text,
-  property_typology text,
-  property_area numeric,
-  property_reference text,
-  condition_notes text,
-  inspection_required boolean DEFAULT false,
-  inspection_deadline date,
-  -- Condicoes
-  special_conditions text,
-  conditions_checklist jsonb DEFAULT '[]',
-  -- Status
-  status text DEFAULT 'draft', -- 'draft','sent','analysis','accepted','rejected','counter'
-  rejection_reason text,
-  pdf_url text,
+  lead_id uuid REFERENCES leads(id),
+  reference text UNIQUE NOT NULL,
   created_by uuid,
+  assigned_agent uuid,
+  -- Dados do imovel
+  property_type text NOT NULL DEFAULT 'apartamento',
+  address text,
+  parish text,
+  city text DEFAULT 'Braga',
+  area_m2 numeric,
+  rooms integer,
+  bedrooms integer,
+  bathrooms integer,
+  floor text,
+  garage boolean DEFAULT false,
+  energy_certificate text,
+  asking_price numeric NOT NULL DEFAULT 0,
+  minimum_price numeric,
+  -- Contrato
+  contract_type text NOT NULL DEFAULT 'exclusive',
+  contract_start_date date,
+  contract_end_date date,
+  contract_duration_months integer DEFAULT 6,
+  commission_percentage numeric,
+  -- Pipeline
+  current_stage text NOT NULL DEFAULT 'documentos',
+  stage_entered_at timestamptz DEFAULT now(),
+  -- Media
+  cover_photo_url text,
+  video_url text,
+  virtual_tour_url text,
+  -- Status
+  status text DEFAULT 'active',
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
 ```
 - RLS via `has_agency_access`
+- Indices em `agency_id`, `status`, `current_stage`
 
-### Ficheiros a criar:
-- `src/components/proposals/ProposalWizard.tsx` — modal 5 passos
-- `src/components/proposals/ProposalPreview.tsx` — preview formatado
-- `src/hooks/useProposals.ts` — CRUD
-- `src/lib/proposal-pdf.ts` — geracao PDF (jsPDF)
-
----
-
-## Fase 3 — Leads Vendedores (colunas atualizadas + Contrato de Mediacao)
-
-### 3A. Atualizar colunas
-Mudar as colunas existentes em `LeadsVendedores.tsx` para:
+### Tabela `property_photos`
 ```text
-Novo Contacto, Primeiro Contacto, Em Qualificacao,
-Imovel Avaliado, Contrato de Mediacao, Imovel Publicado,
-Em Negociacao, Fechado - Ganhamos, Fechado - Perdemos
-```
-Com cores: Blue, Blue, Blue, Amber, Amber, Teal, Teal, Green, Red
-
-### 3B. Trigger "Contrato de Mediacao"
-Modal obrigatorio ao arrastar para esta coluna:
-- Tipo contrato (Exclusividade / Nao Exclusividade)
-- Duracao (meses), Comissao (%), Detalhes imovel, Data assinatura, Notas
-- Gerar PDF resumo do contrato
-
-### DB Changes:
-```text
-CREATE TABLE mediation_contracts (
+CREATE TABLE property_photos (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id uuid NOT NULL REFERENCES leads(id),
-  agency_id uuid NOT NULL,
-  contract_type text NOT NULL, -- 'exclusive','non_exclusive'
-  duration_months integer,
-  commission_percentage numeric,
-  signing_date date,
-  property_details jsonb,
-  notes text,
-  pdf_url text,
-  created_by uuid,
+  property_id uuid NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  url text NOT NULL,
+  order_index integer DEFAULT 0,
+  is_cover boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 ```
 
+### Tabela `property_checklist_items`
+```text
+CREATE TABLE property_checklist_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  property_id uuid NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  stage text NOT NULL,
+  item_key text NOT NULL,
+  label text NOT NULL,
+  is_completed boolean DEFAULT false,
+  completed_at timestamptz,
+  completed_by uuid,
+  is_optional boolean DEFAULT false,
+  order_index integer DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+### Tabela `property_visits`
+```text
+CREATE TABLE property_visits (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  property_id uuid NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  agency_id uuid NOT NULL,
+  visit_date timestamptz NOT NULL,
+  buyer_name text,
+  buyer_contact text,
+  agent_id uuid,
+  outcome text DEFAULT 'medium_interest',
+  feedback text,
+  follow_up_created boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+### Tabela `property_portals`
+```text
+CREATE TABLE property_portals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  property_id uuid NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  portal_name text NOT NULL,
+  is_published boolean DEFAULT false,
+  portal_url text,
+  publish_date date,
+  last_updated timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+### Tabela `property_documents`
+```text
+CREATE TABLE property_documents (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  property_id uuid NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  document_type text NOT NULL,
+  file_url text NOT NULL,
+  file_name text,
+  expiry_date date,
+  version integer DEFAULT 1,
+  uploaded_by uuid,
+  created_at timestamptz DEFAULT now()
+);
+```
+
+### Tabela `property_activities` (timeline)
+```text
+CREATE TABLE property_activities (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  property_id uuid NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  agency_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  activity_type text NOT NULL,
+  description text,
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+```
+
+### Storage
+- Bucket `property-photos` (publico para display)
+- Bucket `property-documents` (privado)
+
+### Sequencia para referencia
+```text
+CREATE SEQUENCE property_reference_seq START 1;
+```
+
 ---
 
-## Fase 4 — Gestao Processual (substituir mock)
+## Fase B — Sidebar + Routing + Pagina de Listagem
 
-Substituir o mock atual em `Processos.tsx` por modulo funcional:
-- Toggle Kanban / Tabela
-- Colunas: Proposta Aceite, Documentacao, CPCV Assinado, Financiamento, Escritura Marcada, Escritura Realizada, Processo Concluido
-- Cada processo liga a: lead comprador + vendedor, imovel, proposta, agente
-- Checklist de documentos configuravel
-- Alertas de deadlines (amarelo 7d, vermelho 3d)
+### Sidebar (`Sidebar.tsx`)
+Adicionar "Angariacoes" entre "Leads Vendedores" e "Recrutamento":
+- Icone: `Building` (lucide-react)
+- Path: `/angariacoes`
+- Permissoes: mesmas dos leads vendedores
 
-### DB: tabela `processes` com campos para datas chave, checklist, status
+### Router (`App.tsx`)
+- Rota `/angariacoes` → pagina `Angariacoes.tsx`
+- Rota `/angariacoes/:id` → pagina `AngariacaoDetalhe.tsx`
 
----
+### Pagina `Angariacoes.tsx` — Lista
+- Summary bar no topo: Total Ativas, Em Exclusividade, Nao Exclusividade, A Expirar (30d), Expiradas
+- Toggle lista/grid
+- Filtros: Agente, Estado, Tipo Imovel, Exclusividade, Portais
+- Tabela com: foto thumbnail, referencia, morada, tipo badge, preco, agente, contrato pill, countdown expirar, stage pill, icones portais
+- Quick actions hover: Ver Detalhe, Agendar Visita, Nota
+- Export CSV/PDF
+- SEM botao "+ Nova Angariacao" (criacao automatica via Leads Vendedores)
 
-## Fase 5 — Agenda
-
-Substituir ComingSoon por modulo funcional:
-- Vistas: Mes, Semana, Dia, Lista
-- Tipos de evento: Visita, Reuniao, Chamada, Escritura, CPCV, Outro
-- Ligacao a Lead / Imovel / Processo
-- Cor por tipo de evento
-- Quick create ao clicar no calendario
-
-### DB: tabela `calendar_events`
-
----
-
-## Fase 6 — Mapa de Atividades + Contas Correntes
-
-### 6A. Mapa de Atividades
-Feed de atividades com filtros (agente, data, tipo)
-- Baseado na tabela `lead_activities` da Fase 1
-- Export PDF/CSV
-
-### 6B. Contas Correntes
-Tracking financeiro por deal:
-- Comissao esperada/recebida, status pagamento
-- Filtros por agente, mes, status
-- Resumo totais
-- Export CSV
-
-### DB: tabela `financial_entries`
+### Hook `useProperties.ts`
+- CRUD para tabela `properties` com joins para fotos, portais, agente
+- Query filtrada por `agency_id`
 
 ---
 
-## Fase 7 — Admin Enhancements (Branding, Templates, RGPD)
+## Fase C — Pagina de Detalhe da Angariacao
 
-- Tab Branding: upload logos (sidebar, login, PDF, favicon) via Storage
-- Tab Templates: templates email/WhatsApp com merge tags
-- Tab RGPD: retencao dados, log consentimento
-- Tab Propostas: configuracoes default, disclaimer, AMI, checklist
+### Layout duas colunas
+- Esquerda (60%): Kanban interno de 5 colunas
+- Direita (40%): Painel de tabs
 
-### DB: storage bucket `branding`, tabelas `email_templates`, `rgpd_settings`
+### Kanban Interno (5 colunas)
+Colunas: Recolha de Documentos | Avaliacao | Publicacao | Visitas | Negociacao
+
+Cores:
+- Documentos: blue (#EBF4FF / #3B82F6)
+- Avaliacao: purple (#F5F3FF / #8B5CF6)
+- Publicacao: teal (#F0FDFA / #14B8A6)
+- Visitas: amber (#FFFBEB / #F59E0B)
+- Negociacao: orange (#FFF7ED / #F97316)
+
+Card unico por angariacao mostra: foto, morada, referencia, preco, aging pill, progress bar checklist, proxima tarefa, avatar agente.
+
+Logica de drag: so permite arrastar se checklist completa. Se incompleta, warning com opcao Confirmar/Cancelar.
+
+### Checklists por Etapa
+Items hardcoded por default (configuráveis via Admin futuramente):
+- Documentos: 7 items (Caderneta, Certidao, Licenca, Certificado Energetico, ID Proprietario, Comprovativo nao divida, Planta)
+- Avaliacao: 4 items
+- Publicacao: 8 items
+- Visitas: 4 items
+- Negociacao: 5 items
+
+Componente `PropertyChecklist.tsx` renderiza items com checkboxes, progress bar, timestamps de conclusao.
+
+### Tabs do Painel Direito
+
+**Tab Resumo**: Detalhes imovel, preco/preco minimo, contrato (tipo, datas, comissao, dias restantes com cor), contacto proprietario, agente, botao "Renovar Contrato" (modal simples).
+
+**Tab Media e Portais**: Galeria fotos (upload multiplo, drag reorder, set cover), video URL, virtual tour URL, toggles por portal (Idealista, Imovirtual, Website) com URL e data publicacao.
+
+**Tab Visitas**: Lista de visitas, botao "Registar Visita" (formulario rapido), stats (total, breakdown interesse, media/mes), botao "Enviar Relatorio ao Proprietario".
+
+**Tab Documentos**: Upload categorizado, tipos predefinidos, preview inline PDF, campo data expirar, historico versoes.
+
+**Tab Historico e Notas**: Timeline completa (mudancas etapa, checklist, visitas, documentos, notas, renovacoes contrato), filtro por tipo, adicionar nota inline.
 
 ---
 
-## Resumo de Prioridades
+## Fase D — Integracao com Leads Vendedores
 
-| Fase | Descricao | Complexidade |
-|------|-----------|-------------|
-| 1 | Cards enriquecidos + Detail Panel + Nova Lead | Media-Alta |
-| 2 | Propostas (modal 5 passos + PDF) | Alta |
-| 3 | Vendedores (colunas + Contrato Mediacao) | Media |
-| 4 | Gestao Processual funcional | Alta |
-| 5 | Agenda | Media |
-| 6 | Atividades + Contas Correntes | Media |
-| 7 | Admin (Branding, Templates, RGPD) | Media |
+### Trigger automatico
+Quando o contrato de mediacao e guardado no modal de Leads Vendedores (coluna "Contrato de Mediacao" ou equivalente), criar automaticamente:
+1. Registo na tabela `properties` com dados do lead + contrato
+2. Checklist items default para a primeira etapa
+3. Portais default (Idealista, Imovirtual, Website — todos nao publicados)
+4. Activity log "Angariacao criada"
 
-Recomendo implementar **Fase 1 primeiro** — e as enriquecimentos dos cards do Kanban e o painel de detalhes da lead. Isto da valor imediato e estabelece a base para as fases seguintes (propostas dependem do detail panel, processos dependem de propostas, etc.).
+### Validacao contrato minimo 4 meses
+No modal de Leads Vendedores, campo duracao tem `min=4` com mensagem inline: "O contrato de mediacao tem uma duracao minima de 4 meses."
 
-Devo avancar com a Fase 1?
+---
+
+## Fase E — Alertas de Expiracao de Contrato
+
+- Dashboard widget (futuro): "Contratos a Expirar"
+- Calculo na listagem: countdown com cores (verde >60d, amarelo 30-60d, vermelho <30d)
+- Badge "Contrato Expirado" (cinza) quando contract_end_date < hoje
+- Opcoes em imovel expirado: Renovar / Fechar / Arquivar
+- Renovacao: modal simples (minimo 4 meses), atualiza end_date, regista na timeline
+
+---
+
+## Ficheiros a Criar
+
+| Ficheiro | Descricao |
+|----------|-----------|
+| `src/pages/Angariacoes.tsx` | Pagina lista angariacoes |
+| `src/pages/AngariacaoDetalhe.tsx` | Pagina detalhe com Kanban + tabs |
+| `src/components/angariacoes/PropertyListTable.tsx` | Tabela/grid de angariacoes |
+| `src/components/angariacoes/PropertySummaryBar.tsx` | Barra resumo no topo |
+| `src/components/angariacoes/PropertyStageKanban.tsx` | Kanban interno 5 colunas |
+| `src/components/angariacoes/PropertyChecklist.tsx` | Checklist por etapa |
+| `src/components/angariacoes/PropertySummaryTab.tsx` | Tab resumo |
+| `src/components/angariacoes/PropertyMediaTab.tsx` | Tab media e portais |
+| `src/components/angariacoes/PropertyVisitsTab.tsx` | Tab visitas |
+| `src/components/angariacoes/PropertyDocumentsTab.tsx` | Tab documentos |
+| `src/components/angariacoes/PropertyHistoryTab.tsx` | Tab historico e notas |
+| `src/components/angariacoes/RenewContractDialog.tsx` | Modal renovacao contrato |
+| `src/components/angariacoes/LogVisitDialog.tsx` | Modal registar visita |
+| `src/hooks/useProperties.ts` | CRUD properties |
+| `src/hooks/usePropertyChecklist.ts` | CRUD checklist items |
+| `src/hooks/usePropertyVisits.ts` | CRUD visitas |
+| `src/hooks/usePropertyDocuments.ts` | CRUD documentos |
+| `src/hooks/usePropertyActivities.ts` | Timeline atividades |
+| `src/hooks/usePropertyPortals.ts` | CRUD portais |
+
+### Ficheiros a Modificar
+
+| Ficheiro | Alteracao |
+|----------|-----------|
+| `src/components/layout/Sidebar.tsx` | Adicionar item "Angariacoes" |
+| `src/App.tsx` | Adicionar rotas `/angariacoes` e `/angariacoes/:id` |
+
+---
+
+## Resumo de Complexidade
+
+Este modulo e o maior da aplicacao ate agora. Envolve:
+- 7 tabelas novas + 2 storage buckets
+- 2 paginas novas (lista + detalhe)
+- ~15 componentes novos
+- ~6 hooks novos
+- Kanban interno com logica de checklists
+- Integracao com Leads Vendedores existente
+
+Recomendo implementar em ordem: DB migration → Sidebar/Router → Lista → Detalhe (Kanban + Tabs) → Integracao Vendedores → Alertas.
