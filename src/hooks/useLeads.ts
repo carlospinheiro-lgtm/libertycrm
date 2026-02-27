@@ -39,7 +39,7 @@ export function useLeads(leadType: 'buyer' | 'seller' | 'recruitment') {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('leads')
-        .select('*, profiles(name), agencies(name)')
+        .select('*, profiles!leads_user_id_profiles_fkey(name), agencies(name)')
         .eq('lead_type', leadType)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
