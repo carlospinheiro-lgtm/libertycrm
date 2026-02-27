@@ -13,7 +13,11 @@ const buyerColumns: Column[] = [
   { id: 'proposal', title: 'Proposta Apresentada', color: 'yellow' },
   { id: 'negotiation', title: 'Em Negociação', color: 'yellow' },
   { id: 'won', title: 'Fechado - Ganhámos', color: 'green' },
-  { id: 'lost', title: 'Fechado - Perdemos', color: 'red' },
+  { id: 'followup-0-3', title: 'Follow-up 0-3 Meses', color: 'purple' },
+  { id: 'followup-3-6', title: 'Follow-up 3-6 Meses', color: 'purple' },
+  { id: 'followup-6+', title: 'Follow-up +6 Meses', color: 'purple' },
+  { id: 'no-interest', title: 'Sem Interesse', color: 'red' },
+  { id: 'disqualified', title: 'Lead Desqualificada', color: 'gray' },
 ];
 
 export default function LeadsCompradores() {
@@ -98,7 +102,7 @@ export default function LeadsCompradores() {
     <DashboardLayout>
       <div className="animate-fade-in">
         <KanbanBoard
-          title="Leads Compradores"
+          title="CRM Compradores"
           columns={buyerColumns}
           leads={mappedLeads}
           agencyId={currentUser?.agencyId}

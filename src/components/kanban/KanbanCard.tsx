@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Phone, Mail, Calendar, MoveHorizontal, MessageCircle, Euro, FileText } from 'lucide-react';
+import { Phone, Mail, Calendar, MoveHorizontal, MessageCircle, Euro, FileText, CalendarPlus, StickyNote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KanbanLead, KanbanColumn } from '@/hooks/useKanbanState';
 import { differenceInDays } from 'date-fns';
@@ -58,6 +58,20 @@ function getAgingInfo(entryDate: string, columnEnteredAt?: string) {
   }
 }
 
+function getLastContactInfo(columnEnteredAt?: string, entryDate?: string) {
+  const refDate = columnEnteredAt || entryDate;
+  if (!refDate) return null;
+  try {
+    const days = differenceInDays(new Date(), new Date(refDate));
+    let color = 'text-success';
+    if (days >= 7) color = 'text-destructive';
+    else if (days >= 3) color = 'text-warning';
+    return { days, color };
+  } catch {
+    return null;
+  }
+}
+
 function getInitials(name: string) {
   return name.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 }
@@ -89,6 +103,7 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove, current
   const columnEnteredAt = (lead as any).columnEnteredAt;
   const proposalStatus = (lead as any).proposalStatus as string | undefined;
   const aging = getAgingInfo(lead.entryDate, columnEnteredAt);
+  const lastContact = getLastContactInfo(columnEnteredAt, lead.entryDate);
   const shouldShowAgent = !currentUserId || lead.agentId !== currentUserId;
   const isInProposalColumn = lead.columnId === 'proposal';
 
@@ -177,22 +192,27 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove, current
         {/* Quick actions */}
         <div className="flex items-center gap-1" data-no-drag>
           <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
-            className="inline-flex items-center justify-center h-7 w-7 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors" title="Ligar">
+            className="inline-flex items-center justify-center h-7 w-7 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors" title="Registar chamada">
             <Phone className="h-3.5 w-3.5" />
           </a>
-          <a href={`https://wa.me/${formatPhoneForWhatsApp(lead.phone)}`} target="_blank" rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
-            className="inline-flex items-center justify-center h-7 w-7 rounded bg-success/10 text-success hover:bg-success/20 transition-colors" title="WhatsApp">
-            <MessageCircle className="h-3.5 w-3.5" />
-          </a>
           <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
-            className="inline-flex items-center justify-center h-7 w-7 rounded bg-info/10 text-info hover:bg-info/20 transition-colors" title="Email">
+            className="inline-flex items-center justify-center h-7 w-7 rounded bg-info/10 text-info hover:bg-info/20 transition-colors" title="Enviar email">
             <Mail className="h-3.5 w-3.5" />
           </a>
+          <button
+            onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
+            className="inline-flex items-center justify-center h-7 w-7 rounded bg-warning/10 text-warning hover:bg-warning/20 transition-colors" title="Agendar tarefa">
+            <CalendarPlus className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
+            className="inline-flex items-center justify-center h-7 w-7 rounded bg-muted text-muted-foreground hover:bg-muted/80 transition-colors" title="Adicionar nota">
+            <StickyNote className="h-3.5 w-3.5" />
+          </button>
           <div className="flex-1" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onPointerDown={e => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onPointerDown={e => e.stopPropagation()} title="Mover de etapa">
                 <MoveHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -206,13 +226,22 @@ export function KanbanCard({ lead, columns, isDragging, onClick, onMove, current
           </DropdownMenu>
         </div>
 
-        {/* Agent */}
-        {shouldShowAgent && (
+        {/* Agent + Last Contact */}
+        {(shouldShowAgent || lastContact) && (
           <div className="flex items-center gap-1.5 pt-1 border-t border-border text-xs text-muted-foreground">
-            <div className={cn('h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold', getInitialsColor(lead.agentName))}>
-              {getInitials(lead.agentName)}
-            </div>
-            <span className="truncate">{lead.agentName}</span>
+            {shouldShowAgent && (
+              <>
+                <div className={cn('h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold', getInitialsColor(lead.agentName))}>
+                  {getInitials(lead.agentName)}
+                </div>
+                <span className="truncate">{lead.agentName}</span>
+              </>
+            )}
+            {lastContact && (
+              <span className={cn('ml-auto text-[10px]', lastContact.color)}>
+                Último contacto: {lastContact.days}d
+              </span>
+            )}
           </div>
         )}
       </CardContent>

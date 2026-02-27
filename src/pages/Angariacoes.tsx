@@ -19,7 +19,7 @@ export default function Angariacoes() {
           <div className="flex items-center gap-3">
             <Building2 className="h-7 w-7 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold">Angariações</h1>
+              <h1 className="text-2xl font-bold">CRM Angariações</h1>
               <p className="text-sm text-muted-foreground">Imóveis sob contrato de mediação</p>
             </div>
           </div>
