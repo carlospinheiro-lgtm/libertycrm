@@ -20,6 +20,7 @@ const columnColors: Record<string, string> = {
   green: 'bg-kanban-done border-t-success',
   red: 'bg-kanban-lost border-t-destructive',
   gray: 'bg-muted border-t-muted-foreground',
+  purple: 'bg-purple-50 border-t-purple-500 dark:bg-purple-950/30 dark:border-t-purple-400',
 };
 
 export function KanbanColumn({

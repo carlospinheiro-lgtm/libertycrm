@@ -35,11 +35,11 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-  { icon: Users, label: 'Leads Compradores', path: '/leads-compradores', permissions: ['leads.read.own', 'leads.read.team', 'leads.read.agency', 'leads.read.group'] },
-  { icon: Home, label: 'Leads Vendedores', path: '/leads-vendedores', permissions: ['leads.read.own', 'leads.read.team', 'leads.read.agency', 'leads.read.group'] },
-  { icon: Building2, label: 'Angariações', path: '/angariacoes', permissions: ['leads.read.own', 'leads.read.team', 'leads.read.agency', 'leads.read.group'] },
-  { icon: UserPlus, label: 'Recrutamento', path: '/recrutamento', permissions: ['recruiting.read.own', 'recruiting.read.team', 'recruiting.read.agency', 'recruiting.read.group'] },
-  { icon: FileText, label: 'Gestão Processual', path: '/processos', permissions: ['process.read.own', 'process.read.team', 'process.read.agency', 'process.read.group'] },
+  { icon: Users, label: 'CRM Compradores', path: '/leads-compradores', permissions: ['leads.read.own', 'leads.read.team', 'leads.read.agency', 'leads.read.group'] },
+  { icon: Home, label: 'CRM Vendedores', path: '/leads-vendedores', permissions: ['leads.read.own', 'leads.read.team', 'leads.read.agency', 'leads.read.group'] },
+  { icon: Building2, label: 'CRM Angariações', path: '/angariacoes', permissions: ['leads.read.own', 'leads.read.team', 'leads.read.agency', 'leads.read.group'] },
+  { icon: UserPlus, label: 'CRM Recrutamento', path: '/recrutamento', permissions: ['recruiting.read.own', 'recruiting.read.team', 'recruiting.read.agency', 'recruiting.read.group'] },
+  { icon: FileText, label: 'CRM Processual', path: '/processos', permissions: ['process.read.own', 'process.read.team', 'process.read.agency', 'process.read.group'] },
   { icon: CalendarDays, label: 'Mapa de Atividades', path: '/atividades', permissions: ['execution.create', 'execution.edit'] },
   { icon: Wallet, label: 'Contas Correntes', path: '/contas', permissions: ['finance.read.agency', 'finance.read.group'] },
   { icon: Target, label: 'Objetivos', path: '/objetivos', permissions: ['objectives.read.own', 'objectives.read.team', 'objectives.read.agency', 'objectives.read.group'] },

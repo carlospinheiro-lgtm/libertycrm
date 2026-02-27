@@ -32,6 +32,7 @@ import { useKanbanState, KanbanLead, KanbanColumn as KanbanColumnType } from '@/
 import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeadSettings, LeadMovePopupMode } from '@/hooks/useAgencySettings';
+import { useAgentFilter } from '@/contexts/AgentFilterContext';
 import type { LeadTemperature } from '@/types';
 
 export interface Column {
@@ -93,7 +94,7 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { currentUser } = useAuth();
   const { data: leadSettings } = useLeadSettings(agencyId);
-  const [agentFilter, setAgentFilter] = useState('all');
+  const { selectedAgentId } = useAgentFilter();
   const [agencyFilter, setAgencyFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
 
@@ -151,12 +152,10 @@ export function KanbanBoard({
   );
 
   const filteredLeads = leads.filter((lead) => {
-    if (agentFilter !== 'all' && lead.agentName !== agentFilter) return false;
+    if (selectedAgentId !== 'all' && lead.agentId !== selectedAgentId) return false;
     if (agencyFilter !== 'all' && lead.agency !== agencyFilter) return false;
     return true;
   });
-
-  const agents = [...new Set(leads.map((l) => l.agentName))];
 
   const handleDragStart = (event: DragStartEvent) => {
     const lead = leads.find(l => l.id === event.active.id);
@@ -304,19 +303,6 @@ export function KanbanBoard({
               </SelectContent>
             </Select>
 
-            <Select value={agentFilter} onValueChange={setAgentFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Agente" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {agents.map((agent) => (
-                  <SelectItem key={agent} value={agent}>
-                    {agent}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
             <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as 'cards' | 'list')}>
               <ToggleGroupItem value="cards" aria-label="Vista Cartões">

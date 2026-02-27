@@ -67,7 +67,7 @@ export default function Processos() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold font-heading">Gestão Processual & Crédito</h1>
+            <h1 className="text-2xl font-bold font-heading">CRM Processual & Crédito</h1>
             <p className="text-muted-foreground">
               Acompanhamento de processos de compra e venda
             </p>

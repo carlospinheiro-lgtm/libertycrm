@@ -1,4 +1,4 @@
-import { Bell, Search, User, Building2, Menu } from 'lucide-react';
+import { Bell, Search, User, Building2, Menu, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,9 +9,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useAgentFilter } from '@/contexts/AgentFilterContext';
+import { useAgencyActiveUsers } from '@/hooks/useAgencyActiveUsers';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TopBarProps {
   sidebarCollapsed: boolean;
@@ -20,6 +30,10 @@ interface TopBarProps {
 }
 
 export function TopBar({ sidebarCollapsed, onMenuClick, showMenuButton = false }: TopBarProps) {
+  const { currentUser } = useAuth();
+  const { selectedAgentId, setSelectedAgentId, isAgentLocked } = useAgentFilter();
+  const { data: agents = [] } = useAgencyActiveUsers(currentUser?.agencyId);
+
   return (
     <header
       className={cn(
@@ -30,7 +44,6 @@ export function TopBar({ sidebarCollapsed, onMenuClick, showMenuButton = false }
       <div className="flex h-full items-center justify-between px-4 md:px-6">
         {/* Left side - Menu button and Search */}
         <div className="flex items-center gap-3 flex-1 max-w-md">
-          {/* Hamburger menu for mobile */}
           {showMenuButton && (
             <Button 
               variant="ghost" 
@@ -42,7 +55,6 @@ export function TopBar({ sidebarCollapsed, onMenuClick, showMenuButton = false }
             </Button>
           )}
           
-          {/* Search - hidden on very small screens */}
           <div className="relative flex-1 hidden sm:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -54,7 +66,29 @@ export function TopBar({ sidebarCollapsed, onMenuClick, showMenuButton = false }
 
         {/* Right Side */}
         <div className="flex items-center gap-2 md:gap-4">
-          {/* Agency Selector - hidden on mobile */}
+          {/* Global Agent Filter */}
+          <div className="hidden md:flex items-center gap-1.5">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <Select
+              value={selectedAgentId}
+              onValueChange={setSelectedAgentId}
+              disabled={isAgentLocked}
+            >
+              <SelectTrigger className="w-[160px] h-9 text-sm">
+                <SelectValue placeholder="Agente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Agentes</SelectItem>
+                {agents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Agency Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2 hidden md:flex">

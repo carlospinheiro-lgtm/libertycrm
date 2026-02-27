@@ -57,7 +57,7 @@ export default function Recrutamento() {
     <DashboardLayout>
       <div className="animate-fade-in">
         <KanbanBoard
-          title="Recrutamento de Agentes"
+          title="CRM Recrutamento"
           columns={recruitmentColumns}
           leads={convertedCandidates}
           isRecruitment={true}

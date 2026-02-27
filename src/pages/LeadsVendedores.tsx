@@ -97,7 +97,7 @@ export default function LeadsVendedores() {
     <DashboardLayout>
       <div className="animate-fade-in">
         <KanbanBoard
-          title="Leads Vendedores"
+          title="CRM Vendedores"
           columns={sellerColumns}
           leads={mappedLeads}
           agencyId={currentUser?.agencyId}
