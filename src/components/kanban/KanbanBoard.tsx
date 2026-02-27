@@ -13,7 +13,7 @@ import {
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { MoveLeadDialog } from './MoveLeadDialog';
-import { LeadDetailsDialog } from './LeadDetailsDialog';
+import { LeadDetailsSheet } from './LeadDetailsSheet';
 import { LeadsListView } from './LeadsListView';
 import { AddColumnDialog } from './AddColumnDialog';
 import { AddLeadDialog } from './AddLeadDialog';
@@ -69,6 +69,8 @@ interface KanbanBoardProps {
   onLeadUpdated?: (leadId: string, updates: Partial<KanbanLead>) => void;
   onLeadAdded?: (lead: KanbanLead) => void;
   onLeadDeleted?: (leadId: string) => void;
+  // Map kanban lead IDs to DB lead IDs (for activities/tasks)
+  dbLeadIds?: Record<string, string>;
 }
 
 export function KanbanBoard({
@@ -83,6 +85,7 @@ export function KanbanBoard({
   onLeadUpdated,
   onLeadAdded,
   onLeadDeleted,
+  dbLeadIds,
 }: KanbanBoardProps) {
   const { currentUser } = useAuth();
   const { data: leadSettings } = useLeadSettings(agencyId);
@@ -370,8 +373,8 @@ export function KanbanBoard({
         onCancel={handleMoveCancel}
       />
 
-      {/* Details Dialog - Centered */}
-      <LeadDetailsDialog
+      {/* Details Sheet - Right side panel */}
+      <LeadDetailsSheet
         open={detailsSheetOpen}
         onOpenChange={setDetailsSheetOpen}
         lead={selectedLead}
@@ -384,6 +387,8 @@ export function KanbanBoard({
           onLeadDeleted?.(leadId);
         }}
         isRecruitment={isRecruitment}
+        dbLeadId={selectedLead ? (dbLeadIds?.[selectedLead.id] || selectedLead.id) : undefined}
+        agencyId={agencyId}
       />
 
       {/* Add Column Dialog */}

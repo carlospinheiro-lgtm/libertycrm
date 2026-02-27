@@ -20,12 +20,13 @@ export default function LeadsCompradores() {
   const { leads, isLoading, addLead, updateLead, deleteLead, moveLead } = useLeads('buyer');
   const { currentUser } = useAuth();
 
-  const mappedLeads: Lead[] = leads.map((lead) => ({
+  const mappedLeads: Lead[] = leads.map((lead: any) => ({
     id: lead.id,
     clientName: lead.client_name,
     phone: lead.phone || '',
     email: lead.email || '',
     agentName: lead.agent_name || '',
+    agentId: lead.user_id,
     agency: lead.agency_name || '',
     source: lead.source || '',
     entryDate: new Date(lead.entry_date).toLocaleDateString('pt-PT'),
@@ -34,7 +35,15 @@ export default function LeadsCompradores() {
     temperature: (lead.temperature as Lead['temperature']) || 'undefined',
     nextActivityDate: lead.next_activity_date || undefined,
     nextActivityDescription: lead.next_activity_description || undefined,
+    budgetMin: lead.budget_min,
+    budgetMax: lead.budget_max,
+    priority: lead.priority || 'normal',
+    columnEnteredAt: lead.column_entered_at,
   }));
+
+  // Map kanban IDs to DB IDs (they're the same since we use DB ids)
+  const dbLeadIds: Record<string, string> = {};
+  leads.forEach(lead => { dbLeadIds[lead.id] = lead.id; });
 
   const handleLeadMoved = (leadId: string, columnId: string, nextActivityDate?: string, nextActivityDescription?: string) => {
     moveLead.mutate({ id: leadId, column_id: columnId, next_activity_date: nextActivityDate, next_activity_description: nextActivityDescription });
@@ -92,10 +101,12 @@ export default function LeadsCompradores() {
           title="Leads Compradores"
           columns={buyerColumns}
           leads={mappedLeads}
+          agencyId={currentUser?.agencyId}
           onLeadMoved={handleLeadMoved}
           onLeadUpdated={handleLeadUpdated}
           onLeadAdded={handleLeadAdded}
           onLeadDeleted={handleLeadDeleted}
+          dbLeadIds={dbLeadIds}
         />
       </div>
     </DashboardLayout>

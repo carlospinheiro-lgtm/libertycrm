@@ -190,10 +190,125 @@ export type Database = {
           },
         ]
       }
+      lead_activities: {
+        Row: {
+          activity_type: string
+          agency_id: string
+          created_at: string
+          description: string | null
+          id: string
+          lead_id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          agency_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          agency_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activities_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_tasks: {
+        Row: {
+          agency_id: string
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          lead_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          agency_id: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          agency_id?: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tasks_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           agency_id: string
+          budget_max: number | null
+          budget_min: number | null
           client_name: string
+          column_entered_at: string
           column_id: string
           created_at: string
           cv_url: string | null
@@ -206,11 +321,16 @@ export type Database = {
           imported_at: string | null
           imported_by_user_id: string | null
           is_active: boolean | null
+          language: string
           lead_type: string
           next_activity_date: string | null
           next_activity_description: string | null
+          nif: string | null
           notes: string | null
           phone: string | null
+          priority: string
+          rgpd_consent: boolean
+          rgpd_consent_date: string | null
           source: string | null
           source_category: string | null
           temperature: string
@@ -219,7 +339,10 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          budget_max?: number | null
+          budget_min?: number | null
           client_name: string
+          column_entered_at?: string
           column_id: string
           created_at?: string
           cv_url?: string | null
@@ -232,11 +355,16 @@ export type Database = {
           imported_at?: string | null
           imported_by_user_id?: string | null
           is_active?: boolean | null
+          language?: string
           lead_type: string
           next_activity_date?: string | null
           next_activity_description?: string | null
+          nif?: string | null
           notes?: string | null
           phone?: string | null
+          priority?: string
+          rgpd_consent?: boolean
+          rgpd_consent_date?: string | null
           source?: string | null
           source_category?: string | null
           temperature?: string
@@ -245,7 +373,10 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          budget_max?: number | null
+          budget_min?: number | null
           client_name?: string
+          column_entered_at?: string
           column_id?: string
           created_at?: string
           cv_url?: string | null
@@ -258,11 +389,16 @@ export type Database = {
           imported_at?: string | null
           imported_by_user_id?: string | null
           is_active?: boolean | null
+          language?: string
           lead_type?: string
           next_activity_date?: string | null
           next_activity_description?: string | null
+          nif?: string | null
           notes?: string | null
           phone?: string | null
+          priority?: string
+          rgpd_consent?: boolean
+          rgpd_consent_date?: string | null
           source?: string | null
           source_category?: string | null
           temperature?: string
