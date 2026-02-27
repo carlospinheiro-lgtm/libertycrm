@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import {
   ObjectiveFlow,
   ObjectiveCategory,
@@ -144,7 +145,7 @@ export function AddObjectiveDialog({ open, onOpenChange }: AddObjectiveDialogPro
       sourceFilter: sourceFilter === 'all' ? 'all' : [sourceFilter],
     };
 
-    console.log('New objective:', newObjective);
+    logger.log('New objective:', newObjective);
     toast.success('Objetivo criado com sucesso');
     
     resetForm();

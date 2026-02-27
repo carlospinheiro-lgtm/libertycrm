@@ -27,6 +27,7 @@ import { useCreateImportJob } from '@/hooks/useImportJobs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, Loader2, CheckCircle, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ImportUsersDialogProps {
   open: boolean;
@@ -201,7 +202,7 @@ export function ImportUsersDialog({
       setStep('preview');
     } catch (error) {
       toast.error('Erro ao processar ficheiro');
-      console.error(error);
+      logger.error(error);
     } finally {
       setIsProcessing(false);
     }
@@ -293,10 +294,10 @@ export function ImportUsersDialog({
         });
         
         if (importError) {
-          console.error('Edge function error:', importError);
+          logger.error('Edge function error:', importError);
           result.errors.push(`Erro na função de importação: ${importError.message}`);
         } else if (importResponse) {
-          console.log('Import response:', importResponse);
+          logger.log('Import response:', importResponse);
           
           if (importResponse.error) {
             result.errors.push(importResponse.error);
@@ -364,7 +365,7 @@ export function ImportUsersDialog({
       }
       
     } catch (error: any) {
-      console.error('Import error:', error);
+      logger.error('Import error:', error);
       toast.error('Erro durante a importação');
       result.errors.push(`Erro geral: ${error.message}`);
       setImportResult(result);

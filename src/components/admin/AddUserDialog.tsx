@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -72,7 +73,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
     }
 
     // Em produção, isto faria uma chamada à API
-    console.log('Creating user:', { name, email, phone, agencyId, teamId, roles: selectedRoles });
+    logger.log('Creating user:', { name, email, phone, agencyId, teamId, roles: selectedRoles });
     
     toast.success('Utilizador criado com sucesso');
     onOpenChange(false);
