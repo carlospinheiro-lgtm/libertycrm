@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { ImportUserRow, ImportTeamRow, roleMapping } from '@/types/import';
+import { logger } from '@/lib/logger';
 
 /**
  * Remove accented characters for normalization
@@ -68,7 +69,7 @@ export function parseUserRows(rawRows: Record<string, unknown>[]): ImportUserRow
   if (rawRows.length === 0) return [];
   
   // Debug: log original column names
-  console.log('[Import] Colunas originais:', Object.keys(rawRows[0]));
+  logger.log('[Import] Colunas originais:', Object.keys(rawRows[0]));
   
   return rawRows.map((row) => {
     const normalizedRow: Record<string, string> = {};
@@ -118,7 +119,7 @@ export function parseTeamRows(rawRows: Record<string, unknown>[]): ImportTeamRow
   if (rawRows.length === 0) return [];
   
   // Debug: log original column names
-  console.log('[Import] Colunas originais (equipas):', Object.keys(rawRows[0]));
+  logger.log('[Import] Colunas originais (equipas):', Object.keys(rawRows[0]));
   
   return rawRows.map((row) => {
     const normalizedRow: Record<string, string> = {};

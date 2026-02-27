@@ -12,6 +12,7 @@ import {
   getUserPermissions,
 } from '@/lib/permissions';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/lib/logger';
 
 type DbAppRole = Database['public']['Enums']['app_role'];
 
@@ -132,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (teamsData) setTeams(teamsData);
 
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      logger.error('Error fetching user data:', error);
     }
   }, [user?.email]);
 
@@ -256,7 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const switchUser = useCallback((userId: string) => {
     // Mantido para compatibilidade, mas não faz nada na autenticação real
-    console.log('switchUser is deprecated with real auth. Use sign out and sign in instead.');
+    logger.log('switchUser is deprecated with real auth. Use sign out and sign in instead.');
   }, []);
 
   const signOut = useCallback(async () => {

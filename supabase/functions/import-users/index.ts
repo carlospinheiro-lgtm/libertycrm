@@ -2,10 +2,21 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const ALLOWED_ORIGINS = [
+  'https://libertycrm.lovable.app',
+  'https://id-preview--9161e7b6-71c1-4c1f-9df7-8a68f44ce40f.lovable.app',
+];
+
+function getCorsHeaders(origin: string | null) {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, '')))
+    ? origin
+    : ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 interface ImportUserData {
   email: string;
@@ -32,6 +43,9 @@ interface ImportUserResult {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -65,20 +79,16 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    console.log('Verifying user authorization...');
     const { data: { user: callingUser }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !callingUser) {
-      console.error('Auth error:', authError);
       return new Response(
         JSON.stringify({ error: 'Invalid authorization' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log(`Authenticated user: ${callingUser.email} (${callingUser.id})`);
 
     // Check if calling user is a global admin (diretor_geral)
-    const { data: isAdmin, error: adminCheckError } = await supabaseAdmin.rpc('is_global_admin', { _user_id: callingUser.id });
-    console.log(`Admin check for ${callingUser.email}: isAdmin=${isAdmin}, error=${adminCheckError?.message || 'none'}`);
+    const { data: isAdmin } = await supabaseAdmin.rpc('is_global_admin', { _user_id: callingUser.id });
     if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions. Only global admins can import users.' }),
@@ -102,8 +112,6 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Processing ${users.length} users for agency ${agency_id}`);
-    
     const results: ImportUserResult[] = [];
     
     for (const userData of users) {
@@ -117,12 +125,10 @@ serve(async (req) => {
         let userId: string;
         
         if (existingUser) {
-          // User exists in Auth, use their ID
           userId = existingUser.id;
-          console.log(`User ${userData.email} already exists with ID ${userId}`);
           
           // Update profile data
-          const { error: profileError } = await supabaseAdmin
+          await supabaseAdmin
             .from('profiles')
             .update({
               name: userData.name,
@@ -131,10 +137,6 @@ serve(async (req) => {
             })
             .eq('id', userId);
           
-          if (profileError) {
-            console.error(`Error updating profile for ${userData.email}:`, profileError);
-          }
-          
           results.push({
             email: userData.email,
             external_id: userData.external_id,
@@ -142,10 +144,10 @@ serve(async (req) => {
             action: 'updated',
           });
         } else {
-          // Create new user in Auth (inactive - no email confirmation sent)
+          // Create new user in Auth
           const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email: userData.email.toLowerCase(),
-            email_confirm: false, // User needs to confirm email to activate
+            email_confirm: false,
             user_metadata: {
               name: userData.name,
               phone: userData.phone,
@@ -153,7 +155,6 @@ serve(async (req) => {
           });
           
           if (createError) {
-            console.error(`Error creating user ${userData.email}:`, createError);
             results.push({
               email: userData.email,
               external_id: userData.external_id,
@@ -164,24 +165,18 @@ serve(async (req) => {
           }
           
           userId = newAuthUser.user.id;
-          console.log(`Created user ${userData.email} with ID ${userId}`);
           
-          // The handle_new_user trigger should create the profile automatically
-          // But we need to wait a moment and ensure it has the correct data
+          // Wait for trigger to create profile
           await new Promise(resolve => setTimeout(resolve, 100));
           
-          // Update the profile with additional data (phone might not be in trigger)
-          const { error: updateProfileError } = await supabaseAdmin
+          // Update the profile with additional data
+          await supabaseAdmin
             .from('profiles')
             .update({
               phone: userData.phone,
               is_active: userData.is_active,
             })
             .eq('id', userId);
-          
-          if (updateProfileError) {
-            console.log(`Profile update warning for ${userData.email}:`, updateProfileError.message);
-          }
           
           results.push({
             email: userData.email,
@@ -200,7 +195,6 @@ serve(async (req) => {
           .maybeSingle();
         
         if (existingAgency) {
-          // Update existing association
           await supabaseAdmin
             .from('user_agencies')
             .update({
@@ -212,7 +206,6 @@ serve(async (req) => {
             })
             .eq('id', existingAgency.id);
         } else {
-          // Create new association
           await supabaseAdmin
             .from('user_agencies')
             .insert({
@@ -235,7 +228,6 @@ serve(async (req) => {
           .maybeSingle();
         
         if (existingRole) {
-          // Update if role changed
           if (existingRole.role !== userData.role) {
             await supabaseAdmin
               .from('user_roles')
@@ -243,7 +235,6 @@ serve(async (req) => {
               .eq('id', existingRole.id);
           }
         } else {
-          // Create new role
           await supabaseAdmin
             .from('user_roles')
             .insert({
@@ -254,7 +245,6 @@ serve(async (req) => {
         }
         
       } catch (error: any) {
-        console.error(`Error processing user ${userData.email}:`, error);
         results.push({
           email: userData.email,
           external_id: userData.external_id,
@@ -268,8 +258,6 @@ serve(async (req) => {
     const updated = results.filter(r => r.action === 'updated').length;
     const errors = results.filter(r => r.action === 'error').length;
     
-    console.log(`Import complete: ${created} created, ${updated} updated, ${errors} errors`);
-    
     return new Response(
       JSON.stringify({
         success: true,
@@ -280,10 +268,9 @@ serve(async (req) => {
     );
     
   } catch (error: any) {
-    console.error('Error in import-users function:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...getCorsHeaders(req.headers.get('origin')), 'Content-Type': 'application/json' } }
     );
   }
 });
