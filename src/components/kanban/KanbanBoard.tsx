@@ -17,6 +17,7 @@ import { LeadDetailsSheet } from './LeadDetailsSheet';
 import { LeadsListView } from './LeadsListView';
 import { AddColumnDialog } from './AddColumnDialog';
 import { AddLeadDialog } from './AddLeadDialog';
+import { ProposalWizard } from '@/components/proposals/ProposalWizard';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, LayoutGrid, List } from 'lucide-react';
 import {
@@ -55,6 +56,9 @@ export interface Lead {
   nextActivityDate?: string;
   nextActivityDescription?: string;
 }
+
+// Column IDs that trigger the proposal wizard
+const PROPOSAL_COLUMN_ID = 'proposal';
 
 interface KanbanBoardProps {
   title: string;
@@ -130,6 +134,11 @@ export function KanbanBoard({
   const [selectedLead, setSelectedLead] = useState<KanbanLead | null>(null);
   const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false);
   const [addLeadDialogOpen, setAddLeadDialogOpen] = useState(false);
+  
+  // Proposal wizard state
+  const [proposalWizardOpen, setProposalWizardOpen] = useState(false);
+  const [proposalLead, setProposalLead] = useState<KanbanLead | null>(null);
+  const [preProposalColumnId, setPreProposalColumnId] = useState<string | null>(null);
 
   // Sensors for drag and drop
   const sensors = useSensors(
@@ -179,6 +188,17 @@ export function KanbanBoard({
       
       // Check if dropping on a column
       if (lead && columns.some(c => c.id === targetColumnId) && lead.columnId !== targetColumnId) {
+        // Intercept: if target is "Proposta Apresentada", open proposal wizard
+        if (targetColumnId === PROPOSAL_COLUMN_ID && !isRecruitment) {
+          setProposalLead(lead);
+          setPreProposalColumnId(lead.columnId);
+          // Optimistically move the card to show it in the proposal column
+          moveLead(lead.id, targetColumnId);
+          onLeadMoved?.(lead.id, targetColumnId);
+          setProposalWizardOpen(true);
+          return;
+        }
+
         if (shouldShowMovePopup(targetColumnId)) {
           setPendingMove({ leadId: lead.id, targetColumnId });
           setMoveDialogOpen(true);
@@ -189,6 +209,24 @@ export function KanbanBoard({
         }
       }
     }
+  };
+
+  const handleProposalComplete = (status: string) => {
+    setProposalWizardOpen(false);
+    setProposalLead(null);
+    setPreProposalColumnId(null);
+    // Card stays in "Proposta Apresentada"
+  };
+
+  const handleProposalCancel = () => {
+    // Return card to previous column
+    if (proposalLead && preProposalColumnId) {
+      moveLead(proposalLead.id, preProposalColumnId);
+      onLeadMoved?.(proposalLead.id, preProposalColumnId);
+    }
+    setProposalWizardOpen(false);
+    setProposalLead(null);
+    setPreProposalColumnId(null);
   };
 
   const handleMoveConfirm = (columnId: string, nextActivityDate: string, nextActivityDescription: string) => {
@@ -221,6 +259,15 @@ export function KanbanBoard({
   };
 
   const handleMoveViaButton = (lead: KanbanLead, targetColumnId: string) => {
+    // Intercept proposal column move via button too
+    if (targetColumnId === PROPOSAL_COLUMN_ID && !isRecruitment) {
+      setProposalLead(lead);
+      setPreProposalColumnId(lead.columnId);
+      moveLead(lead.id, targetColumnId);
+      onLeadMoved?.(lead.id, targetColumnId);
+      setProposalWizardOpen(true);
+      return;
+    }
     setPendingMove({ leadId: lead.id, targetColumnId });
     setMoveDialogOpen(true);
   };
@@ -406,6 +453,24 @@ export function KanbanBoard({
         onAdd={handleAddLead}
         isRecruitment={isRecruitment}
       />
+
+      {/* Proposal Wizard */}
+      {proposalLead && agencyId && (
+        <ProposalWizard
+          open={proposalWizardOpen}
+          onOpenChange={setProposalWizardOpen}
+          lead={{
+            id: proposalLead.id,
+            clientName: proposalLead.clientName,
+            email: proposalLead.email,
+            phone: proposalLead.phone,
+            nif: (proposalLead as any).nif,
+          }}
+          agencyId={agencyId}
+          onComplete={handleProposalComplete}
+          onCancel={handleProposalCancel}
+        />
+      )}
     </DndContext>
   );
 }

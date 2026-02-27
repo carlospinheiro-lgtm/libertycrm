@@ -832,6 +832,141 @@ export type Database = {
           },
         ]
       }
+      proposals: {
+        Row: {
+          agency_id: string
+          approval_status: string | null
+          bank: string | null
+          client_address: string | null
+          client_email: string | null
+          client_name: string | null
+          client_nif: string | null
+          client_phone: string | null
+          co_titular_name: string | null
+          co_titular_nif: string | null
+          condition_notes: string | null
+          conditions_checklist: Json | null
+          created_at: string
+          created_by: string | null
+          deal_type: string
+          deed_date: string | null
+          down_payment: number | null
+          down_payment_date: string | null
+          id: string
+          inspection_deadline: string | null
+          inspection_required: boolean | null
+          lead_id: string
+          mortgage_amount: number | null
+          payment_method: string | null
+          pdf_url: string | null
+          property_address: string | null
+          property_area: number | null
+          property_reference: string | null
+          property_typology: string | null
+          proposal_date: string
+          proposal_number: string
+          proposed_value: number
+          rejection_reason: string | null
+          special_conditions: string | null
+          status: string
+          updated_at: string
+          validity_date: string | null
+        }
+        Insert: {
+          agency_id: string
+          approval_status?: string | null
+          bank?: string | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_nif?: string | null
+          client_phone?: string | null
+          co_titular_name?: string | null
+          co_titular_nif?: string | null
+          condition_notes?: string | null
+          conditions_checklist?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deal_type?: string
+          deed_date?: string | null
+          down_payment?: number | null
+          down_payment_date?: string | null
+          id?: string
+          inspection_deadline?: string | null
+          inspection_required?: boolean | null
+          lead_id: string
+          mortgage_amount?: number | null
+          payment_method?: string | null
+          pdf_url?: string | null
+          property_address?: string | null
+          property_area?: number | null
+          property_reference?: string | null
+          property_typology?: string | null
+          proposal_date?: string
+          proposal_number: string
+          proposed_value?: number
+          rejection_reason?: string | null
+          special_conditions?: string | null
+          status?: string
+          updated_at?: string
+          validity_date?: string | null
+        }
+        Update: {
+          agency_id?: string
+          approval_status?: string | null
+          bank?: string | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_nif?: string | null
+          client_phone?: string | null
+          co_titular_name?: string | null
+          co_titular_nif?: string | null
+          condition_notes?: string | null
+          conditions_checklist?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deal_type?: string
+          deed_date?: string | null
+          down_payment?: number | null
+          down_payment_date?: string | null
+          id?: string
+          inspection_deadline?: string | null
+          inspection_required?: boolean | null
+          lead_id?: string
+          mortgage_amount?: number | null
+          payment_method?: string | null
+          pdf_url?: string | null
+          property_address?: string | null
+          property_area?: number | null
+          property_reference?: string | null
+          property_typology?: string | null
+          proposal_date?: string
+          proposal_number?: string
+          proposed_value?: number
+          rejection_reason?: string | null
+          special_conditions?: string | null
+          status?: string
+          updated_at?: string
+          validity_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_memberships: {
         Row: {
           created_at: string | null
