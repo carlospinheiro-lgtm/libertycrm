@@ -12,7 +12,7 @@ export interface LeadSettingsValue {
 export function useAgencySetting<T = unknown>(agencyId: string | undefined, settingKey: string) {
   return useQuery({
     queryKey: ['agency-settings', agencyId, settingKey],
-    queryFn: async () => {
+    queryFn: async (): Promise<T | null> => {
       if (!agencyId) return null;
       
       const { data, error } = await supabase
@@ -23,7 +23,7 @@ export function useAgencySetting<T = unknown>(agencyId: string | undefined, sett
         .maybeSingle();
       
       if (error) throw error;
-      return data?.setting_value as T | null;
+      return (data?.setting_value as T) ?? null;
     },
     enabled: !!agencyId,
   });
