@@ -134,7 +134,12 @@ export function useLeads(leadType: 'buyer' | 'seller' | 'recruitment') {
     }) => {
       const { error } = await supabase
         .from('leads')
-        .update({ column_id, next_activity_date, next_activity_description })
+        .update({
+          column_id,
+          next_activity_date,
+          next_activity_description,
+          column_entered_at: new Date().toISOString(),
+        })
         .eq('id', id);
       if (error) throw error;
     },
