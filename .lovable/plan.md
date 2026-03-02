@@ -1,179 +1,152 @@
 
-
-# Reestruturacao CRM Compradores - Modelo Minimalista
+# Reestruturacao CRM Vendedores - Modelo Minimalista
 
 ## Visao Geral
 
-Reestruturar completamente o modulo de Leads Compradores com pipeline simplificado de 8 colunas, cartoes minimalistas, ficha de comprador com qualificacao, historico de interacoes, alertas automaticos e dashboard de metricas para o diretor comercial.
+Reestruturar o modulo CRM Vendedores seguindo o mesmo padrao minimalista implementado nos Compradores: pipeline de 8 colunas, cartoes simples, ficha com qualificacao comercial, historico de interacoes, alertas visuais, automatizacoes ao mover e dashboard de metricas para diretores.
 
 ## 1. Migracao de Base de Dados
 
-### 1.1 Novos campos na tabela `leads`
+### 1.1 Novos campos na tabela `leads` (especificos vendedores)
 
-Adicionar campos especificos para compradores:
+- `property_type` (text) - tipo de imovel (apartamento, moradia, terreno, comercial, outro)
+- `location` (text) - localizacao do imovel
+- `estimated_value` (numeric) - valor estimado
+- `seller_motivation` (text) - mudanca / partilha / divorcio / investimento / outro
+- `seller_deadline` (text) - 0-30 / 30-90 / 90+
+- `seller_exclusivity` (text) - sim / nao / indefinido
+- `commission_percentage` (numeric) - percentagem de comissao
+- `contract_duration` (text) - duracao do contrato
 
-- `zones` (text[]) - zonas de interesse
-- `typology` (text) - tipologia pretendida
-- `last_contact_at` (timestamptz) - data do ultimo contacto
-- `next_action_text` (text) - texto da proxima acao
-- `next_action_at` (timestamptz) - data da proxima acao
-- `buyer_motive` (text) - HPP / Investimento / Arrendamento
-- `buyer_timeline` (text) - 0-30 / 30-90 / 90+
-- `buyer_financing` (text) - sim / nao / em_analise
+### 1.2 Nova tabela `seller_interactions`
 
-### 1.2 Nova tabela `buyer_interactions`
+Mesma estrutura de `buyer_interactions`:
 
 ```text
 id (uuid, PK)
 lead_id (uuid, FK -> leads.id)
 agency_id (uuid, FK -> agencies.id)
-type (text: call | whatsapp | email | meeting | other)
+type (text: call | meeting | email | whatsapp | stage_change | other)
 note (text)
 created_at (timestamptz)
 created_by (uuid, FK -> profiles.id)
 ```
 
-RLS: mesmas regras da agencia (has_agency_access).
+RLS: politicas com `has_agency_access`, imutaveis (sem UPDATE/DELETE).
 
 ### 1.3 Migracao de column_ids existentes
 
-Mapear colunas antigas para novas:
+Mapear colunas antigas para novas (lead_type = 'seller'):
 
 ```text
-'new', ''          -> 'novo'
-'first-contact'    -> 'contacto-feito'
-'qualifying'       -> 'qualificacao'
-(sem equivalente)  -> 'ativo'        (nova)
-'visits'           -> 'visitas'
-'proposal'         -> 'proposta-negociacao'
-'negotiation'      -> 'proposta-negociacao'
-'won'              -> 'reserva-cpcv'
-'followup-0-3'     -> 'perdido-followup'
-'followup-3-6'     -> 'perdido-followup'
-'followup-6+'      -> 'perdido-followup'
-'no-interest'      -> 'perdido-followup'
-'disqualified'     -> 'perdido-followup'
+'new'             -> 'novo'
+'first-contact'   -> 'contacto-feito'
+'meeting'         -> 'avaliacao'
+'evaluation'      -> 'avaliacao'
+'proposal-sent'   -> 'apresentacao'
+'decision'        -> 'negociacao'
+'signed'          -> 'angariacao'
+'lost'            -> 'perdido-followup'
 ```
 
-Tudo feito via `UPDATE leads SET column_id = ... WHERE lead_type = 'buyer'`.
+Qualquer column_id nao mapeado -> 'novo'.
 
-## 2. Pipeline (Kanban) - 8 Colunas
-
-Substituir `buyerColumns` em `LeadsCompradores.tsx`:
+## 2. Pipeline (8 Colunas)
 
 | ID | Titulo | Cor |
 |---|---|---|
 | novo | Novo | blue |
 | contacto-feito | Contacto Feito | cyan |
-| qualificacao | Qualificacao | cyan |
-| ativo | Ativo (Imoveis enviados) | yellow |
-| visitas | Visitas | yellow |
-| proposta-negociacao | Proposta / Negociacao | yellow |
-| reserva-cpcv | Reserva / CPCV | green |
+| avaliacao | Avaliacao / Estudo de Mercado | cyan |
+| apresentacao | Apresentacao de Servicos | yellow |
+| negociacao | Negociacao | yellow |
+| angariacao | Angariacao | green |
+| angariacao-reservada | Angariacao Reservada | green |
 | perdido-followup | Perdido / Follow-up | red |
 
-## 3. Cartao Kanban Minimalista
+## 3. Componentes Novos
 
-Criar componente `BuyerKanbanCard.tsx` especifico para compradores com apenas:
+### 3.1 `SellerKanbanCard.tsx`
 
-- Nome do contacto
+Cartao minimalista mostrando:
+- Nome proprietario
 - Telefone (clicavel)
-- Orcamento (formatado, ou "---" se nao definido)
-- Zona principal (primeira zona do array)
-- Temperatura (hot/warm/cold) com badge colorido
-- Ultimo contacto (X dias, verde/laranja/vermelho)
+- Tipo imovel + valor estimado (€)
+- Temperatura (badge colorido)
+- Ultimo contacto (dias, verde/laranja/vermelho)
 - Proxima acao + data
-- Nome do agente (apenas se utilizador logado != agente da lead)
+- Alerta se >5 dias em "Avaliacao"
+- Nome do agente (apenas se user != agente)
 
-Remover: notas longas, campos secundarios, quick actions excessivas (manter apenas mover).
+### 3.2 `SellerDetailsSheet.tsx`
 
-## 4. Ficha do Comprador (LeadDetailsSheet)
+Ficha com 3 tabs (Dados / Historico / Tarefas):
 
-Criar `BuyerDetailsSheet.tsx` com:
+**Seccao Obrigatoria:**
+- Tipo de imovel (select)
+- Localizacao
+- Valor estimado
+- Proxima acao (obrigatoria a partir de "Contacto Feito")
+- Data da proxima acao
 
-### Seccao Obrigatoria (sempre visivel)
-- Orcamento min/max
-- Zonas (tags editaveis)
-- Tipologia (select: T0, T1, T2, T3, T4+)
-- Proxima acao (texto + data)
-- A partir de "Contacto Feito": proxima acao e obrigatoria
-
-### Seccao Qualificacao (compacta)
-- Motivo: HPP / Investimento / Arrendamento
-- Prazo: 0-30d / 30-90d / 90+d
-- Financiamento: Sim / Nao / Em analise
+**Seccao Comercial:**
+- Motivacao: Mudanca / Partilha / Divorcio / Investimento / Outro
+- Prazo venda: 0-30 / 30-90 / 90+
+- Exclusividade: Sim / Nao / Indefinido
 - Origem (readonly)
 
-### Aba Historico
-- Timeline cronologica de `buyer_interactions`
-- Botoes rapidos: + Chamada, + WhatsApp, + Email, + Reuniao
-- Registo automatico de mudancas de coluna
+**Historico:** Timeline de seller_interactions com botoes rapidos.
 
-### Aba Tarefas (reutilizar existente)
+**Tarefas:** Reutilizar useLeadTasks existente.
 
-## 5. Alertas Automaticos (visuais nos cartoes)
+### 3.3 `SellerMetricsDashboard.tsx`
 
-Baseados em `last_contact_at`:
-- Verde: < 3 dias
+Metricas para diretores:
+- Leads novas (semana)
+- Avaliacoes realizadas (semana)
+- Apresentacoes feitas (semana)
+- Angariacoes (mes)
+- Taxa Avaliacao -> Angariacao
+- Angariacoes exclusivas vs nao exclusivas (requer campo exclusivity)
+- Leads >7 dias sem contacto
+
+### 3.4 `useSellerInteractions.ts`
+
+Hook identico ao useBuyerInteractions, apontando para tabela `seller_interactions`.
+
+## 4. Pagina LeadsVendedores.tsx
+
+Reescrever completamente seguindo o padrao de LeadsCompradores:
+- Separar em componente exterior (DashboardLayout) e interior (conteudo)
+- useAgentFilter para filtragem por agente
+- DndContext com drag-and-drop nos cartoes
+- Automatizacoes ao mover:
+  - "Avaliacao" -> tarefa "Preparar CMA"
+  - "Apresentacao" -> tarefa "Enviar proposta de servicos"
+  - "Negociacao" -> tarefa "Follow-up 3 dias"
+  - "Angariacao" -> toast a pedir exclusividade/comissao/prazo
+- logStageChange via seller_interactions
+
+## 5. Alertas Visuais
+
+Nos cartoes:
+- Verde: < 3 dias sem contacto
 - Laranja: 4-7 dias
 - Vermelho: > 7 dias
-- Alerta laranja se `next_action_at` nao definido
-
-Implementado directamente no componente do cartao, sem backend extra.
-
-## 6. Automatizacoes ao Mover
-
-Ao mover lead para certas colunas, criar tarefas automaticas via `lead_tasks`:
-
-- "Visitas" -> tarefa "Confirmar visita" (due_date = amanha)
-- "Proposta / Negociacao" -> tarefa "Follow-up proposta" (due_date = +2 dias)
-- "Reserva / CPCV" -> toast a sugerir criacao de Processo
-
-Registar automaticamente uma `buyer_interaction` do tipo `stage_change`.
-
-Actualizar `last_contact_at` sempre que se regista uma interacao.
-
-## 7. Dashboard Metricas (Diretor Comercial)
-
-Criar componente `BuyerMetricsDashboard.tsx` no topo da pagina (visivel apenas para diretores/admins):
-
-- Leads novas (semana)
-- Leads contactadas (semana)
-- Leads qualificadas (semana)
-- Visitas marcadas (semana)
-- Propostas apresentadas (mes)
-- Reservas (mes)
-- Lista de leads >7 dias sem contacto
-
-Dados obtidos via queries ao Supabase com filtros temporais.
-
-## 8. UX
-
-- Drag-and-drop no cartao inteiro (ja funciona assim com dnd-kit)
-- Sidebar ja recolhe em mobile (existente)
-- Interface 100% em Portugues (manter)
+- Alerta laranja se sem proxima acao
+- Alerta especial se >5 dias na coluna "Avaliacao" (baseado em column_entered_at)
 
 ## Ficheiros Afetados
 
-### Novos ficheiros
-- `src/components/kanban/BuyerKanbanCard.tsx`
-- `src/components/kanban/BuyerDetailsSheet.tsx`
-- `src/components/kanban/BuyerMetricsDashboard.tsx`
-- `src/hooks/useBuyerInteractions.ts`
+### Novos
+- `src/components/kanban/SellerKanbanCard.tsx`
+- `src/components/kanban/SellerDetailsSheet.tsx`
+- `src/components/kanban/SellerMetricsDashboard.tsx`
+- `src/hooks/useSellerInteractions.ts`
 
-### Ficheiros modificados
-- `src/pages/LeadsCompradores.tsx` - novo pipeline, usar componentes especificos
-- `src/hooks/useLeads.ts` - suportar novos campos (zones, typology, etc.)
-- `src/hooks/useKanbanState.ts` - tipos actualizados
+### Modificados
+- `src/pages/LeadsVendedores.tsx` - reescrita completa
+- `src/hooks/useLeads.ts` - adicionar novos campos seller ao DbLead e ao select
 
 ### Migracao SQL
-- 1 ficheiro: adicionar campos, criar tabela, migrar column_ids
-
-## Detalhes Tecnicos
-
-A tabela `leads` continua a ser usada (nao criar `buyer_leads` separada) para manter compatibilidade com importacoes e os outros modulos. Os novos campos sao nullable e so usados quando `lead_type = 'buyer'`.
-
-A tabela `buyer_interactions` e separada de `lead_activities` porque tem schema diferente (tipo de contacto especifico vs actividade generica).
-
-O mapeamento de colunas antigas e feito via SQL `UPDATE` na migracao, garantindo que nenhuma lead fica "orfan" sem coluna valida.
-
+- 1 ficheiro: adicionar campos seller, criar tabela seller_interactions, migrar column_ids
