@@ -365,10 +365,13 @@ export type Database = {
           client_name: string
           column_entered_at: string
           column_id: string
+          commission_percentage: number | null
+          contract_duration: string | null
           created_at: string
           cv_url: string | null
           email: string | null
           entry_date: string
+          estimated_value: number | null
           id: string
           import_batch_id: string | null
           import_file_name: string | null
@@ -379,6 +382,7 @@ export type Database = {
           language: string
           last_contact_at: string | null
           lead_type: string
+          location: string | null
           next_action_at: string | null
           next_action_text: string | null
           next_activity_date: string | null
@@ -387,8 +391,12 @@ export type Database = {
           notes: string | null
           phone: string | null
           priority: string
+          property_type: string | null
           rgpd_consent: boolean
           rgpd_consent_date: string | null
+          seller_deadline: string | null
+          seller_exclusivity: string | null
+          seller_motivation: string | null
           source: string | null
           source_category: string | null
           temperature: string
@@ -407,10 +415,13 @@ export type Database = {
           client_name: string
           column_entered_at?: string
           column_id: string
+          commission_percentage?: number | null
+          contract_duration?: string | null
           created_at?: string
           cv_url?: string | null
           email?: string | null
           entry_date?: string
+          estimated_value?: number | null
           id?: string
           import_batch_id?: string | null
           import_file_name?: string | null
@@ -421,6 +432,7 @@ export type Database = {
           language?: string
           last_contact_at?: string | null
           lead_type: string
+          location?: string | null
           next_action_at?: string | null
           next_action_text?: string | null
           next_activity_date?: string | null
@@ -429,8 +441,12 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           priority?: string
+          property_type?: string | null
           rgpd_consent?: boolean
           rgpd_consent_date?: string | null
+          seller_deadline?: string | null
+          seller_exclusivity?: string | null
+          seller_motivation?: string | null
           source?: string | null
           source_category?: string | null
           temperature?: string
@@ -449,10 +465,13 @@ export type Database = {
           client_name?: string
           column_entered_at?: string
           column_id?: string
+          commission_percentage?: number | null
+          contract_duration?: string | null
           created_at?: string
           cv_url?: string | null
           email?: string | null
           entry_date?: string
+          estimated_value?: number | null
           id?: string
           import_batch_id?: string | null
           import_file_name?: string | null
@@ -463,6 +482,7 @@ export type Database = {
           language?: string
           last_contact_at?: string | null
           lead_type?: string
+          location?: string | null
           next_action_at?: string | null
           next_action_text?: string | null
           next_activity_date?: string | null
@@ -471,8 +491,12 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           priority?: string
+          property_type?: string | null
           rgpd_consent?: boolean
           rgpd_consent_date?: string | null
+          seller_deadline?: string | null
+          seller_exclusivity?: string | null
+          seller_motivation?: string | null
           source?: string | null
           source_category?: string | null
           temperature?: string
@@ -1480,6 +1504,58 @@ export type Database = {
           },
           {
             foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_interactions: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          note: string | null
+          type: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          note?: string | null
+          type: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          note?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_interactions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_interactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_interactions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"

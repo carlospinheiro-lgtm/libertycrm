@@ -35,6 +35,15 @@ export interface DbLead {
   buyer_motive?: string | null;
   buyer_timeline?: string | null;
   buyer_financing?: string | null;
+  // Seller-specific fields
+  property_type?: string | null;
+  location?: string | null;
+  estimated_value?: number | null;
+  seller_motivation?: string | null;
+  seller_deadline?: string | null;
+  seller_exclusivity?: string | null;
+  commission_percentage?: number | null;
+  contract_duration?: string | null;
   // joined profile data
   agent_name?: string;
   agency_name?: string;
