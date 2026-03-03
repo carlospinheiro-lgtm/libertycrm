@@ -1,26 +1,22 @@
 
-# Reestruturacao CRM Vendedores - Modelo Minimalista
+# Reestruturar CRM Recrutamento - Modelo Minimalista
 
 ## Visao Geral
 
-Reestruturar o modulo CRM Vendedores seguindo o mesmo padrao minimalista implementado nos Compradores: pipeline de 8 colunas, cartoes simples, ficha com qualificacao comercial, historico de interacoes, alertas visuais, automatizacoes ao mover e dashboard de metricas para diretores.
+Reestruturar o modulo de Recrutamento seguindo o mesmo padrao minimalista implementado em Compradores e Vendedores: pipeline de 7 colunas, cartoes simples, ficha com qualificacao, historico de interacoes, alertas visuais, automatizacoes ao mover e dashboard de metricas RH.
 
 ## 1. Migracao de Base de Dados
 
-### 1.1 Novos campos na tabela `leads` (especificos vendedores)
+### 1.1 Novos campos na tabela `leads` (especificos recrutamento)
 
-- `property_type` (text) - tipo de imovel (apartamento, moradia, terreno, comercial, outro)
-- `location` (text) - localizacao do imovel
-- `estimated_value` (numeric) - valor estimado
-- `seller_motivation` (text) - mudanca / partilha / divorcio / investimento / outro
-- `seller_deadline` (text) - 0-30 / 30-90 / 90+
-- `seller_exclusivity` (text) - sim / nao / indefinido
-- `commission_percentage` (numeric) - percentagem de comissao
-- `contract_duration` (text) - duracao do contrato
+- `experience_level` (text) - com_experiencia / sem_experiencia
+- `recruitment_source` (text) - referral / linkedin / site / outro (reutiliza `source` existente, nao precisa campo extra)
 
-### 1.2 Nova tabela `seller_interactions`
+Nota: `cv_url` ja existe na tabela. `last_contact_at`, `next_action_text`, `next_action_at` tambem ja existem. Apenas `experience_level` e novo.
 
-Mesma estrutura de `buyer_interactions`:
+### 1.2 Nova tabela `recruitment_interactions`
+
+Mesma estrutura das outras tabelas de interacoes:
 
 ```text
 id (uuid, PK)
@@ -28,104 +24,99 @@ lead_id (uuid, FK -> leads.id)
 agency_id (uuid, FK -> agencies.id)
 type (text: call | meeting | email | whatsapp | stage_change | other)
 note (text)
-created_at (timestamptz)
+created_at (timestamptz, default now())
 created_by (uuid, FK -> profiles.id)
 ```
 
-RLS: politicas com `has_agency_access`, imutaveis (sem UPDATE/DELETE).
+RLS: has_agency_access para SELECT e INSERT, imutavel (false para UPDATE/DELETE).
 
 ### 1.3 Migracao de column_ids existentes
 
-Mapear colunas antigas para novas (lead_type = 'seller'):
+Mapear colunas antigas para novas (lead_type = 'recruitment'):
 
 ```text
-'new'             -> 'novo'
-'first-contact'   -> 'contacto-feito'
-'meeting'         -> 'avaliacao'
-'evaluation'      -> 'avaliacao'
-'proposal-sent'   -> 'apresentacao'
-'decision'        -> 'negociacao'
-'signed'          -> 'angariacao'
-'lost'            -> 'perdido-followup'
+'new'                  -> 'novo-lead'
+'first-contact'        -> 'contactado'
+'interview-scheduled'  -> 'entrevista-agendada'
+'interview-done'       -> 'entrevistado'
+'decision'             -> 'em-decisao'
+'training'             -> 'integrado'
+'active'               -> 'integrado'
+'rejected'             -> 'nao-avancou'
 ```
 
-Qualquer column_id nao mapeado -> 'novo'.
+Qualquer column_id nao mapeado -> 'novo-lead'.
 
-## 2. Pipeline (8 Colunas)
+## 2. Pipeline (7 Colunas)
 
 | ID | Titulo | Cor |
 |---|---|---|
-| novo | Novo | blue |
-| contacto-feito | Contacto Feito | cyan |
-| avaliacao | Avaliacao / Estudo de Mercado | cyan |
-| apresentacao | Apresentacao de Servicos | yellow |
-| negociacao | Negociacao | yellow |
-| angariacao | Angariacao | green |
-| angariacao-reservada | Angariacao Reservada | green |
-| perdido-followup | Perdido / Follow-up | red |
+| novo-lead | Novo Lead | blue |
+| contactado | Contactado | cyan |
+| entrevista-agendada | Entrevista Agendada | yellow |
+| entrevistado | Entrevistado | yellow |
+| em-decisao | Em Decisao | yellow |
+| integrado | Integrado | green |
+| nao-avancou | Nao Avancou | red |
 
 ## 3. Componentes Novos
 
-### 3.1 `SellerKanbanCard.tsx`
+### 3.1 `RecruitmentKanbanCard.tsx`
 
 Cartao minimalista mostrando:
-- Nome proprietario
+- Nome do candidato
 - Telefone (clicavel)
-- Tipo imovel + valor estimado (€)
-- Temperatura (badge colorido)
+- Experiencia (badge: Com / Sem)
+- Origem
 - Ultimo contacto (dias, verde/laranja/vermelho)
 - Proxima acao + data
-- Alerta se >5 dias em "Avaliacao"
+- Alerta se >5 dias em "Entrevistado" sem decisao
 - Nome do agente (apenas se user != agente)
 
-### 3.2 `SellerDetailsSheet.tsx`
+### 3.2 `RecruitmentDetailsSheet.tsx`
 
 Ficha com 3 tabs (Dados / Historico / Tarefas):
 
 **Seccao Obrigatoria:**
-- Tipo de imovel (select)
-- Localizacao
-- Valor estimado
-- Proxima acao (obrigatoria a partir de "Contacto Feito")
+- Nome, telefone, email
+- Experiencia (Com / Sem)
+- CV (upload/link)
+- Proxima acao (obrigatoria a partir de "Contactado")
 - Data da proxima acao
 
-**Seccao Comercial:**
-- Motivacao: Mudanca / Partilha / Divorcio / Investimento / Outro
-- Prazo venda: 0-30 / 30-90 / 90+
-- Exclusividade: Sim / Nao / Indefinido
-- Origem (readonly)
+**Seccao Qualificacao:**
+- Origem
+- Temperatura
 
-**Historico:** Timeline de seller_interactions com botoes rapidos.
+**Historico:** Timeline de recruitment_interactions com botoes rapidos (Chamada, WhatsApp, Email, Reuniao).
 
 **Tarefas:** Reutilizar useLeadTasks existente.
 
-### 3.3 `SellerMetricsDashboard.tsx`
+### 3.3 `RecruitmentMetricsDashboard.tsx`
 
-Metricas para diretores:
+Metricas para RH/diretores:
 - Leads novas (semana)
-- Avaliacoes realizadas (semana)
-- Apresentacoes feitas (semana)
-- Angariacoes (mes)
-- Taxa Avaliacao -> Angariacao
-- Angariacoes exclusivas vs nao exclusivas (requer campo exclusivity)
+- Entrevistas agendadas (semana)
+- Entrevistas realizadas (semana)
+- Integrados (mes)
+- Taxa conversao Entrevista -> Integrado
 - Leads >7 dias sem contacto
 
-### 3.4 `useSellerInteractions.ts`
+### 3.4 `useRecruitmentInteractions.ts`
 
-Hook identico ao useBuyerInteractions, apontando para tabela `seller_interactions`.
+Hook identico ao useBuyerInteractions, apontando para tabela `recruitment_interactions`.
 
-## 4. Pagina LeadsVendedores.tsx
+## 4. Pagina Recrutamento.tsx
 
 Reescrever completamente seguindo o padrao de LeadsCompradores:
 - Separar em componente exterior (DashboardLayout) e interior (conteudo)
-- useAgentFilter para filtragem por agente
-- DndContext com drag-and-drop nos cartoes
+- useAgentFilter para filtragem
+- DndContext com drag-and-drop
 - Automatizacoes ao mover:
-  - "Avaliacao" -> tarefa "Preparar CMA"
-  - "Apresentacao" -> tarefa "Enviar proposta de servicos"
-  - "Negociacao" -> tarefa "Follow-up 3 dias"
-  - "Angariacao" -> toast a pedir exclusividade/comissao/prazo
-- logStageChange via seller_interactions
+  - "Contactado" -> tarefa "Agendar entrevista" (due +2 dias)
+  - "Entrevista Agendada" -> tarefa "Lembrete entrevista" (due +1 dia)
+  - "Entrevistado" -> tarefa "Follow-up decisao" (due +3 dias)
+- logStageChange via recruitment_interactions
 
 ## 5. Alertas Visuais
 
@@ -133,20 +124,22 @@ Nos cartoes:
 - Verde: < 3 dias sem contacto
 - Laranja: 4-7 dias
 - Vermelho: > 7 dias
-- Alerta laranja se sem proxima acao
-- Alerta especial se >5 dias na coluna "Avaliacao" (baseado em column_entered_at)
+- Alerta se sem proxima acao definida
+- Alerta especial se >5 dias na coluna "Entrevistado" (baseado em column_entered_at)
 
-## Ficheiros Afetados
+## 6. Detalhes Tecnicos
 
-### Novos
-- `src/components/kanban/SellerKanbanCard.tsx`
-- `src/components/kanban/SellerDetailsSheet.tsx`
-- `src/components/kanban/SellerMetricsDashboard.tsx`
-- `src/hooks/useSellerInteractions.ts`
+### Ficheiros Novos
+- `src/components/kanban/RecruitmentKanbanCard.tsx`
+- `src/components/kanban/RecruitmentDetailsSheet.tsx`
+- `src/components/kanban/RecruitmentMetricsDashboard.tsx`
+- `src/hooks/useRecruitmentInteractions.ts`
 
-### Modificados
-- `src/pages/LeadsVendedores.tsx` - reescrita completa
-- `src/hooks/useLeads.ts` - adicionar novos campos seller ao DbLead e ao select
+### Ficheiros Modificados
+- `src/pages/Recrutamento.tsx` - reescrita completa
+- `src/hooks/useLeads.ts` - adicionar `experience_level` ao DbLead
 
 ### Migracao SQL
-- 1 ficheiro: adicionar campos seller, criar tabela seller_interactions, migrar column_ids
+- 1 ficheiro: adicionar campo experience_level, criar tabela recruitment_interactions com RLS, migrar column_ids
+
+A tabela `leads` continua a ser reutilizada (lead_type = 'recruitment'). O campo `experience_level` e nullable e so usado para recrutamento. Os campos `last_contact_at`, `next_action_text`, `next_action_at` ja existem e sao reutilizados.
