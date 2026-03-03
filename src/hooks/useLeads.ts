@@ -35,6 +35,8 @@ export interface DbLead {
   buyer_motive?: string | null;
   buyer_timeline?: string | null;
   buyer_financing?: string | null;
+  // Recruitment-specific fields
+  experience_level?: string | null;
   // Seller-specific fields
   property_type?: string | null;
   location?: string | null;

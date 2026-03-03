@@ -372,6 +372,7 @@ export type Database = {
           email: string | null
           entry_date: string
           estimated_value: number | null
+          experience_level: string | null
           id: string
           import_batch_id: string | null
           import_file_name: string | null
@@ -422,6 +423,7 @@ export type Database = {
           email?: string | null
           entry_date?: string
           estimated_value?: number | null
+          experience_level?: string | null
           id?: string
           import_batch_id?: string | null
           import_file_name?: string | null
@@ -472,6 +474,7 @@ export type Database = {
           email?: string | null
           entry_date?: string
           estimated_value?: number | null
+          experience_level?: string | null
           id?: string
           import_batch_id?: string | null
           import_file_name?: string | null
@@ -1504,6 +1507,58 @@ export type Database = {
           },
           {
             foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_interactions: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          note: string | null
+          type: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          note?: string | null
+          type: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          note?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_interactions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruitment_interactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruitment_interactions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
