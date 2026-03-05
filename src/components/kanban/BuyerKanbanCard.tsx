@@ -54,7 +54,7 @@ interface BuyerKanbanCardProps {
   isDragging: boolean;
   onClick: () => void;
   onMove: (targetColumnId: string) => void;
-  onContactLogged?: (leadId: string) => void;
+  onContactLogged?: (leadId: string, type: string, note: string) => void;
   onQuickNote?: (leadId: string, note: string) => void;
   currentUserId?: string;
 }
@@ -133,6 +133,12 @@ export function BuyerKanbanCard({
   const [noteOpen, setNoteOpen]   = useState(false);
   const [noteText, setNoteText]   = useState('');
 
+  // ✅ Estado popover contacto
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactType, setContactType] = useState<string>('call');
+  const [contactResult, setContactResult] = useState<string>('answered');
+  const [contactNote, setContactNote] = useState('');
+
   const availableColumns = columns.filter(c => c.id !== lead.columnId);
   const temp             = temperatureConfig[lead.temperature || 'undefined'];
   const aging            = getContactAging(lead.lastContactAt);
@@ -149,11 +155,19 @@ export function BuyerKanbanCard({
     onClick();
   };
 
-  // ✅ Registar contacto
-  const handleContactClick = (e: React.MouseEvent) => {
+  // ✅ Registar contacto via popover
+  const handleSaveContact = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onContactLogged?.(lead.id);
+    const resultLabels: Record<string, string> = {
+      answered: '✅ Atendeu', no_answer: '📵 Não atendeu', callback: '🔄 Callback agendado',
+    };
+    const fullNote = [resultLabels[contactResult], contactNote.trim()].filter(Boolean).join(' — ');
+    onContactLogged?.(lead.id, contactType, fullNote);
     toast.success(`Contacto registado — ${lead.clientName}`);
+    setContactType('call');
+    setContactResult('answered');
+    setContactNote('');
+    setContactOpen(false);
   };
 
   // ✅ Guardar nota rápida
@@ -282,17 +296,109 @@ export function BuyerKanbanCard({
 
           <div className="flex items-center gap-1 ml-auto">
 
-            {/* ✅ Botão ✓ Contactei */}
-            <Button
-              variant="ghost" size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-success hover:bg-success/10"
-              data-no-drag
-              onPointerDown={e => e.stopPropagation()}
-              onClick={handleContactClick}
-              title="Registar contacto"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            </Button>
+            {/* ✅ Popover Contactei */}
+            <Popover open={contactOpen} onOpenChange={setContactOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-success hover:bg-success/10"
+                  data-no-drag
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); setContactOpen(true); }}
+                  title="Registar contacto"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-72 p-3 space-y-2.5"
+                align="end"
+                data-no-drag
+                onClick={e => e.stopPropagation()}
+                onPointerDown={e => e.stopPropagation()}
+              >
+                <p className="text-xs font-semibold">Registar contacto</p>
+
+                {/* Tipo de contacto */}
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Tipo</p>
+                  <div className="flex gap-1 flex-wrap">
+                    {[
+                      { value: 'call', label: '📞 Chamada' },
+                      { value: 'whatsapp', label: '💬 WhatsApp' },
+                      { value: 'email', label: '📧 Email' },
+                      { value: 'meeting', label: '🏠 Visita' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={cn(
+                          'px-2 py-1 rounded text-[11px] font-medium border transition-colors',
+                          contactType === opt.value
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted',
+                        )}
+                        onClick={() => setContactType(opt.value)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Resultado */}
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Resultado</p>
+                  <div className="flex gap-1 flex-wrap">
+                    {[
+                      { value: 'answered', label: '✅ Atendeu' },
+                      { value: 'no_answer', label: '📵 Não atendeu' },
+                      { value: 'callback', label: '🔄 Callback' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={cn(
+                          'px-2 py-1 rounded text-[11px] font-medium border transition-colors',
+                          contactResult === opt.value
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted',
+                        )}
+                        onClick={() => setContactResult(opt.value)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Nota */}
+                <input
+                  type="text"
+                  className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="Nota rápida (opcional)"
+                  value={contactNote}
+                  onChange={e => setContactNote(e.target.value)}
+                  onPointerDown={e => e.stopPropagation()}
+                />
+
+                {/* Ações */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline" size="sm" className="h-7 text-xs"
+                    onClick={e => { e.stopPropagation(); setContactOpen(false); }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm" className="h-7 text-xs gap-1"
+                    onClick={handleSaveContact}
+                  >
+                    <Send className="h-3 w-3" /> Guardar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* ✅ Nota rápida */}
             <Popover open={noteOpen} onOpenChange={setNoteOpen}>
