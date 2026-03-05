@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,7 +130,7 @@ export function BuyerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, 
         budgetMin: lead.budgetMin,
         budgetMax: lead.budgetMax,
         zones: lead.zones || [],
-        typology: lead.typology || '',
+        typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : [],
         nextActionText: lead.nextActionText || '',
         nextActionAt: lead.nextActionAt || '',
         buyerMotive: lead.buyerMotive || '',
@@ -157,7 +155,7 @@ export function BuyerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, 
       budget_min: form.budgetMin ? Number(form.budgetMin) : null,
       budget_max: form.budgetMax ? Number(form.budgetMax) : null,
       zones: form.zones,
-      typology: form.typology || null,
+      typology: form.typology,
       next_action_text: form.nextActionText || null,
       next_action_at: form.nextActionAt || null,
       buyer_motive: form.buyerMotive || null,
@@ -183,6 +181,17 @@ export function BuyerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, 
 
   const removeZone = (idx: number) => {
     setForm({ ...form, zones: form.zones.filter((_: string, i: number) => i !== idx) });
+  };
+
+  const addTypology = (value: string) => {
+    const current = form.typology || [];
+    if (!current.includes(value)) {
+      setForm({ ...form, typology: [...current, value] });
+    }
+  };
+
+  const removeTypology = (idx: number) => {
+    setForm({ ...form, typology: (form.typology || []).filter((_: string, i: number) => i !== idx) });
   };
 
   const handleAddInteraction = (type: string) => {
@@ -271,21 +280,21 @@ export function BuyerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, 
   const currentPipelineColumns = movePipeline === 'compradores' ? buyerPipelineColumns : sellerPipelineColumns;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-xl w-full overflow-y-auto p-0">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
         {/* Header */}
         <div className="p-6 pb-4 border-b border-border">
-          <SheetHeader>
+          <div>
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
                 {lead.clientName.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <SheetTitle className="text-lg">{lead.clientName}</SheetTitle>
-                <SheetDescription className="flex items-center gap-2 mt-0.5">
+                <h2 className="text-lg font-semibold">{lead.clientName}</h2>
+                <div className="flex items-center gap-2 mt-0.5">
                   <Badge variant="outline" className="text-xs">Comprador</Badge>
                   {lead.source && <Badge variant="secondary" className="text-xs">{lead.source}</Badge>}
-                </SheetDescription>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2 mt-3">
@@ -300,7 +309,7 @@ export function BuyerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, 
                 <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
               </a>
             </div>
-          </SheetHeader>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
@@ -374,17 +383,28 @@ export function BuyerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, 
               </div>
             </div>
 
-            {/* Typology */}
-            <div className="space-y-1">
+            {/* Typology - multi-select tags */}
+            <div className="space-y-2">
               <Label className="text-xs">Tipologia</Label>
-              <Select value={form.typology || ''} onValueChange={v => setForm({ ...form, typology: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+              <div className="flex flex-wrap gap-1.5">
+                {(form.typology || []).map((t: string, i: number) => (
+                  <Badge key={i} variant="secondary" className="gap-1 text-xs">
+                    {t}
+                    <button onClick={() => removeTypology(i)} className="ml-0.5"><X className="h-3 w-3" /></button>
+                  </Badge>
+                ))}
+              </div>
+              <Select value="" onValueChange={addTypology}>
+                <SelectTrigger><SelectValue placeholder="Adicionar tipologia..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="T0">T0</SelectItem>
                   <SelectItem value="T1">T1</SelectItem>
                   <SelectItem value="T2">T2</SelectItem>
                   <SelectItem value="T3">T3</SelectItem>
                   <SelectItem value="T4+">T4+</SelectItem>
+                  <SelectItem value="Moradia">Moradia</SelectItem>
+                  <SelectItem value="Terreno">Terreno</SelectItem>
+                  <SelectItem value="Comercial">Comercial</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -685,7 +705,7 @@ export function BuyerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, 
             </div>
           </TabsContent>
         </Tabs>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
