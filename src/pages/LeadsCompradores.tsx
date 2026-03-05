@@ -260,6 +260,32 @@ function LeadsCompradoresContent() {
 
   const handleSaveLead   = (leadId: string, updates: Record<string, any>) => { updateLead.mutate({ id: leadId, ...updates }); };
   const handleDeleteLead = (leadId: string) => { deleteLead.mutate(leadId); };
+  const handleDuplicateLead = async (leadId: string, targetColumnId: string) => {
+    if (!currentUser?.agencyId || !user?.id) return;
+    const sourceLead = leads.find((l: any) => l.id === leadId);
+    if (!sourceLead) return;
+    const { error } = await supabase.from('leads').insert({
+      client_name: sourceLead.client_name,
+      email: sourceLead.email,
+      phone: sourceLead.phone,
+      source: sourceLead.source,
+      column_id: targetColumnId,
+      lead_type: 'seller',
+      temperature: sourceLead.temperature,
+      notes: sourceLead.notes,
+      agency_id: currentUser.agencyId,
+      user_id: user.id,
+      budget_min: sourceLead.budget_min,
+      budget_max: sourceLead.budget_max,
+      zones: sourceLead.zones,
+      typology: sourceLead.typology,
+    });
+    if (error) {
+      toast.error('Erro ao duplicar lead: ' + error.message);
+    } else {
+      toast.success('Lead duplicada para CRM Vendedores');
+    }
+  };
   const handleAddLead    = (lead: KanbanLead) => {
     if (!currentUser?.agencyId) return;
     addLead.mutate({
@@ -469,6 +495,7 @@ function LeadsCompradoresContent() {
           agencyId={currentUser?.agencyId}
           onSave={handleSaveLead}
           onDelete={handleDeleteLead}
+          onDuplicate={handleDuplicateLead}
         />
 
         {/* Add Lead Dialog */}
