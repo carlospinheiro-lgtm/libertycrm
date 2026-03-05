@@ -1,145 +1,57 @@
 
-# Reestruturar CRM Recrutamento - Modelo Minimalista
 
-## Visao Geral
+## Plano: Melhorias no BuyerDetailsSheet.tsx
 
-Reestruturar o modulo de Recrutamento seguindo o mesmo padrao minimalista implementado em Compradores e Vendedores: pipeline de 7 colunas, cartoes simples, ficha com qualificacao, historico de interacoes, alertas visuais, automatizacoes ao mover e dashboard de metricas RH.
+### Alterações no ficheiro `src/components/kanban/BuyerDetailsSheet.tsx`
 
-## 1. Migracao de Base de Dados
+#### 1. Corrigir bug da data vermelha (linha 295)
+O botão do Popover da "Data da ação" já usa `variant="outline"` — o problema não existe. Confirmar que `cn()` não aplica estilos destrutivos. A classe actual é correcta: `text-muted-foreground` quando vazio. Nenhuma alteração necessária aqui.
 
-### 1.1 Novos campos na tabela `leads` (especificos recrutamento)
+#### 2. Tradução completa
+Verificar todos os textos — já estão maioritariamente em PT-PT. Pequenos ajustes: placeholders como "Nova tarefa..." → manter, confirmar que tudo é consistente.
 
-- `experience_level` (text) - com_experiencia / sem_experiencia
-- `recruitment_source` (text) - referral / linkedin / site / outro (reutiliza `source` existente, nao precisa campo extra)
+#### 3. Histórico de notas (aba "Histórico")
+- Adicionar secção "Notas" com botão "+ Adicionar nota" que expande um `Textarea`
+- Ao guardar, chama `addInteraction.mutate()` com `type: 'note'`
+- Na timeline, filtrar notas (type=note) com ícone 📝 e mostrar separadamente acima da timeline de contactos
+- Adicionar `'note'` ao `interactionTypeConfig`
 
-Nota: `cv_url` ja existe na tabela. `last_contact_at`, `next_action_text`, `next_action_at` tambem ja existem. Apenas `experience_level` e novo.
+#### 4. Histórico de contactos melhorado
+- Na timeline, mostrar ícone, tipo, resultado (extraído da nota), data/hora formatada em PT e nome do agente
+- Usar `format(date, "d 'de' MMMM 'às' HH:mm", { locale: pt })` em vez de `formatDistanceToNow`
 
-### 1.2 Nova tabela `recruitment_interactions`
+#### 5. Agendamento de visitas (aba "Tarefas")
+- Adicionar secção "Visitas" com botão "+ Agendar visita" que expande campos: data, hora, morada/imóvel, notas
+- Guardar em `lead_tasks` com título `"Visita: {morada}"` e data
+- Separar visitas (título começa com "Visita:") das tarefas normais
+- Visitas futuras com fundo highlight, passadas a cinza
 
-Mesma estrutura das outras tabelas de interacoes:
+#### 6. Mover lead / Duplicar para outro pipeline (aba "Dados")
+- Adicionar secção "Mover lead" após Qualificação e antes dos botões de ação
+- Dropdown "Pipeline" com opções: CRM Compradores / CRM Vendedores
+- Dropdown "Etapa" com colunas do pipeline selecionado (hardcoded, conforme memória)
+- Botão "Mover" que chama `onSave` com `column_id` e potencialmente `lead_type` actualizado
+- Botão "Duplicar para CRM Vendedores" (visível quando pipeline=compradores) — precisa de callback novo no props
+- Toast de confirmação em PT
 
-```text
-id (uuid, PK)
-lead_id (uuid, FK -> leads.id)
-agency_id (uuid, FK -> agencies.id)
-type (text: call | meeting | email | whatsapp | stage_change | other)
-note (text)
-created_at (timestamptz, default now())
-created_by (uuid, FK -> profiles.id)
-```
+### Alterações na interface `BuyerDetailsSheetProps`
+- Adicionar prop `onDuplicate?: (leadId: string, targetColumnId: string) => void` para duplicação
+- Adicionar prop `columns?: KanbanColumn[]` para saber as colunas actuais
 
-RLS: has_agency_access para SELECT e INSERT, imutavel (false para UPDATE/DELETE).
+### Alterações em `src/pages/LeadsCompradores.tsx`
+- Passar as novas props `onDuplicate` e `columns` ao `BuyerDetailsSheet`
+- Implementar `handleDuplicate` que insere lead no pipeline vendedores via Supabase
 
-### 1.3 Migracao de column_ids existentes
+### Secção técnica
 
-Mapear colunas antigas para novas (lead_type = 'recruitment'):
+**Tabelas afectadas (sem alterações de schema):**
+- `buyer_interactions` — inserção com `type: 'note'` (já suportado, campo text)
+- `lead_tasks` — inserção com título prefixado "Visita:" (já suportado)
+- `leads` — update de `column_id` e `lead_type` + insert para duplicação
 
-```text
-'new'                  -> 'novo-lead'
-'first-contact'        -> 'contactado'
-'interview-scheduled'  -> 'entrevista-agendada'
-'interview-done'       -> 'entrevistado'
-'decision'             -> 'em-decisao'
-'training'             -> 'integrado'
-'active'               -> 'integrado'
-'rejected'             -> 'nao-avancou'
-```
+**Sem migrações necessárias.** Todas as tabelas já suportam os dados requeridos.
 
-Qualquer column_id nao mapeado -> 'novo-lead'.
+**Ficheiros a editar:**
+1. `src/components/kanban/BuyerDetailsSheet.tsx` — todas as 6 melhorias
+2. `src/pages/LeadsCompradores.tsx` — passar novas props e implementar duplicação
 
-## 2. Pipeline (7 Colunas)
-
-| ID | Titulo | Cor |
-|---|---|---|
-| novo-lead | Novo Lead | blue |
-| contactado | Contactado | cyan |
-| entrevista-agendada | Entrevista Agendada | yellow |
-| entrevistado | Entrevistado | yellow |
-| em-decisao | Em Decisao | yellow |
-| integrado | Integrado | green |
-| nao-avancou | Nao Avancou | red |
-
-## 3. Componentes Novos
-
-### 3.1 `RecruitmentKanbanCard.tsx`
-
-Cartao minimalista mostrando:
-- Nome do candidato
-- Telefone (clicavel)
-- Experiencia (badge: Com / Sem)
-- Origem
-- Ultimo contacto (dias, verde/laranja/vermelho)
-- Proxima acao + data
-- Alerta se >5 dias em "Entrevistado" sem decisao
-- Nome do agente (apenas se user != agente)
-
-### 3.2 `RecruitmentDetailsSheet.tsx`
-
-Ficha com 3 tabs (Dados / Historico / Tarefas):
-
-**Seccao Obrigatoria:**
-- Nome, telefone, email
-- Experiencia (Com / Sem)
-- CV (upload/link)
-- Proxima acao (obrigatoria a partir de "Contactado")
-- Data da proxima acao
-
-**Seccao Qualificacao:**
-- Origem
-- Temperatura
-
-**Historico:** Timeline de recruitment_interactions com botoes rapidos (Chamada, WhatsApp, Email, Reuniao).
-
-**Tarefas:** Reutilizar useLeadTasks existente.
-
-### 3.3 `RecruitmentMetricsDashboard.tsx`
-
-Metricas para RH/diretores:
-- Leads novas (semana)
-- Entrevistas agendadas (semana)
-- Entrevistas realizadas (semana)
-- Integrados (mes)
-- Taxa conversao Entrevista -> Integrado
-- Leads >7 dias sem contacto
-
-### 3.4 `useRecruitmentInteractions.ts`
-
-Hook identico ao useBuyerInteractions, apontando para tabela `recruitment_interactions`.
-
-## 4. Pagina Recrutamento.tsx
-
-Reescrever completamente seguindo o padrao de LeadsCompradores:
-- Separar em componente exterior (DashboardLayout) e interior (conteudo)
-- useAgentFilter para filtragem
-- DndContext com drag-and-drop
-- Automatizacoes ao mover:
-  - "Contactado" -> tarefa "Agendar entrevista" (due +2 dias)
-  - "Entrevista Agendada" -> tarefa "Lembrete entrevista" (due +1 dia)
-  - "Entrevistado" -> tarefa "Follow-up decisao" (due +3 dias)
-- logStageChange via recruitment_interactions
-
-## 5. Alertas Visuais
-
-Nos cartoes:
-- Verde: < 3 dias sem contacto
-- Laranja: 4-7 dias
-- Vermelho: > 7 dias
-- Alerta se sem proxima acao definida
-- Alerta especial se >5 dias na coluna "Entrevistado" (baseado em column_entered_at)
-
-## 6. Detalhes Tecnicos
-
-### Ficheiros Novos
-- `src/components/kanban/RecruitmentKanbanCard.tsx`
-- `src/components/kanban/RecruitmentDetailsSheet.tsx`
-- `src/components/kanban/RecruitmentMetricsDashboard.tsx`
-- `src/hooks/useRecruitmentInteractions.ts`
-
-### Ficheiros Modificados
-- `src/pages/Recrutamento.tsx` - reescrita completa
-- `src/hooks/useLeads.ts` - adicionar `experience_level` ao DbLead
-
-### Migracao SQL
-- 1 ficheiro: adicionar campo experience_level, criar tabela recruitment_interactions com RLS, migrar column_ids
-
-A tabela `leads` continua a ser reutilizada (lead_type = 'recruitment'). O campo `experience_level` e nullable e so usado para recrutamento. Os campos `last_contact_at`, `next_action_text`, `next_action_at` ja existem e sao reutilizados.
