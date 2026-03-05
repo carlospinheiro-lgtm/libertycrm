@@ -15,4 +15,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify("https://wwkxppnerjoeaqchxspr.supabase.co"),
+    'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3a3hwcG5lcmpvZWFxY2h4c3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MzkyMDgsImV4cCI6MjA4MjUxNTIwOH0.0jn-Sn5GRYhm9GlR0EJ84zI435udo4ZAcTr8eLjo_zY"),
+    'import.meta.env.VITE_SUPABASE_PROJECT_ID': JSON.stringify("wwkxppnerjoeaqchxspr"),
+  },
 }));
