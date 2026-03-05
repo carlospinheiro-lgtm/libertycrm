@@ -1,436 +1,373 @@
 import { useState } from 'react';
-import {
-  Dialog, DialogContent, DialogDescription,
-  DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+  DropdownMenu, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
-  CalendarIcon, Flame, Sun, Snowflake, Circle,
-  Copy, Home, ShoppingBag, Users,
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Phone, MoveHorizontal, Euro, MapPin, Calendar,
+  AlertTriangle, CheckCircle2, Flame, MessageSquarePlus,
+  Home, ShoppingBag, Users, Send,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import type { LeadTemperature, Source, SourceCategory } from '@/types';
-import type { KanbanLead, KanbanColumn } from '@/hooks/useKanbanState';
-import { defaultSources, sourceCategoryLabels } from '@/types';
+import { differenceInDays, isToday, isTomorrow, isPast } from 'date-fns';
+import { toast } from 'sonner';
+import type { KanbanColumn } from '@/hooks/useKanbanState';
 
-// ✅ Colunas do pipeline Vendedores para duplicação
-const vendedoresColumns: KanbanColumn[] = [
-  { id: 'novo-vendedor',        title: 'Novo',              color: 'blue'   },
-  { id: 'contacto-feito',       title: 'Contacto Feito',    color: 'cyan'   },
-  { id: 'visita-agendada',      title: 'Visita Agendada',   color: 'yellow' },
-  { id: 'avaliacao',            title: 'Avaliação',         color: 'yellow' },
-  { id: 'angariado-exclusivo',  title: 'Angariado (Excl.)', color: 'green'  },
-  { id: 'publicado',            title: 'Publicado',         color: 'green'  },
-  { id: 'vendido',              title: 'Vendido',           color: 'green'  },
-];
-
-interface AddLeadDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  columns: KanbanColumn[];
-  onAdd: (lead: KanbanLead, duplicateToSeller?: boolean) => void;
-  isRecruitment?: boolean;
-  leadFlow?: 'vendedores' | 'compradores';
+export interface BuyerCardLead {
+  id: string;
+  clientName: string;
+  phone: string;
+  email: string;
+  agentName: string;
+  agentId?: string;
+  columnId: string;
+  temperature: string;
+  budgetMin?: number | null;
+  budgetMax?: number | null;
+  zones?: string[];
+  lastContactAt?: string | null;
+  nextActionText?: string | null;
+  nextActionAt?: string | null;
+  source?: string;
+  typology?: string;
+  buyerMotive?: string;
+  buyerTimeline?: string;
+  buyerFinancing?: string;
+  createdAt?: string;
+  columnEnteredAt?: string;
+  // ✅ NOVO: tipo de cliente
+  clientType?: 'comprador' | 'vendedor' | 'ambos';
 }
 
-// ✅ Tipo de cliente
-type ClientType = 'comprador' | 'vendedor' | 'ambos';
+interface BuyerKanbanCardProps {
+  lead: BuyerCardLead;
+  columns: KanbanColumn[];
+  isDragging: boolean;
+  onClick: () => void;
+  onMove: (targetColumnId: string) => void;
+  onContactLogged?: (leadId: string) => void;
+  onQuickNote?: (leadId: string, note: string) => void;
+  currentUserId?: string;
+}
 
-const clientTypeOptions: { value: ClientType; label: string; icon: React.ReactNode; color: string }[] = [
-  { value: 'comprador', label: 'Comprador',  icon: <ShoppingBag className="h-3.5 w-3.5" />, color: 'bg-blue-500 text-white'   },
-  { value: 'vendedor',  label: 'Vendedor',   icon: <Home className="h-3.5 w-3.5" />,        color: 'bg-green-500 text-white'  },
-  { value: 'ambos',     label: 'Comprador + Vendedor', icon: <Users className="h-3.5 w-3.5" />, color: 'bg-purple-500 text-white' },
-];
+const temperatureConfig: Record<string, { label: string; className: string }> = {
+  hot:       { label: 'Quente',    className: 'bg-destructive text-destructive-foreground' },
+  warm:      { label: 'Morno',     className: 'bg-warning text-warning-foreground'         },
+  cold:      { label: 'Frio',      className: 'bg-info text-info-foreground'               },
+  undefined: { label: '—',         className: 'bg-muted text-muted-foreground'             },
+};
 
-const temperatureOptions: { value: LeadTemperature; label: string; icon: React.ReactNode; color: string }[] = [
-  { value: 'hot',       label: 'Quente',    icon: <Flame className="h-4 w-4" />,     color: 'bg-destructive text-destructive-foreground' },
-  { value: 'warm',      label: 'Morno',     icon: <Sun className="h-4 w-4" />,       color: 'bg-warning text-warning-foreground'         },
-  { value: 'cold',      label: 'Frio',      icon: <Snowflake className="h-4 w-4" />, color: 'bg-info text-info-foreground'               },
-  { value: 'undefined', label: 'Indefinido',icon: <Circle className="h-4 w-4" />,    color: 'bg-muted text-muted-foreground'             },
-];
+// ✅ Tipo de cliente — badge + ícone
+const clientTypeConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
+  comprador: { label: 'Comprador', icon: <ShoppingBag className="h-2.5 w-2.5" />, className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'     },
+  vendedor:  { label: 'Vendedor',  icon: <Home className="h-2.5 w-2.5" />,        className: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'  },
+  ambos:     { label: 'C + V',     icon: <Users className="h-2.5 w-2.5" />,       className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
+};
 
-export function AddLeadDialog({
-  open, onOpenChange, columns, onAdd,
-  isRecruitment = false, leadFlow = 'compradores',
-}: AddLeadDialogProps) {
-  const [formData, setFormData] = useState({
-    clientName:              '',
-    phone:                   '',
-    email:                   '',
-    agentName:               '',
-    agency:                  '',
-    sourceId:                '',
-    notes:                   '',
-    temperature:             'undefined' as LeadTemperature,
-    nextActivityDate:        undefined as Date | undefined,
-    nextActivityDescription: '',
-    cvUrl:                   '',
-    // ✅ NOVOS campos
-    columnId:                columns[0]?.id || '',   // Escolher coluna inicial
-    clientType:              'comprador' as ClientType, // Tipo de cliente
-  });
+// ✅ Ícones de origem
+const sourceIconMap: Record<string, string> = {
+  instagram: '📸', facebook: '📘', idealista: '🏠', imovirtual: '🔑',
+  referencia: '🤝', site: '🌐', remax: '🏷️', telefone: '📞',
+};
 
-  // ✅ Se "ambos" ou "vendedor", mostrar opção de duplicar no pipeline vendedores
-  const showDuplicateOption = formData.clientType === 'ambos' || formData.clientType === 'vendedor';
-  const [duplicateToSeller, setDuplicateToSeller] = useState(false);
-  const [sellerColumnId, setSellerColumnId] = useState(vendedoresColumns[0]?.id || '');
+function getSourceEmoji(source?: string): string {
+  if (!source) return '';
+  const key = source.toLowerCase();
+  for (const [k, v] of Object.entries(sourceIconMap)) {
+    if (key.includes(k)) return v;
+  }
+  return '📋';
+}
 
-  const availableSources = defaultSources.filter(source =>
-    source.isActive && (source.flow === leadFlow || source.flow === 'ambos')
-  );
+function getContactAging(lastContactAt?: string | null): { days: number; color: string; urgent: boolean } | null {
+  if (!lastContactAt) return null;
+  try {
+    const days = differenceInDays(new Date(), new Date(lastContactAt));
+    if (days <= 3)  return { days, color: 'text-success',     urgent: false };
+    if (days <= 7)  return { days, color: 'text-warning',     urgent: false };
+    if (days <= 14) return { days, color: 'text-destructive', urgent: false };
+    return           { days, color: 'text-destructive',       urgent: true  };
+  } catch { return null; }
+}
 
-  const sourcesByCategory = availableSources.reduce((acc, source) => {
-    if (!acc[source.category]) acc[source.category] = [];
-    acc[source.category].push(source);
-    return acc;
-  }, {} as Record<SourceCategory, Source[]>);
+function formatBudget(min?: number | null, max?: number | null): string {
+  if (min == null && max == null) return '—';
+  const fmt = (v: number) => {
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000)     return `${Math.round(v / 1_000)}k`;
+    return v.toString();
+  };
+  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}€`;
+  if (max != null) return `até ${fmt(max)}€`;
+  return `desde ${fmt(min!)}€`;
+}
 
-  const selectedSource = defaultSources.find(s => s.id === formData.sourceId);
+function getNextActionLabel(nextActionAt?: string | null): { label: string; urgent: boolean; overdue: boolean } | null {
+  if (!nextActionAt) return null;
+  try {
+    const date = new Date(nextActionAt);
+    if (isToday(date))    return { label: 'Hoje',     urgent: true,  overdue: false };
+    if (isTomorrow(date)) return { label: 'Amanhã',   urgent: false, overdue: false };
+    if (isPast(date))     return { label: 'Atrasada', urgent: true,  overdue: true  };
+    return { label: date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' }), urgent: false, overdue: false };
+  } catch { return null; }
+}
 
-  const handleSubmit = () => {
-    if (!formData.clientName || !formData.phone || !formData.agentName) return;
-    if (!formData.sourceId) return;
+export function BuyerKanbanCard({
+  lead, columns, isDragging, onClick, onMove,
+  onContactLogged, onQuickNote, currentUserId,
+}: BuyerKanbanCardProps) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: lead.id });
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
 
-    const source = defaultSources.find(s => s.id === formData.sourceId);
+  // ✅ Estado nota rápida
+  const [noteOpen, setNoteOpen]   = useState(false);
+  const [noteText, setNoteText]   = useState('');
 
-    const newLead: KanbanLead = {
-      id:                      crypto.randomUUID(),
-      clientName:              formData.clientName,
-      phone:                   formData.phone,
-      email:                   formData.email,
-      agentName:               formData.agentName,
-      agency:                  formData.agency,
-      source:                  source?.name || '',
-      sourceId:                formData.sourceId,
-      sourceCategory:          source?.category || 'espontaneo',
-      notes:                   formData.notes,
-      temperature:             formData.temperature,
-      entryDate:               new Date().toLocaleDateString('pt-PT'),
-      // ✅ Usa a coluna escolhida pelo agente
-      columnId:                formData.columnId || columns[0]?.id || '',
-      nextActivityDate:        formData.nextActivityDate?.toISOString(),
-      nextActivityDescription: formData.nextActivityDescription,
-      cvUrl:                   isRecruitment ? formData.cvUrl : undefined,
-      // ✅ Guarda o tipo de cliente
-      clientType:              formData.clientType,
-    };
+  const availableColumns = columns.filter(c => c.id !== lead.columnId);
+  const temp             = temperatureConfig[lead.temperature || 'undefined'];
+  const aging            = getContactAging(lead.lastContactAt);
+  const nextActionInfo   = getNextActionLabel(lead.nextActionAt);
+  const shouldShowAgent  = !currentUserId || lead.agentId !== currentUserId;
+  const mainZone         = lead.zones?.[0];
+  const hasNoNextAction  = !lead.nextActionAt;
+  const isUrgent         = aging?.urgent ?? false;
+  const clientType       = clientTypeConfig[lead.clientType || 'comprador'];
+  const sourceEmoji      = getSourceEmoji(lead.source);
 
-    // ✅ Passa flag de duplicação para o pai tratar
-    onAdd(newLead, showDuplicateOption && duplicateToSeller ? true : false);
-    onOpenChange(false);
-
-    setFormData({
-      clientName: '', phone: '', email: '', agentName: '', agency: '',
-      sourceId: '', notes: '', temperature: 'undefined',
-      nextActivityDate: undefined, nextActivityDescription: '', cvUrl: '',
-      columnId: columns[0]?.id || '', clientType: 'comprador',
-    });
-    setDuplicateToSeller(false);
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, [data-no-drag], textarea')) return;
+    onClick();
   };
 
-  const isFormValid = formData.clientName && formData.phone && formData.agentName && formData.sourceId;
+  // ✅ Registar contacto
+  const handleContactClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onContactLogged?.(lead.id);
+    toast.success(`Contacto registado — ${lead.clientName}`);
+  };
+
+  // ✅ Guardar nota rápida
+  const handleSaveNote = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!noteText.trim()) return;
+    onQuickNote?.(lead.id, noteText.trim());
+    toast.success('Nota guardada');
+    setNoteText('');
+    setNoteOpen(false);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isRecruitment ? 'Novo Candidato' : 'Nova Lead'}</DialogTitle>
-          <DialogDescription>
-            Preencha os dados para adicionar {isRecruitment ? 'um novo candidato' : 'uma nova lead'}.
-          </DialogDescription>
-        </DialogHeader>
+    <Card
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        'card-interactive bg-card transition-all touch-none border-l-4',
+        isUrgent
+          ? 'border-l-destructive ring-1 ring-destructive/20'
+          : 'border-l-primary/30',
+        isDragging && 'opacity-50',
+      )}
+      onClick={handleCardClick}
+    >
+      <CardContent className="p-3 space-y-1.5">
 
-        <div className="grid gap-4 py-4">
+        {/* Row 1: Nome + Temperatura */}
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-semibold text-sm truncate flex-1">{lead.clientName}</p>
+          <Badge className={cn('text-[10px] px-1.5 py-0 shrink-0', temp.className)}>
+            {temp.label}
+          </Badge>
+        </div>
 
-          {/* ✅ MELHORIA: Tipo de cliente */}
-          {!isRecruitment && (
-            <div className="grid gap-2">
-              <Label>Tipo de Cliente</Label>
-              <div className="flex gap-2 flex-wrap">
-                {clientTypeOptions.map(opt => (
-                  <Button
-                    key={opt.value}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={cn('gap-1.5 text-xs', formData.clientType === opt.value && opt.color)}
-                    onClick={() => {
-                      setFormData({ ...formData, clientType: opt.value });
-                      setDuplicateToSeller(false);
-                    }}
-                  >
-                    {opt.icon}{opt.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
+        {/* ✅ Row 2: Tipo de cliente + Origem */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={cn(
+            'inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full',
+            clientType.className,
+          )}>
+            {clientType.icon}{clientType.label}
+          </span>
+          {lead.source && (
+            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+              {sourceEmoji} {lead.source}
+            </span>
           )}
+        </div>
 
-          {/* Temperature */}
-          <div className="grid gap-2">
-            <Label>Temperatura</Label>
-            <div className="flex gap-2 flex-wrap">
-              {temperatureOptions.map((option) => (
-                <Button
-                  key={option.value}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={cn('gap-2', formData.temperature === option.value && option.color)}
-                  onClick={() => setFormData({ ...formData, temperature: option.value })}
-                >
-                  {option.icon}{option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Nome */}
-          <div className="grid gap-2">
-            <Label htmlFor="clientName">
-              {isRecruitment ? 'Nome do Candidato' : 'Nome do Cliente'} *
-            </Label>
-            <Input
-              id="clientName"
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-              placeholder="Nome completo"
-            />
-          </div>
-
-          {/* Telefone + Email */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Telefone *</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="912 345 678"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@exemplo.pt"
-              />
-            </div>
-          </div>
-
-          {/* Agente + Agência */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="agentName">{isRecruitment ? 'Recrutador' : 'Agente'} *</Label>
-              <Input
-                id="agentName"
-                value={formData.agentName}
-                onChange={(e) => setFormData({ ...formData, agentName: e.target.value })}
-                placeholder="Nome do agente"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="agency">Agência</Label>
-              <Select
-                value={formData.agency}
-                onValueChange={(value) => setFormData({ ...formData, agency: value })}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Braga">Braga</SelectItem>
-                  <SelectItem value="Barcelos">Barcelos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Origem */}
-          <div className="grid gap-2">
-            <Label htmlFor="source" className="flex items-center gap-1">
-              Origem <span className="text-destructive">*</span>
-              <span className="text-xs text-muted-foreground ml-1">(obrigatório)</span>
-            </Label>
-            <Select
-              value={formData.sourceId}
-              onValueChange={(value) => setFormData({ ...formData, sourceId: value })}
+        {/* Row 3: Telefone + Orçamento */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {lead.phone ? (
+            <a
+              href={`tel:${lead.phone}`}
+              onClick={e => e.stopPropagation()}
+              onPointerDown={e => e.stopPropagation()}
+              className="flex items-center gap-1 hover:text-primary"
             >
-              <SelectTrigger className={cn(!formData.sourceId && 'border-destructive')}>
-                <SelectValue placeholder="Selecionar origem" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(sourcesByCategory).map(([category, sources]) => (
-                  <div key={category}>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted">
-                      {sourceCategoryLabels[category as SourceCategory]}
-                    </div>
-                    {sources.map((source) => (
-                      <SelectItem key={source.id} value={source.id}>{source.name}</SelectItem>
-                    ))}
-                  </div>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedSource && (
-              <p className="text-xs text-muted-foreground">
-                Categoria: {sourceCategoryLabels[selectedSource.category]}
-              </p>
+              <Phone className="h-3 w-3" />{lead.phone}
+            </a>
+          ) : (
+            <span className="text-muted-foreground/50">Sem telefone</span>
+          )}
+          <span className="ml-auto flex items-center gap-0.5">
+            <Euro className="h-3 w-3" />
+            {formatBudget(lead.budgetMin, lead.budgetMax)}
+          </span>
+        </div>
+
+        {/* Row 4: Zona + Aging */}
+        <div className="flex items-center gap-2 text-xs">
+          {mainZone && (
+            <span className="flex items-center gap-0.5 text-muted-foreground">
+              <MapPin className="h-3 w-3" />{mainZone}
+            </span>
+          )}
+          <div className="ml-auto flex items-center gap-1.5">
+            {aging && (
+              <span className={cn('text-[10px] font-medium flex items-center gap-0.5', aging.color)}>
+                {aging.urgent && <Flame className="h-3 w-3" />}
+                {aging.days}d
+              </span>
             )}
-          </div>
-
-          {/* ✅ MELHORIA: Escolher coluna inicial no Kanban */}
-          {!isRecruitment && (
-            <div className="grid gap-2">
-              <Label>Etapa inicial no Kanban</Label>
-              <Select
-                value={formData.columnId}
-                onValueChange={(value) => setFormData({ ...formData, columnId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar etapa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {columns.map(col => (
-                    <SelectItem key={col.id} value={col.id}>{col.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Por defeito entra em "{columns[0]?.title}"
-              </p>
-            </div>
-          )}
-
-          {/* ✅ MELHORIA: Duplicar para pipeline Vendedores */}
-          {showDuplicateOption && !isRecruitment && (
-            <div className={cn(
-              'rounded-lg border p-3 space-y-3',
-              duplicateToSeller ? 'border-purple-300 bg-purple-50 dark:bg-purple-950/20' : 'border-dashed',
-            )}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Copy className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-medium">Duplicar no CRM Vendedores</span>
-                  {formData.clientType === 'ambos' && (
-                    <Badge variant="secondary" className="text-[10px]">Recomendado</Badge>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant={duplicateToSeller ? 'default' : 'outline'}
-                  size="sm"
-                  className={cn('text-xs', duplicateToSeller && 'bg-purple-500 hover:bg-purple-600')}
-                  onClick={() => setDuplicateToSeller(!duplicateToSeller)}
-                >
-                  {duplicateToSeller ? 'Ativo ✓' : 'Ativar'}
-                </Button>
-              </div>
-              {duplicateToSeller && (
-                <div className="grid gap-1.5">
-                  <Label className="text-xs text-muted-foreground">Etapa no CRM Vendedores</Label>
-                  <Select value={sellerColumnId} onValueChange={setSellerColumnId}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vendedoresColumns.map(col => (
-                        <SelectItem key={col.id} value={col.id} className="text-xs">
-                          {col.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[11px] text-muted-foreground">
-                    O contacto será criado em ambos os pipelines simultaneamente.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* CV URL para recrutamento */}
-          {isRecruitment && (
-            <div className="grid gap-2">
-              <Label htmlFor="cvUrl">URL do Currículo</Label>
-              <Input
-                id="cvUrl"
-                type="url"
-                value={formData.cvUrl}
-                onChange={(e) => setFormData({ ...formData, cvUrl: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-          )}
-
-          {/* Próxima Atividade */}
-          <div className="grid gap-2">
-            <Label>Próxima Atividade</Label>
-            <div className="flex gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn('justify-start text-left font-normal flex-1', !formData.nextActivityDate && 'text-muted-foreground')}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.nextActivityDate
-                      ? format(formData.nextActivityDate, 'PPP', { locale: pt })
-                      : 'Selecionar data'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.nextActivityDate}
-                    onSelect={(date) => setFormData({ ...formData, nextActivityDate: date })}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <Input
-              placeholder="Descrição da atividade"
-              value={formData.nextActivityDescription}
-              onChange={(e) => setFormData({ ...formData, nextActivityDescription: e.target.value })}
-            />
-          </div>
-
-          {/* Notas */}
-          <div className="grid gap-2">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              rows={3}
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Observações adicionais..."
-            />
+            {hasNoNextAction && <AlertTriangle className="h-3 w-3 text-warning" />}
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={!isFormValid} className="gap-2">
-            {duplicateToSeller && <Copy className="h-3.5 w-3.5" />}
-            {duplicateToSeller ? 'Adicionar nos 2 pipelines' : 'Adicionar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        {/* Row 5: Próxima ação */}
+        {lead.nextActionText ? (
+          <div className={cn(
+            'flex items-center gap-1.5 text-xs rounded px-2 py-1',
+            nextActionInfo?.overdue ? 'bg-destructive/10 text-destructive' :
+            nextActionInfo?.urgent  ? 'bg-warning/10 text-warning-foreground' :
+            'bg-muted/50 text-muted-foreground',
+          )}>
+            <Calendar className="h-3 w-3 shrink-0" />
+            <span className="truncate flex-1">{lead.nextActionText}</span>
+            {nextActionInfo && (
+              <span className={cn(
+                'ml-auto shrink-0 text-[10px] font-semibold px-1 rounded',
+                nextActionInfo.overdue ? 'bg-destructive/20 text-destructive' :
+                nextActionInfo.urgent  ? 'bg-warning/20 text-warning-foreground' :
+                'text-muted-foreground',
+              )}>
+                {nextActionInfo.label}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 bg-muted/30 rounded px-2 py-1">
+            <AlertTriangle className="h-3 w-3 text-warning shrink-0" />
+            <span className="italic">Sem próxima ação definida</span>
+          </div>
+        )}
+
+        {/* Row 6: Agente + ações rápidas */}
+        <div className="flex items-center justify-between pt-0.5" data-no-drag>
+          {shouldShowAgent ? (
+            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+              {lead.agentName}
+            </span>
+          ) : <div />}
+
+          <div className="flex items-center gap-1 ml-auto">
+
+            {/* ✅ Botão ✓ Contactei */}
+            <Button
+              variant="ghost" size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-success hover:bg-success/10"
+              data-no-drag
+              onPointerDown={e => e.stopPropagation()}
+              onClick={handleContactClick}
+              title="Registar contacto"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            </Button>
+
+            {/* ✅ Nota rápida */}
+            <Popover open={noteOpen} onOpenChange={setNoteOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                  data-no-drag
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); setNoteOpen(true); }}
+                  title="Nota rápida"
+                >
+                  <MessageSquarePlus className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-64 p-3 space-y-2"
+                align="end"
+                data-no-drag
+                onClick={e => e.stopPropagation()}
+                onPointerDown={e => e.stopPropagation()}
+              >
+                <p className="text-xs font-semibold">Nota rápida — {lead.clientName}</p>
+                <Textarea
+                  rows={3}
+                  className="text-xs resize-none"
+                  placeholder="Escreve uma nota..."
+                  value={noteText}
+                  onChange={e => setNoteText(e.target.value)}
+                  onPointerDown={e => e.stopPropagation()}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline" size="sm" className="h-7 text-xs"
+                    onClick={e => { e.stopPropagation(); setNoteOpen(false); setNoteText(''); }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm" className="h-7 text-xs gap-1"
+                    onClick={handleSaveNote}
+                    disabled={!noteText.trim()}
+                  >
+                    <Send className="h-3 w-3" /> Guardar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Mover coluna */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost" size="icon" className="h-6 w-6"
+                  data-no-drag
+                  onPointerDown={e => e.stopPropagation()}
+                  title="Mover coluna"
+                >
+                  <MoveHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                {availableColumns.map(column => (
+                  <DropdownMenuItem
+                    key={column.id}
+                    onClick={e => { e.stopPropagation(); onMove(column.id); }}
+                  >
+                    {column.title}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
