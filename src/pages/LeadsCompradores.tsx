@@ -47,7 +47,6 @@ const temperatureFilters = [
   { value: 'hot',       label: 'Quente', icon: Flame },
   { value: 'warm',      label: 'Morno',  icon: Thermometer },
   { value: 'cold',      label: 'Frio',   icon: Snowflake },
-  { value: 'undefined', label: '—',      icon: null },
 ];
 
 async function createAutoTask(leadId: string, agencyId: string, userId: string, columnId: string) {
@@ -151,26 +150,25 @@ function LeadsCompradoresContent() {
     columnEnteredAt: lead.column_entered_at,
   }));
 
-  // ✅ MELHORIAS 3 + 5 + 6: filtragem combinada (agente + pesquisa + temperatura)
-  const filteredLeads = useMemo(() => {
+  // Leads filtradas por agente + pesquisa (sem temperatura — para contar "Todos")
+  const agentAndSearchLeads = useMemo(() => {
     return mappedLeads.filter(lead => {
-      // Filtro agente
       if (selectedAgentId !== 'all' && lead.agentId !== selectedAgentId) return false;
-
-      // ✅ MELHORIA 6: pesquisa por nome ou telefone
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName  = lead.clientName?.toLowerCase().includes(q);
         const matchesPhone = lead.phone?.toLowerCase().includes(q);
         if (!matchesName && !matchesPhone) return false;
       }
-
-      // ✅ MELHORIA 3: filtro por temperatura
-      if (tempFilter !== 'all' && lead.temperature !== tempFilter) return false;
-
       return true;
     });
-  }, [mappedLeads, selectedAgentId, searchQuery, tempFilter]);
+  }, [mappedLeads, selectedAgentId, searchQuery]);
+
+  // Leads filtradas finais (agente + pesquisa + temperatura)
+  const filteredLeads = useMemo(() => {
+    if (tempFilter === 'all') return agentAndSearchLeads;
+    return agentAndSearchLeads.filter(lead => lead.temperature === tempFilter);
+  }, [agentAndSearchLeads, tempFilter]);
 
   // ✅ MELHORIA 5: leads "O meu dia" — próxima ação para hoje
   const myDayLeads = useMemo(() => {
@@ -330,8 +328,8 @@ function LeadsCompradoresContent() {
                   <List className="h-4 w-4" />
                 </ToggleGroupItem>
                 {/* ✅ MELHORIA 5: botão "O meu dia" */}
-                <ToggleGroupItem value="myday" aria-label="O meu dia">
-                  <Sun className="h-4 w-4" />
+                <ToggleGroupItem value="myday" aria-label="O meu dia" className="text-xs px-3">
+                  Hoje
                 </ToggleGroupItem>
               </ToggleGroup>
               <Button onClick={() => setAddLeadOpen(true)} className="gap-2">
@@ -367,8 +365,8 @@ function LeadsCompradoresContent() {
               {temperatureFilters.map(f => {
                 const Icon = f.icon;
                 const count = f.value === 'all'
-                  ? filteredLeads.length
-                  : mappedLeads.filter(l => l.temperature === f.value).length;
+                  ? agentAndSearchLeads.length
+                  : agentAndSearchLeads.filter(l => l.temperature === f.value).length;
                 return (
                   <Button
                     key={f.value}
