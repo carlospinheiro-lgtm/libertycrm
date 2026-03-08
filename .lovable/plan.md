@@ -1,49 +1,30 @@
 
 
-## Plano: Melhorias ao CRM Recrutamento (Cartão + Página + Barra)
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### 1. `src/components/kanban/RecruitmentKanbanCard.tsx` — Redesenho completo
+### 1. Sheet → Dialog (centrado no ecrã)
 
-Reescrever seguindo o padrão do `BuyerKanbanCard`:
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-- **Props**: Adicionar `onContactLogged`, `onQuickNote` callbacks
-- **Imports**: `Card/CardContent`, `Popover`, `cn`, `date-fns`, `toast`, `Textarea`, `CheckCircle2`, `MessageSquarePlus`, `MoveHorizontal`, `Flame`, `Send`, `CSS` do dnd-kit/utilities
-- **Estados internos**: `noteOpen/noteText`, `contactOpen/contactType/contactResult/contactNote`
-- **Layout**:
-  - Row 1: Nome + badge experiência (verde/azul)
-  - Row 2: Badge "Recrutamento" roxo + origem com emoji (mapeamento `sourceIconMap`: instagram→📸, referencia→👥, site→🌐, etc.)
-  - Row 3: Telefone clicável com `Phone` icon
-  - Row 4: Dias sem contacto (verde ≤3d, laranja ≤7d, vermelho >7d) + 🔥 Flame se >14d
-  - Row 5: Próxima ação — fundo `bg-destructive/10` se atrasada, `bg-warning/10` se hoje/amanhã, aviso laranja se sem ação
-  - Row 6: Nome agente + ✓ Contactei (Popover com tipo/resultado/nota → `onContactLogged`) + Nota rápida (Popover com Textarea → `onQuickNote`) + Dropdown Mover (MoveHorizontal)
-- **Estilos**: `border-l-4`, `border-l-destructive ring-1 ring-destructive/20` se >14d sem contacto, `border-l-orange-400` se entrevistado >5d, `touch-none`
-- Usar `CSS.Translate.toString(transform)` e `handleCardClick` com guarda para `button/a/textarea`
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-### 2. `src/pages/Recrutamento.tsx` — Popup + barra superior
+### 2. Tipologia multi-seleção (tags)
 
-**Popup desativado**:
-- `shouldShowMovePopup` retorna sempre `false`
-- No `executeMove`, adicionar toasts especiais:
-  - `integrado`: `"🎉 Parabéns! Novo consultor integrado. Não esqueças de criar o perfil de utilizador."`
-  - `nao-avancou`: `"📋 Candidato arquivado. Define um follow-up para reativar no futuro."`
-- `last_contact_at` já é atualizado em `logStageChange`
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-**Callbacks para cartão**:
-- `handleContactLogged(leadId, type, note)`: insere em `recruitment_interactions` + atualiza `last_contact_at` no lead
-- `handleQuickNote(leadId, note)`: insere em `recruitment_interactions` com `type: 'note'`
-- Passar `onContactLogged` e `onQuickNote` ao `RecruitmentKanbanCard`
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
 
-**Barra superior**:
-- `searchTerm` state + `<Input>` com ícone `Search`, filtra `clientName` ou `phone` (case-insensitive)
-- `expFilter` state: `'all' | 'com_experiencia' | 'sem_experiencia'` — 3 botões com contador
-- `todayFilter` boolean no `ToggleGroup` — mostra só leads com `nextActionAt` para hoje (usando `isToday` de date-fns)
-- Contadores calculados dos `mappedLeads` filtrados por agente
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
 
-### 3. `src/components/kanban/RecruitmentDetailsSheet.tsx` — sem alterações
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
 
-O pedido não inclui alterações a este ficheiro.
-
-### Ficheiros editados
-- `src/components/kanban/RecruitmentKanbanCard.tsx` — reescrita completa
-- `src/pages/Recrutamento.tsx` — popup desativado, callbacks, barra de filtros
+### Ficheiro editado
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 
