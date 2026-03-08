@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .select('name, is_super_admin')
         .eq('id', userId)
-        .single();
+        .single() as { data: { name: string; is_super_admin: boolean } | null };
 
       // Fetch user agency info (including organization_id via agencies join)
       const { data: userAgencyData } = await supabase
@@ -114,16 +114,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', userId)
         .eq('is_active', true)
         .limit(1)
-        .single();
-
-      const agencyRow = userAgencyData?.agencies as unknown as { organization_id: string | null } | null;
+        .single() as { data: { team_id: string | null; agency_id: string | null; agencies: { organization_id: string | null } | null } | null };
 
       setUserProfile({
         name: profileData?.name || user?.email || 'Utilizador',
         team_id: userAgencyData?.team_id || null,
         agency_id: userAgencyData?.agency_id || null,
         is_super_admin: profileData?.is_super_admin ?? false,
-        organization_id: agencyRow?.organization_id ?? null,
+        organization_id: userAgencyData?.agencies?.organization_id ?? null,
       });
 
       // Fetch agencies and teams for name lookups
