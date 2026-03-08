@@ -388,7 +388,27 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
             {/* CV */}
             <div className="space-y-1">
               <Label className="text-xs">CV (URL)</Label>
-              <Input value={form.cv_url} onChange={e => setForm(f => ({ ...f, cv_url: e.target.value }))} placeholder="https://..." />
+              <div className="flex gap-2">
+                <Input
+                  className="flex-1"
+                  value={form.cv_url}
+                  onChange={e => setForm(f => ({ ...f, cv_url: e.target.value }))}
+                  placeholder="Cole o link do CV (Google Drive, Dropbox...)"
+                />
+                {form.cv_url && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={() => window.open(form.cv_url, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Partilha o ficheiro com permissão "qualquer pessoa com o link pode ver" antes de colar aqui
+              </p>
             </div>
 
             {/* Botões Guardar + Eliminar */}
