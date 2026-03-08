@@ -129,11 +129,10 @@ export function AddLeadDialog({
       nextActivityDate:        formData.nextActivityDate?.toISOString(),
       nextActivityDescription: formData.nextActivityDescription,
       cvUrl:                   isRecruitment ? formData.cvUrl : undefined,
-      // ✅ Guarda o tipo de cliente
       clientType:              formData.clientType,
+      contractDuration:        leadFlow === 'vendedores' ? formData.contractDuration : undefined,
     };
 
-    // ✅ Passa flag de duplicação para o pai tratar
     onAdd(newLead, showDuplicateOption && duplicateToSeller ? true : false);
     onOpenChange(false);
 
@@ -142,6 +141,7 @@ export function AddLeadDialog({
       sourceId: '', notes: '', temperature: 'undefined',
       nextActivityDate: undefined, nextActivityDescription: '', cvUrl: '',
       columnId: columns[0]?.id || '', clientType: 'comprador',
+      contractDuration: contractDefault,
     });
     setDuplicateToSeller(false);
   };
