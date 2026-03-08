@@ -386,7 +386,14 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
 
               <div className="space-y-1">
                 <Label className="text-xs">Duração Contrato</Label>
-                <Input value={form.contract_duration} onChange={e => setForm({ ...form, contract_duration: e.target.value })} placeholder="Ex: 6 meses" />
+                <Select value={form.contract_duration} onValueChange={v => setForm({ ...form, contract_duration: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar duração" /></SelectTrigger>
+                  <SelectContent>
+                    {contractOptions.map(opt => (
+                      <SelectItem key={opt} value={String(opt)}>{opt} dias</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {lead.source && (
