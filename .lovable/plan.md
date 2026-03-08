@@ -1,30 +1,50 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Configuração de duração de contrato de angariação
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### Abordagem
+Usar a tabela `agency_settings` existente com JSONB (chave `contract_duration`), sem necessidade de migration. O hook `useAgencySettings.ts` já suporta chaves genéricas via `useAgencySetting<T>`.
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+### 1. Sem migration necessária
+A tabela `agency_settings` já armazena configurações em JSONB com `setting_key` + `setting_value`. Basta usar uma nova chave `contract_duration` com valor `{ defaultDays: 120, options: [90, 120, 150, 180] }`.
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+### 2. Hook `useAgencySettings.ts`
+Adicionar tipos e funções helper:
 
-### 2. Tipologia multi-seleção (tags)
+```typescript
+export interface ContractDurationSettings {
+  defaultDays: number;
+  options: number[];
+}
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+export function useContractDurationSettings(agencyId: string | undefined) {
+  return useAgencySetting<ContractDurationSettings>(agencyId, 'contract_duration');
+}
+```
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+### 3. `SettingsPanel.tsx`
+Após o `LeadSettingsCard`, adicionar nova secção "Contratos de Angariação" (visível quando `selectedAgencyId` existe):
+- Input numérico "Duração padrão (dias)"
+- Lista de badges editáveis com opções de duração (90d, 120d, etc.) + botão "+" para adicionar + "×" para remover
+- Botão "Guardar" que usa `useUpsertAgencySetting` com chave `contract_duration`
+- Nota informativa em texto muted
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+### 4. `SellerDetailsSheet.tsx` (linha ~386-389)
+Substituir o `<Input>` de texto livre por um `<Select>`:
+- Importar `useContractDurationSettings`
+- Carregar opções da agência, fallback `[90, 120, 150, 180]`
+- Mostrar como "90 dias", "120 dias", etc.
+- Valor padrão = `defaultDays` da agência (ou 120)
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+### 5. `AddLeadDialog.tsx`
+Quando `leadFlow === 'vendedores'`:
+- Adicionar campo `contractDuration` ao `formData`, pré-preenchido com `defaultDays`
+- Renderizar `<Select>` com as mesmas opções dinâmicas
+- Incluir no `newLead` como `contract_duration`
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+### Ficheiros editados
+- `src/hooks/useAgencySettings.ts` — adicionar tipos e hook
+- `src/components/admin/SettingsPanel.tsx` — nova secção de contratos
+- `src/components/kanban/SellerDetailsSheet.tsx` — Select dinâmico
+- `src/components/kanban/AddLeadDialog.tsx` — campo duração para vendedores
 
