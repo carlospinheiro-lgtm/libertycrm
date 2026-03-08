@@ -1,30 +1,70 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Sistema de Comissionamento Configurável
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### Abordagem
+Usar a tabela `agency_settings` existente com JSONB — 3 chaves novas: `commission_table`, `commission_split`, `commission_rental`. Sem migration necessária.
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+### 1. Hook `useAgencySettings.ts` — novos tipos e hooks
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+```typescript
+export interface CommissionTier {
+  from: number; to: number | null; fee1: string; fee2: string;
+}
+export interface CommissionTableSettings { tiers: CommissionTier[]; }
+export interface CommissionSplitSettings {
+  agentSplit: number; // % angariador
+  coMediacaoSplit: number; // % co-mediação
+}
+export interface CommissionRentalSettings { months: number; }
+```
 
-### 2. Tipologia multi-seleção (tags)
+Hooks: `useCommissionTable`, `useCommissionSplit`, `useCommissionRental` — cada um com fallback para valores padrão.
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+### 2. `SettingsPanel.tsx` — secção "Comissionamento"
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+Novo componente `CommissionSettingsCard` com 3 sub-secções:
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+**2a. Tabela de Honorários (Venda)**
+- Tabela editável com colunas: De, Até, Honorário 1, Honorário 2
+- 5 linhas pré-preenchidas com os valores pedidos
+- Cada célula editável inline (Input)
+- Botão "+" para adicionar linha, "×" para remover
+- Botão "Guardar Tabela"
+- Nota: "Valores em regime de exclusividade. IVA acresce sempre."
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+**2b. Arrendamento**
+- Input numérico "Honorários de arrendamento" (default 1.5)
+- Texto: "Número de rendas mensais cobradas como honorário."
+- Botão "Guardar"
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+**2c. Divisão de Comissão**
+- 2 pares de inputs linked (somam 100%): angariador/vendedor e co-mediação
+- Ao alterar um, o outro ajusta automaticamente
+- Botão "Guardar Divisões"
+
+### 3. `CommissionCalculator.tsx` — componente reutilizável
+
+Novo ficheiro `src/components/commission/CommissionCalculator.tsx`:
+- Props: `propertyValue`, `isExclusivity`, `agencyId`, `onSelectCommission?`
+- Carrega `useCommissionTable` e `useCommissionSplit` para a agência
+- Calcula honorários com base no escalão correspondente ao valor
+- Mostra: "Honorário recomendado: X€ (opção 1) ou Y€ (opção 2)"
+- Toggle para escolher opção 1 ou 2
+- Mostra divisão: "Angariador: X€ | Vendedor: X€"
+- Mostra IVA: "IVA (23%) não incluído — acresce X€"
+- Inputs editáveis para override da divisão neste negócio
+- Botão "Aplicar" que chama `onSelectCommission` com o valor final em %
+
+### 4. `SellerDetailsSheet.tsx` — integração
+
+Após o campo "Valor Estimado (€)" (linha ~325), adicionar botão "💰 Calcular comissão" que abre `<Popover>` com `CommissionCalculator`:
+- Passa `propertyValue` do form, `agencyId`, `isExclusivity` do form
+- `onSelectCommission` atualiza `form.commission_percentage`
+
+### Ficheiros editados
+- `src/hooks/useAgencySettings.ts` — tipos + 3 hooks
+- `src/components/admin/SettingsPanel.tsx` — `CommissionSettingsCard`
+- `src/components/commission/CommissionCalculator.tsx` — novo
+- `src/components/kanban/SellerDetailsSheet.tsx` — popover calculadora
 
