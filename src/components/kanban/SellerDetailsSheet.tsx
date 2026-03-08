@@ -115,6 +115,8 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
   const [visitTime, setVisitTime] = useState('');
   const [visitAddress, setVisitAddress] = useState('');
   const [visitNotes, setVisitNotes] = useState('');
+  const [movePipeline, setMovePipeline] = useState('vendedores');
+  const [moveColumnId, setMoveColumnId] = useState('');
 
   const [form, setForm] = useState<Record<string, any>>({
     property_type: '',
