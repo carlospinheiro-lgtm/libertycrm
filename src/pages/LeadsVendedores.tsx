@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   PointerSensor, TouchSensor, useSensor, useSensors, closestCenter,
@@ -13,14 +13,19 @@ import { AddLeadDialog } from '@/components/kanban/AddLeadDialog';
 import { useLeads } from '@/hooks/useLeads';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgentFilter } from '@/contexts/AgentFilterContext';
-import { useLeadSettings, type LeadMovePopupMode } from '@/hooks/useAgencySettings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Plus, LayoutGrid, List } from 'lucide-react';
+import {
+  Plus, LayoutGrid, List, Search, Sun,
+  Flame, Thermometer, Snowflake, X,
+} from 'lucide-react';
 import { LeadsListView } from '@/components/kanban/LeadsListView';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isToday } from 'date-fns';
 import type { KanbanLead, KanbanColumn as KanbanColumnType } from '@/hooks/useKanbanState';
 
 const sellerColumns: KanbanColumnType[] = [
@@ -34,7 +39,13 @@ const sellerColumns: KanbanColumnType[] = [
   { id: 'perdido-followup', title: 'Perdido / Follow-up', color: 'red' },
 ];
 
-// Auto-tasks when moving to specific columns
+const temperatureFilters = [
+  { value: 'all',  label: 'Todos',  icon: null },
+  { value: 'hot',  label: 'Quente', icon: Flame },
+  { value: 'warm', label: 'Morno',  icon: Thermometer },
+  { value: 'cold', label: 'Frio',   icon: Snowflake },
+];
+
 async function createAutoTask(leadId: string, agencyId: string, userId: string, columnId: string) {
   const taskMap: Record<string, { title: string; daysOffset: number }> = {
     'avaliacao': { title: 'Preparar CMA', daysOffset: 2 },
@@ -43,13 +54,10 @@ async function createAutoTask(leadId: string, agencyId: string, userId: string, 
   };
   const task = taskMap[columnId];
   if (!task) return;
-
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + task.daysOffset);
-
   await supabase.from('lead_tasks').insert({
-    lead_id: leadId,
-    agency_id: agencyId,
+    lead_id: leadId, agency_id: agencyId,
     title: task.title,
     due_date: dueDate.toISOString().split('T')[0],
     assigned_to: userId,
@@ -58,8 +66,7 @@ async function createAutoTask(leadId: string, agencyId: string, userId: string, 
 
 async function logStageChange(leadId: string, agencyId: string, userId: string, fromColumn: string, toColumn: string) {
   await supabase.from('seller_interactions').insert({
-    lead_id: leadId,
-    agency_id: agencyId,
+    lead_id: leadId, agency_id: agencyId,
     type: 'stage_change',
     note: `${fromColumn} → ${toColumn}`,
     created_by: userId,
@@ -79,8 +86,11 @@ function LeadsVendedoresContent() {
   const { leads, isLoading, addLead, updateLead, deleteLead, moveLead } = useLeads('seller');
   const { currentUser, user } = useAuth();
   const { selectedAgentId } = useAgentFilter();
-  const { data: leadSettings } = useLeadSettings(currentUser?.agencyId);
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+
+  const [viewMode, setViewMode] = useState<'cards' | 'list' | 'myday'>('cards');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [tempFilter, setTempFilter] = useState('all');
+
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedLead, setDraggedLead] = useState<SellerCardLead | null>(null);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -121,21 +131,36 @@ function LeadsVendedoresContent() {
     createdAt: lead.created_at,
   }));
 
-  const filteredLeads = mappedLeads.filter(lead => {
-    if (selectedAgentId !== 'all' && lead.agentId !== selectedAgentId) return false;
-    return true;
-  });
+  // Leads filtradas por agente + pesquisa (sem temperatura)
+  const agentAndSearchLeads = useMemo(() => {
+    return mappedLeads.filter(lead => {
+      if (selectedAgentId !== 'all' && lead.agentId !== selectedAgentId) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = lead.clientName?.toLowerCase().includes(q);
+        const matchesPhone = lead.phone?.toLowerCase().includes(q);
+        if (!matchesName && !matchesPhone) return false;
+      }
+      return true;
+    });
+  }, [mappedLeads, selectedAgentId, searchQuery]);
 
-  const shouldShowMovePopup = (targetColumnId: string): boolean => {
-    const popupMode: LeadMovePopupMode = leadSettings?.popupMode ?? 'always';
-    if (popupMode === 'always') return true;
-    if (popupMode === 'never') return false;
-    if (popupMode === 'critical') {
-      const criticalColumns = leadSettings?.criticalColumns || [];
-      return criticalColumns.includes(targetColumnId);
-    }
-    return true;
-  };
+  // Leads filtradas finais (agente + pesquisa + temperatura)
+  const filteredLeads = useMemo(() => {
+    if (tempFilter === 'all') return agentAndSearchLeads;
+    return agentAndSearchLeads.filter(lead => lead.temperature === tempFilter);
+  }, [agentAndSearchLeads, tempFilter]);
+
+  // Leads "Hoje" — próxima ação para hoje
+  const myDayLeads = useMemo(() => {
+    return filteredLeads.filter(lead => {
+      if (!lead.nextActionAt) return false;
+      try { return isToday(new Date(lead.nextActionAt)); } catch { return false; }
+    });
+  }, [filteredLeads]);
+
+  // Move popup always false — only toasts for specific columns
+  const shouldShowMovePopup = (_targetColumnId: string): boolean => false;
 
   const executeMove = (leadId: string, columnId: string, nextActivityDate?: string, nextActivityDescription?: string) => {
     const lead = mappedLeads.find(l => l.id === leadId);
@@ -149,10 +174,26 @@ function LeadsVendedoresContent() {
       logStageChange(leadId, currentUser.agencyId, user.id, fromTitle, toTitle);
     }
 
-    // Prompt for angariação details
     if (columnId === 'angariacao') {
-      toast.info('Preencha: Exclusividade, Comissão e Prazo do contrato na ficha', { duration: 6000 });
+      toast.success('🎉 Parabéns! Preenche exclusividade, comissão e prazo na ficha.', { duration: 6000 });
     }
+    if (columnId === 'perdido-followup') {
+      toast.info('📋 Lead movida para Perdido. Define um follow-up para reativar.', { duration: 6000 });
+    }
+  };
+
+  // Contact logged handler
+  const handleContactLogged = async (leadId: string, type: string, note: string) => {
+    if (!currentUser?.agencyId || !user?.id) return;
+    await supabase.from('seller_interactions').insert({
+      lead_id: leadId,
+      agency_id: currentUser.agencyId,
+      type,
+      note,
+      created_by: user.id,
+    });
+    await supabase.from('leads').update({ last_contact_at: new Date().toISOString() }).eq('id', leadId);
+    updateLead.mutate({ id: leadId, last_contact_at: new Date().toISOString() });
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -187,11 +228,7 @@ function LeadsVendedoresContent() {
     setPendingMove(null);
   };
 
-  const handleCardClick = (lead: SellerCardLead) => {
-    setSelectedLead(lead);
-    setDetailsOpen(true);
-  };
-
+  const handleCardClick = (lead: SellerCardLead) => { setSelectedLead(lead); setDetailsOpen(true); };
   const handleMoveViaButton = (lead: SellerCardLead, targetColumnId: string) => {
     if (shouldShowMovePopup(targetColumnId)) {
       setPendingMove({ leadId: lead.id, targetColumnId });
@@ -201,14 +238,8 @@ function LeadsVendedoresContent() {
     }
   };
 
-  const handleSaveLead = (leadId: string, updates: Record<string, any>) => {
-    updateLead.mutate({ id: leadId, ...updates });
-  };
-
-  const handleDeleteLead = (leadId: string) => {
-    deleteLead.mutate(leadId);
-  };
-
+  const handleSaveLead = (leadId: string, updates: Record<string, any>) => { updateLead.mutate({ id: leadId, ...updates }); };
+  const handleDeleteLead = (leadId: string) => { deleteLead.mutate(leadId); };
   const handleAddLead = (lead: KanbanLead) => {
     if (!currentUser?.agencyId) return;
     addLead.mutate({
@@ -240,13 +271,21 @@ function LeadsVendedoresContent() {
     <>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="space-y-4 animate-fade-in">
+
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h1 className="text-2xl font-bold font-heading">CRM Vendedores</h1>
             <div className="flex items-center gap-3">
               <ToggleGroup type="single" value={viewMode} onValueChange={v => v && setViewMode(v as any)}>
-                <ToggleGroupItem value="cards" aria-label="Vista Cartões"><LayoutGrid className="h-4 w-4" /></ToggleGroupItem>
-                <ToggleGroupItem value="list" aria-label="Vista Lista"><List className="h-4 w-4" /></ToggleGroupItem>
+                <ToggleGroupItem value="cards" aria-label="Vista Cartões">
+                  <LayoutGrid className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="list" aria-label="Vista Lista">
+                  <List className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="myday" aria-label="O meu dia" className="text-xs px-3">
+                  Hoje
+                </ToggleGroupItem>
               </ToggleGroup>
               <Button onClick={() => setAddLeadOpen(true)} className="gap-2">
                 <Plus className="h-4 w-4" /> Nova Lead
@@ -254,13 +293,87 @@ function LeadsVendedoresContent() {
             </div>
           </div>
 
+          {/* Search + temperature filters */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Pesquisar nome ou telefone..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 h-9 text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {temperatureFilters.map(f => {
+                const Icon = f.icon;
+                const count = f.value === 'all'
+                  ? agentAndSearchLeads.length
+                  : agentAndSearchLeads.filter(l => l.temperature === f.value).length;
+                return (
+                  <Button
+                    key={f.value}
+                    variant={tempFilter === f.value ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={() => setTempFilter(f.value)}
+                  >
+                    {Icon && <Icon className="h-3 w-3" />}
+                    {f.label}
+                    <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[10px]">
+                      {count}
+                    </Badge>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Director Metrics */}
-          {isDirector && (
-            <SellerMetricsDashboard leads={mappedLeads} />
+          {isDirector && <SellerMetricsDashboard leads={mappedLeads} />}
+
+          {/* "Hoje" view */}
+          {viewMode === 'myday' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Sun className="h-5 w-5 text-warning" />
+                <h2 className="font-semibold text-base">O meu dia</h2>
+                <Badge variant="secondary">{myDayLeads.length} ações para hoje</Badge>
+              </div>
+              {myDayLeads.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+                  <Sun className="h-12 w-12 opacity-20" />
+                  <p className="text-sm">Sem ações agendadas para hoje 🎉</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {myDayLeads.map(lead => (
+                    <SellerKanbanCard
+                      key={lead.id}
+                      lead={lead}
+                      columns={sellerColumns}
+                      isDragging={false}
+                      onClick={() => handleCardClick(lead)}
+                      onMove={targetId => handleMoveViaButton(lead, targetId)}
+                      onContactLogged={handleContactLogged}
+                      currentUserId={currentUser?.id}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Board */}
-          {viewMode === 'cards' ? (
+          {viewMode === 'cards' && (
             <div className="flex gap-4 overflow-x-auto pb-4 kanban-scroll">
               {sellerColumns.map(column => {
                 const columnLeads = filteredLeads.filter(l => l.columnId === column.id);
@@ -274,6 +387,7 @@ function LeadsVendedoresContent() {
                         isDragging={activeId === lead.id}
                         onClick={() => handleCardClick(lead)}
                         onMove={targetId => handleMoveViaButton(lead, targetId)}
+                        onContactLogged={handleContactLogged}
                         currentUserId={currentUser?.id}
                       />
                     ))}
@@ -281,7 +395,9 @@ function LeadsVendedoresContent() {
                 );
               })}
             </div>
-          ) : (
+          )}
+
+          {viewMode === 'list' && (
             <LeadsListView
               leads={filteredLeads as any}
               columns={sellerColumns}

@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Badge } from '@/components/ui/badge';
-import { Phone, AlertTriangle, Calendar, ArrowRight } from 'lucide-react';
+import { Phone, AlertTriangle, Calendar, ArrowRight, CheckCircle2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { KanbanColumn } from '@/hooks/useKanbanState';
 
 export interface SellerCardLead {
@@ -36,6 +40,7 @@ interface Props {
   isDragging: boolean;
   onClick: () => void;
   onMove: (targetColumnId: string) => void;
+  onContactLogged?: (leadId: string, type: string, note: string) => void;
   currentUserId?: string;
 }
 
@@ -66,8 +71,25 @@ const tempLabels: Record<string, string> = {
   undefined: 'N/D',
 };
 
-export function SellerKanbanCard({ lead, columns, isDragging, onClick, onMove, currentUserId }: Props) {
+const contactTypes = [
+  { value: 'call', label: 'Chamada' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'email', label: 'Email' },
+  { value: 'visit', label: 'Visita' },
+];
+
+const contactResults = [
+  { value: 'answered', label: 'Atendeu' },
+  { value: 'no_answer', label: 'Não atendeu' },
+  { value: 'callback', label: 'Callback' },
+];
+
+export function SellerKanbanCard({ lead, columns, isDragging, onClick, onMove, onContactLogged, currentUserId }: Props) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: lead.id });
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactType, setContactType] = useState('call');
+  const [contactResult, setContactResult] = useState('answered');
+  const [contactNote, setContactNote] = useState('');
 
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
 
@@ -75,11 +97,26 @@ export function SellerKanbanCard({ lead, columns, isDragging, onClick, onMove, c
   const contactColor = getContactColor(daysSinceContact);
   const showAgentName = currentUserId !== lead.agentId;
 
-  // Evaluation stale alert (>5 days in Avaliação)
   const daysInColumn = getDaysSince(lead.columnEnteredAt);
   const evaluationAlert = lead.columnId === 'avaliacao' && daysInColumn !== null && daysInColumn > 5;
 
-  const noNextAction = !lead.nextActionText;
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('[role="menu"]')) return;
+    onClick();
+  };
+
+  const handleSaveContact = () => {
+    if (!onContactLogged) return;
+    const resultLabel = contactResults.find(r => r.value === contactResult)?.label || '';
+    const fullNote = [resultLabel, contactNote].filter(Boolean).join(' — ');
+    onContactLogged(lead.id, contactType, fullNote);
+    toast.success('Contacto registado');
+    setContactOpen(false);
+    setContactNote('');
+    setContactType('call');
+    setContactResult('answered');
+  };
 
   return (
     <div
@@ -88,7 +125,7 @@ export function SellerKanbanCard({ lead, columns, isDragging, onClick, onMove, c
       {...attributes}
       {...listeners}
       className={`rounded-lg border bg-card p-3 space-y-2 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${isDragging ? 'opacity-50' : ''} ${evaluationAlert ? 'border-orange-400' : ''}`}
-      onClick={e => { e.stopPropagation(); onClick(); }}
+      onClick={handleCardClick}
     >
       {/* Name + temp */}
       <div className="flex items-start justify-between gap-2">
@@ -145,11 +182,64 @@ export function SellerKanbanCard({ lead, columns, isDragging, onClick, onMove, c
         <div className="text-[10px] text-muted-foreground">Agente: {lead.agentName}</div>
       )}
 
-      {/* Quick move */}
-      <div className="pt-1">
+      {/* Actions: Contact + Move */}
+      <div className="pt-1 flex gap-1">
+        {/* Contact popover */}
+        {onContactLogged && (
+          <Popover open={contactOpen} onOpenChange={setContactOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 flex-1 text-xs gap-1" onClick={e => e.stopPropagation()}>
+                <CheckCircle2 className="h-3 w-3" /> Contactei
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 space-y-3" align="start" onClick={e => e.stopPropagation()}>
+              <p className="text-xs font-medium">Registar contacto</p>
+              {/* Type */}
+              <div className="flex flex-wrap gap-1">
+                {contactTypes.map(t => (
+                  <Button
+                    key={t.value}
+                    variant={contactType === t.value ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => setContactType(t.value)}
+                  >
+                    {t.label}
+                  </Button>
+                ))}
+              </div>
+              {/* Result */}
+              <div className="flex flex-wrap gap-1">
+                {contactResults.map(r => (
+                  <Button
+                    key={r.value}
+                    variant={contactResult === r.value ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => setContactResult(r.value)}
+                  >
+                    {r.label}
+                  </Button>
+                ))}
+              </div>
+              {/* Note */}
+              <input
+                className="w-full border rounded px-2 py-1 text-xs bg-background"
+                placeholder="Nota rápida..."
+                value={contactNote}
+                onChange={e => setContactNote(e.target.value)}
+              />
+              <Button size="sm" className="w-full h-7 text-xs gap-1" onClick={handleSaveContact}>
+                <Send className="h-3 w-3" /> Guardar
+              </Button>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* Quick move */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-6 w-full text-xs gap-1" onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" className={cn("h-6 text-xs gap-1", onContactLogged ? "flex-1" : "w-full")} onClick={e => e.stopPropagation()}>
               <ArrowRight className="h-3 w-3" /> Mover
             </Button>
           </DropdownMenuTrigger>
