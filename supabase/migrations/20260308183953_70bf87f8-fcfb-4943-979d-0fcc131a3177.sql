@@ -1,0 +1,1 @@
+ALTER TABLE public.agency_settings ADD CONSTRAINT agency_settings_agency_id_setting_key_unique UNIQUE (agency_id, setting_key);

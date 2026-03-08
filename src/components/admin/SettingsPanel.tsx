@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -22,10 +23,18 @@ import { Separator } from '@/components/ui/separator';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Save, Bell, Mail, Shield, Clock, FileText, Plus, X, DollarSign } from 'lucide-react';
+import { Save, Bell, Mail, Shield, Clock, FileText, Plus, X, DollarSign, AlertTriangle, Copy, CheckSquare } from 'lucide-react';
 import { LeadSettingsCard } from './LeadSettingsCard';
 import { useAgencies } from '@/hooks/useAgencies';
+import { supabase } from '@/integrations/supabase/client';
 import {
   useContractDurationSettings, useUpdateContractDurationSettings,
   useCommissionTable, useCommissionSplit, useCommissionRental,
@@ -33,24 +42,266 @@ import {
   type CommissionTier, DEFAULT_COMMISSION_TIERS,
 } from '@/hooks/useAgencySettings';
 
+// ─── Agency Multi-Selector ───────────────────────────────────────
+function AgencyMultiSelector({
+  agencies,
+  selectedIds,
+  onSelectionChange,
+}: {
+  agencies: { id: string; name: string }[];
+  selectedIds: string[];
+  onSelectionChange: (ids: string[]) => void;
+}) {
+  const toggleAgency = (id: string) => {
+    if (selectedIds.includes(id)) {
+      if (selectedIds.length === 1) return; // keep at least one
+      onSelectionChange(selectedIds.filter(a => a !== id));
+    } else {
+      onSelectionChange([...selectedIds, id]);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        {agencies.map(agency => (
+          <label key={agency.id} className="flex items-center gap-1.5 cursor-pointer">
+            <Checkbox
+              checked={selectedIds.includes(agency.id)}
+              onCheckedChange={() => toggleAgency(agency.id)}
+            />
+            <span className="text-sm">{agency.name}</span>
+          </label>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onSelectionChange(agencies.map(a => a.id))}
+        >
+          <CheckSquare className="h-3.5 w-3.5 mr-1" />
+          Selecionar todas
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onSelectionChange(agencies.length > 0 ? [agencies[0].id] : [])}
+        >
+          Limpar seleção
+        </Button>
+      </div>
+      {selectedIds.length > 1 && (
+        <div className="flex items-center gap-2 rounded-md border border-yellow-300 bg-yellow-50 dark:bg-yellow-950/30 dark:border-yellow-700 px-3 py-2 text-sm text-yellow-800 dark:text-yellow-300">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          As alterações guardadas serão aplicadas a {selectedIds.length} agências selecionadas
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Confirm Multi-Apply AlertDialog ─────────────────────────────
+function ConfirmMultiApplyDialog({
+  open,
+  agencyNames,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  agencyNames: string[];
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={open => { if (!open) onCancel(); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Aplicar a múltiplas agências?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vais aplicar estas definições a: <strong>{agencyNames.join(', ')}</strong>. Confirmas?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onCancel}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Confirmar e aplicar a todas</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// ─── Copy Settings Dialog ────────────────────────────────────────
+function CopySettingsDialog({
+  open,
+  onOpenChange,
+  agencies,
+  targetAgencyIds,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  agencies: { id: string; name: string }[];
+  targetAgencyIds: string[];
+}) {
+  const [sourceId, setSourceId] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<{ key: string; summary: string }[]>([]);
+
+  const sourceAgencies = agencies.filter(a => !targetAgencyIds.includes(a.id));
+  const targetNames = agencies.filter(a => targetAgencyIds.includes(a.id)).map(a => a.name);
+
+  useEffect(() => {
+    if (!sourceId) { setPreview([]); return; }
+    supabase
+      .from('agency_settings')
+      .select('setting_key, setting_value')
+      .eq('agency_id', sourceId)
+      .then(({ data }) => {
+        if (!data) { setPreview([]); return; }
+        setPreview(data.map(row => {
+          const val = row.setting_value as Record<string, unknown>;
+          let summary = JSON.stringify(val).slice(0, 80);
+          if (row.setting_key === 'commission_table') {
+            const tiers = (val as any)?.tiers;
+            summary = `${Array.isArray(tiers) ? tiers.length : '?'} escalões`;
+          } else if (row.setting_key === 'commission_split') {
+            summary = `Agente ${(val as any)?.agentSplit ?? '?'}% | Co-med ${(val as any)?.coMediacaoSplit ?? '?'}%`;
+          } else if (row.setting_key === 'commission_rental') {
+            summary = `${(val as any)?.months ?? '?'} rendas`;
+          } else if (row.setting_key === 'contract_duration') {
+            summary = `Padrão ${(val as any)?.defaultDays ?? '?'}d, ${((val as any)?.options as number[])?.length ?? '?'} opções`;
+          }
+          return { key: row.setting_key, summary };
+        }));
+      });
+  }, [sourceId]);
+
+  const handleCopy = async () => {
+    if (!sourceId) return;
+    setLoading(true);
+    try {
+      const { data: sourceSettings } = await supabase
+        .from('agency_settings')
+        .select('setting_key, setting_value')
+        .eq('agency_id', sourceId);
+
+      if (!sourceSettings?.length) {
+        toast.error('Agência de origem sem definições');
+        setLoading(false);
+        return;
+      }
+
+      for (const targetId of targetAgencyIds) {
+        for (const setting of sourceSettings) {
+          await supabase
+            .from('agency_settings')
+            .upsert(
+              { agency_id: targetId, setting_key: setting.setting_key, setting_value: setting.setting_value },
+              { onConflict: 'agency_id,setting_key' }
+            );
+        }
+      }
+
+      const sourceName = agencies.find(a => a.id === sourceId)?.name ?? 'origem';
+      toast.success(`Definições copiadas de ${sourceName} para: ${targetNames.join(', ')}`);
+      onOpenChange(false);
+    } catch {
+      toast.error('Erro ao copiar definições');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Copiar definições de outra agência</DialogTitle>
+          <DialogDescription>
+            Seleciona a agência de origem para copiar todas as configurações para as agências destino.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Agência de origem</Label>
+            <Select value={sourceId} onValueChange={setSourceId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecionar agência..." />
+              </SelectTrigger>
+              <SelectContent>
+                {sourceAgencies.map(a => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {preview.length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Definições encontradas:</Label>
+              {preview.map(p => (
+                <div key={p.key} className="flex justify-between text-xs bg-muted/50 rounded px-2 py-1">
+                  <span className="font-medium">{p.key}</span>
+                  <span className="text-muted-foreground">{p.summary}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-xs text-muted-foreground">
+            Destino: <strong>{targetNames.join(', ')}</strong>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleCopy} disabled={!sourceId || loading}>
+            <Copy className="h-4 w-4 mr-1" />
+            Copiar para agências selecionadas
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main SettingsPanel ──────────────────────────────────────────
 export function SettingsPanel() {
   const { data: agencies } = useAgencies();
-  const [selectedAgencyId, setSelectedAgencyId] = useState<string | undefined>();
-  
+  const [selectedAgencyIds, setSelectedAgencyIds] = useState<string[]>([]);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+
+  // Confirm dialog state
+  const [pendingSave, setPendingSave] = useState<{ fn: () => Promise<void> } | null>(null);
+
+  // Set default selection when agencies load
+  useEffect(() => {
+    if (agencies?.length && selectedAgencyIds.length === 0) {
+      setSelectedAgencyIds([agencies[0].id]);
+    }
+  }, [agencies]);
+
+  const primaryAgencyId = selectedAgencyIds[0];
+  const selectedAgencyNames = (agencies ?? [])
+    .filter(a => selectedAgencyIds.includes(a.id))
+    .map(a => a.name);
+
+  const handleMultiSave = (saveFn: () => Promise<void>) => {
+    if (selectedAgencyIds.length > 1) {
+      setPendingSave({ fn: saveFn });
+    } else {
+      saveFn();
+    }
+  };
+
   // Estado das configurações (em produção, viria da API)
   const [settings, setSettings] = useState({
-    // Notificações
     emailNotifications: true,
     leadAssignmentNotifications: true,
     objectiveReminders: true,
     weeklyReports: false,
-    
-    // Segurança
     sessionTimeout: 60,
     requirePasswordChange: false,
     twoFactorAuth: false,
-    
-    // Operacional
     defaultLeadSource: 'website',
     autoAssignLeads: true,
     workingHoursStart: '09:00',
@@ -82,40 +333,56 @@ export function SettingsPanel() {
         </Button>
       </div>
 
+      {/* Agency Multi-Selector */}
+      {agencies && agencies.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Aplicar a agências</CardTitle>
+            <CardDescription>Selecione as agências onde as configurações serão aplicadas</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AgencyMultiSelector
+              agencies={agencies}
+              selectedIds={selectedAgencyIds}
+              onSelectionChange={setSelectedAgencyIds}
+            />
+            <Button variant="outline" size="sm" onClick={() => setCopyDialogOpen(true)}>
+              <Copy className="h-4 w-4 mr-1" />
+              Copiar definições de outra agência
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Configurações de Leads */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Configurações de Leads por Agência</CardTitle>
-          <CardDescription>Selecione uma agência para configurar</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione uma agência" />
-            </SelectTrigger>
-            <SelectContent>
-              {agencies?.map(agency => (
-                <SelectItem key={agency.id} value={agency.id}>
-                  {agency.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {selectedAgencyId && (
-            <LeadSettingsCard agencyId={selectedAgencyId} />
-          )}
-        </CardContent>
-      </Card>
+      {primaryAgencyId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Configurações de Leads por Agência</CardTitle>
+            <CardDescription>Configurações da agência principal selecionada</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LeadSettingsCard agencyId={primaryAgencyId} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Contratos de Angariação */}
-      {selectedAgencyId && (
-        <ContractDurationCard agencyId={selectedAgencyId} />
+      {primaryAgencyId && (
+        <ContractDurationCard
+          agencyIds={selectedAgencyIds}
+          primaryAgencyId={primaryAgencyId}
+          onMultiSave={handleMultiSave}
+        />
       )}
 
       {/* Comissionamento */}
-      {selectedAgencyId && (
-        <CommissionSettingsCard agencyId={selectedAgencyId} />
+      {primaryAgencyId && (
+        <CommissionSettingsCard
+          agencyIds={selectedAgencyIds}
+          primaryAgencyId={primaryAgencyId}
+          onMultiSave={handleMultiSave}
+        />
       )}
 
       {/* Notificações */}
@@ -264,12 +531,42 @@ export function SettingsPanel() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirm Multi-Apply Dialog */}
+      <ConfirmMultiApplyDialog
+        open={!!pendingSave}
+        agencyNames={selectedAgencyNames}
+        onConfirm={() => {
+          pendingSave?.fn();
+          setPendingSave(null);
+        }}
+        onCancel={() => setPendingSave(null)}
+      />
+
+      {/* Copy Settings Dialog */}
+      {agencies && (
+        <CopySettingsDialog
+          open={copyDialogOpen}
+          onOpenChange={setCopyDialogOpen}
+          agencies={agencies}
+          targetAgencyIds={selectedAgencyIds}
+        />
+      )}
     </div>
   );
 }
 
-function ContractDurationCard({ agencyId }: { agencyId: string }) {
-  const { data: settings } = useContractDurationSettings(agencyId);
+// ─── Contract Duration Card ──────────────────────────────────────
+function ContractDurationCard({
+  agencyIds,
+  primaryAgencyId,
+  onMultiSave,
+}: {
+  agencyIds: string[];
+  primaryAgencyId: string;
+  onMultiSave: (fn: () => Promise<void>) => void;
+}) {
+  const { data: settings } = useContractDurationSettings(primaryAgencyId);
   const updateSettings = useUpdateContractDurationSettings();
   const [defaultDays, setDefaultDays] = useState(120);
   const [options, setOptions] = useState<number[]>([90, 120, 150, 180]);
@@ -295,10 +592,23 @@ function ContractDurationCard({ agencyId }: { agencyId: string }) {
 
   const handleSave = () => {
     const finalDefault = options.includes(defaultDays) ? defaultDays : options[0] || 120;
-    updateSettings.mutate(
-      { agencyId, settingKey: 'contract_duration', settingValue: { defaultDays: finalDefault, options } },
-      { onSuccess: () => toast.success('Configurações de contrato guardadas') }
-    );
+    const saveFn = async () => {
+      await Promise.all(
+        agencyIds.map(agencyId =>
+          updateSettings.mutateAsync({
+            agencyId,
+            settingKey: 'contract_duration',
+            settingValue: { defaultDays: finalDefault, options },
+          })
+        )
+      );
+      toast.success(
+        agencyIds.length > 1
+          ? `Configurações de contrato aplicadas a ${agencyIds.length} agências`
+          : 'Configurações de contrato guardadas'
+      );
+    };
+    onMultiSave(saveFn);
   };
 
   return (
@@ -365,10 +675,19 @@ function ContractDurationCard({ agencyId }: { agencyId: string }) {
   );
 }
 
-function CommissionSettingsCard({ agencyId }: { agencyId: string }) {
-  const { data: tableSettings } = useCommissionTable(agencyId);
-  const { data: splitSettings } = useCommissionSplit(agencyId);
-  const { data: rentalSettings } = useCommissionRental(agencyId);
+// ─── Commission Settings Card ────────────────────────────────────
+function CommissionSettingsCard({
+  agencyIds,
+  primaryAgencyId,
+  onMultiSave,
+}: {
+  agencyIds: string[];
+  primaryAgencyId: string;
+  onMultiSave: (fn: () => Promise<void>) => void;
+}) {
+  const { data: tableSettings } = useCommissionTable(primaryAgencyId);
+  const { data: splitSettings } = useCommissionSplit(primaryAgencyId);
+  const { data: rentalSettings } = useCommissionRental(primaryAgencyId);
   const updateSettings = useUpdateCommissionSettings();
 
   const [tiers, setTiers] = useState<CommissionTier[]>(DEFAULT_COMMISSION_TIERS);
@@ -405,24 +724,51 @@ function CommissionSettingsCard({ agencyId }: { agencyId: string }) {
   };
 
   const saveTable = () => {
-    updateSettings.mutate(
-      { agencyId, settingKey: 'commission_table', settingValue: { tiers } },
-      { onSuccess: () => toast.success('Tabela de honorários guardada') }
-    );
+    const saveFn = async () => {
+      await Promise.all(
+        agencyIds.map(agencyId =>
+          updateSettings.mutateAsync({ agencyId, settingKey: 'commission_table', settingValue: { tiers } })
+        )
+      );
+      toast.success(
+        agencyIds.length > 1
+          ? `Tabela de honorários aplicada a ${agencyIds.length} agências`
+          : 'Tabela de honorários guardada'
+      );
+    };
+    onMultiSave(saveFn);
   };
 
   const saveRental = () => {
-    updateSettings.mutate(
-      { agencyId, settingKey: 'commission_rental', settingValue: { months: rentalMonths } },
-      { onSuccess: () => toast.success('Honorários de arrendamento guardados') }
-    );
+    const saveFn = async () => {
+      await Promise.all(
+        agencyIds.map(agencyId =>
+          updateSettings.mutateAsync({ agencyId, settingKey: 'commission_rental', settingValue: { months: rentalMonths } })
+        )
+      );
+      toast.success(
+        agencyIds.length > 1
+          ? `Honorários de arrendamento aplicados a ${agencyIds.length} agências`
+          : 'Honorários de arrendamento guardados'
+      );
+    };
+    onMultiSave(saveFn);
   };
 
   const saveSplits = () => {
-    updateSettings.mutate(
-      { agencyId, settingKey: 'commission_split', settingValue: { agentSplit, coMediacaoSplit } },
-      { onSuccess: () => toast.success('Divisões de comissão guardadas') }
-    );
+    const saveFn = async () => {
+      await Promise.all(
+        agencyIds.map(agencyId =>
+          updateSettings.mutateAsync({ agencyId, settingKey: 'commission_split', settingValue: { agentSplit, coMediacaoSplit } })
+        )
+      );
+      toast.success(
+        agencyIds.length > 1
+          ? `Divisões de comissão aplicadas a ${agencyIds.length} agências`
+          : 'Divisões de comissão guardadas'
+      );
+    };
+    onMultiSave(saveFn);
   };
 
   return (
