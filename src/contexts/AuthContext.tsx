@@ -191,6 +191,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       teamId: userProfile.team_id || undefined,
       isActive: true,
       createdAt: new Date(user.created_at || Date.now()),
+      isSuperAdmin: userProfile.is_super_admin,
+      organizationId: userProfile.organization_id || undefined,
     };
   }, [user, userProfile, userRolesData]);
 
