@@ -14,7 +14,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Flame, Sun, Snowflake, Circle, Trash2, CalendarIcon,
-  Phone, Mail, MessageCircle, Plus, X, Clock, MapPin, CheckCircle,
+  Phone, Mail, MessageCircle, Plus, X, Clock, MapPin, CheckCircle, Calculator,
 } from 'lucide-react';
 import { format, formatDistanceToNow, isBefore, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -23,6 +23,7 @@ import { useSellerInteractions, type SellerInteraction } from '@/hooks/useSeller
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContractDurationSettings } from '@/hooks/useAgencySettings';
+import { CommissionCalculator } from '@/components/commission/CommissionCalculator';
 import { toast } from 'sonner';
 import type { SellerCardLead } from './SellerKanbanCard';
 
