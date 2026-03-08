@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userRolesData, setUserRolesData] = useState<{ role: AppRole; agency_id: string }[]>([]);
-  const [userProfile, setUserProfile] = useState<{ name: string; team_id: string | null; agency_id: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ name: string; team_id: string | null; agency_id: string | null; is_super_admin: boolean; organization_id: string | null } | null>(null);
   const [agencies, setAgencies] = useState<{ id: string; name: string }[]>([]);
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
 
