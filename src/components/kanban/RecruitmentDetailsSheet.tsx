@@ -73,6 +73,44 @@ const pipelineColumns: Record<string, string> = {
   'nao-avancou': 'Não Avançou',
 };
 
+const pipelineStages: Record<string, { value: string; label: string }[]> = {
+  recruitment: [
+    { value: 'novo-lead', label: 'Novo Lead' },
+    { value: 'contactado', label: 'Contactado' },
+    { value: 'entrevista-agendada', label: 'Entrevista Agendada' },
+    { value: 'entrevistado', label: 'Entrevistado' },
+    { value: 'em-decisao', label: 'Em Decisão' },
+    { value: 'integrado', label: 'Integrado' },
+    { value: 'nao-avancou', label: 'Não Avançou' },
+  ],
+  buyer: [
+    { value: 'novo', label: 'Novo' },
+    { value: 'contacto-feito', label: 'Contacto Feito' },
+    { value: 'qualificacao', label: 'Qualificação' },
+    { value: 'ativo', label: 'Ativo' },
+    { value: 'visitas', label: 'Visitas' },
+    { value: 'proposta-negociacao', label: 'Proposta/Negociação' },
+    { value: 'reserva-cpcv', label: 'Reserva/CPCV' },
+    { value: 'perdido-followup', label: 'Perdido/Follow-up' },
+  ],
+  seller: [
+    { value: 'novo', label: 'Novo' },
+    { value: 'contacto-feito', label: 'Contacto Feito' },
+    { value: 'avaliacao', label: 'Avaliação/Estudo de Mercado' },
+    { value: 'apresentacao', label: 'Apresentação de Serviços' },
+    { value: 'negociacao', label: 'Negociação' },
+    { value: 'angariacao', label: 'Angariação' },
+    { value: 'angariacao-reservada', label: 'Angariação Reservada' },
+    { value: 'perdido-followup', label: 'Perdido/Follow-up' },
+  ],
+};
+
+const pipelineLabels: Record<string, string> = {
+  recruitment: 'CRM Recrutamento',
+  buyer: 'CRM Compradores',
+  seller: 'CRM Vendedores',
+};
+
 const interactionTypeLabels: Record<string, { emoji: string; label: string }> = {
   call: { emoji: '📞', label: 'Chamada' },
   whatsapp: { emoji: '💬', label: 'WhatsApp' },
