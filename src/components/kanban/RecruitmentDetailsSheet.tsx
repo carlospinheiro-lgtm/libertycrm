@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,11 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useRecruitmentInteractions, type RecruitmentInteraction } from '@/hooks/useRecruitmentInteractions';
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
-import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle } from 'lucide-react';
+import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import type { RecruitmentCardLead } from './RecruitmentKanbanCard';
 
 interface Props {
@@ -29,10 +34,32 @@ const experienceLevels = [
   { value: 'sem_experiencia', label: 'Sem Experiência' },
 ];
 
-const tempOptions = [
-  { value: 'hot', label: 'Quente' },
-  { value: 'warm', label: 'Morno' },
-  { value: 'cold', label: 'Frio' },
+const tempButtons = [
+  { value: 'hot', label: '🔥 Quente', active: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300' },
+  { value: 'warm', label: '☀️ Morno', active: 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300' },
+  { value: 'cold', label: '❄️ Frio', active: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300' },
+  { value: '', label: '○ Indefinido', active: 'bg-muted text-muted-foreground border-border' },
+];
+
+const sourceOptions = [
+  { value: 'instagram', label: '📸 Instagram' },
+  { value: 'facebook', label: '📘 Facebook' },
+  { value: 'referencia', label: '👥 Referência' },
+  { value: 'website', label: '🌐 Website' },
+  { value: 'idealista', label: '🏠 Idealista' },
+  { value: 'redes_sociais', label: '📱 Redes Sociais' },
+  { value: 'walkin', label: '🚶 Walk-in' },
+  { value: 'evento', label: '🎤 Evento' },
+  { value: 'outro', label: '📋 Outro' },
+];
+
+const motivationOptions = [
+  { value: 'progressao_carreira', label: 'Progressão de carreira' },
+  { value: 'maior_rendimento', label: 'Maior rendimento' },
+  { value: 'reconversao', label: 'Reconversão profissional' },
+  { value: 'desempregado', label: 'Desempregado' },
+  { value: 'empreendedorismo', label: 'Empreendedorismo' },
+  { value: 'outro', label: 'Outro' },
 ];
 
 const interactionTypes = [
@@ -42,6 +69,14 @@ const interactionTypes = [
   { value: 'meeting', label: 'Reunião', icon: Users },
   { value: 'other', label: 'Outro', icon: FileText },
 ];
+
+function getInitials(name: string) {
+  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function cleanPhone(phone?: string) {
+  return phone?.replace(/\s+/g, '').replace(/^00/, '+') || '';
+}
 
 export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, onDelete }: Props) {
   const { user } = useAuth();
@@ -54,9 +89,15 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     next_action_text: '',
     next_action_at: '',
     temperature: 'warm',
+    source: '',
+    candidate_profession: '',
+    candidate_zone: '',
+    candidate_motivation: '',
+    candidate_notes: '',
   });
 
   const [interactionNote, setInteractionNote] = useState('');
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -66,6 +107,11 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
         next_action_text: lead.nextActionText || '',
         next_action_at: lead.nextActionAt ? new Date(lead.nextActionAt).toISOString().slice(0, 10) : '',
         temperature: lead.temperature || 'warm',
+        source: lead.source || '',
+        candidate_profession: lead.candidateProfession || '',
+        candidate_zone: lead.candidateZone || '',
+        candidate_motivation: lead.candidateMotivation || '',
+        candidate_notes: lead.candidateNotes || '',
       });
     }
   }, [lead]);
@@ -78,7 +124,12 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
       cv_url: form.cv_url || null,
       next_action_text: form.next_action_text || null,
       next_action_at: form.next_action_at || null,
-      temperature: form.temperature,
+      temperature: form.temperature || 'warm',
+      source: form.source || null,
+      candidate_profession: form.candidate_profession || null,
+      candidate_zone: form.candidate_zone || null,
+      candidate_motivation: form.candidate_motivation || null,
+      candidate_notes: form.candidate_notes || null,
     });
     toast.success('Candidato atualizado');
   };
@@ -95,26 +146,53 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     toast.success('Interação registada');
   };
 
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="text-lg">{lead.clientName}</SheetTitle>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {lead.phone && (
-              <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-foreground">
-                <Phone className="h-3 w-3" /> {lead.phone}
-              </a>
-            )}
-            {lead.email && (
-              <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-foreground">
-                <Mail className="h-3 w-3" /> {lead.email}
-              </a>
-            )}
-          </div>
-        </SheetHeader>
+  const selectedDate = form.next_action_at ? new Date(form.next_action_at) : undefined;
+  const phoneClean = cleanPhone(lead.phone);
 
-        <Tabs defaultValue="dados" className="mt-4">
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Header com avatar + botões */}
+        <div className="p-6 pb-4">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
+              {getInitials(lead.clientName)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold truncate">{lead.clientName}</h2>
+                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-0 shrink-0">
+                  Recrutamento
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {lead.phone && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" asChild>
+                    <a href={`tel:${lead.phone}`}>
+                      <Phone className="h-3 w-3" /> Ligar
+                    </a>
+                  </Button>
+                )}
+                {lead.email && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
+                    <a href={`mailto:${lead.email}`}>
+                      <Mail className="h-3 w-3" /> Email
+                    </a>
+                  </Button>
+                )}
+                {phoneClean && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-green-600 border-green-200 hover:bg-green-50" asChild>
+                    <a href={`https://wa.me/${phoneClean.replace('+', '')}`} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle className="h-3 w-3" /> WhatsApp
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Tabs defaultValue="dados" className="px-6 pb-6">
           <TabsList className="w-full">
             <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
             <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>
@@ -137,13 +215,35 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Temperatura</Label>
-                  <Select value={form.temperature} onValueChange={v => setForm(f => ({ ...f, temperature: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Label className="text-xs">Origem</Label>
+                  <Select value={form.source} onValueChange={v => setForm(f => ({ ...f, source: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecionar origem" /></SelectTrigger>
                     <SelectContent>
-                      {tempOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                      {sourceOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              {/* Temperatura como botões visuais */}
+              <div className="space-y-1">
+                <Label className="text-xs">Temperatura</Label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {tempButtons.map(t => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      className={cn(
+                        'px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
+                        form.temperature === t.value
+                          ? t.active
+                          : 'bg-background text-muted-foreground border-border hover:bg-muted/50',
+                      )}
+                      onClick={() => setForm(f => ({ ...f, temperature: t.value }))}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -152,6 +252,51 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
                 <Input value={form.cv_url} onChange={e => setForm(f => ({ ...f, cv_url: e.target.value }))} placeholder="https://..." />
               </div>
 
+              {/* Perfil do Candidato */}
+              <Separator />
+              <h4 className="font-medium text-sm">Perfil do Candidato</h4>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Profissão atual</Label>
+                  <Input
+                    value={form.candidate_profession}
+                    onChange={e => setForm(f => ({ ...f, candidate_profession: e.target.value }))}
+                    placeholder="Ex: Assistente Comercial"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Zona geográfica</Label>
+                  <Input
+                    value={form.candidate_zone}
+                    onChange={e => setForm(f => ({ ...f, candidate_zone: e.target.value }))}
+                    placeholder="Ex: Braga, Guimarães"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Motivação</Label>
+                <Select value={form.candidate_motivation} onValueChange={v => setForm(f => ({ ...f, candidate_motivation: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar motivação" /></SelectTrigger>
+                  <SelectContent>
+                    {motivationOptions.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Notas iniciais</Label>
+                <Textarea
+                  value={form.candidate_notes}
+                  onChange={e => setForm(f => ({ ...f, candidate_notes: e.target.value }))}
+                  placeholder="Observações sobre o candidato..."
+                  rows={3}
+                />
+              </div>
+
+              <Separator />
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Próxima Ação</Label>
@@ -159,16 +304,36 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Data</Label>
-                  <Input type="date" value={form.next_action_at} onChange={e => setForm(f => ({ ...f, next_action_at: e.target.value }))} />
+                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal h-10',
+                          !selectedDate && 'text-muted-foreground',
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate
+                          ? format(selectedDate, "d 'de' MMMM yyyy", { locale: pt })
+                          : 'Selecionar data'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          setForm(f => ({ ...f, next_action_at: date ? format(date, 'yyyy-MM-dd') : '' }));
+                          setCalendarOpen(false);
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
-
-              {lead.source && (
-                <div className="space-y-1">
-                  <Label className="text-xs">Origem</Label>
-                  <Input value={lead.source} disabled className="bg-muted" />
-                </div>
-              )}
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -243,7 +408,7 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
             )}
           </TabsContent>
         </Tabs>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

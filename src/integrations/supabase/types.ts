@@ -373,6 +373,10 @@ export type Database = {
           buyer_financing: string | null
           buyer_motive: string | null
           buyer_timeline: string | null
+          candidate_motivation: string | null
+          candidate_notes: string | null
+          candidate_profession: string | null
+          candidate_zone: string | null
           client_name: string
           column_entered_at: string
           column_id: string
@@ -424,6 +428,10 @@ export type Database = {
           buyer_financing?: string | null
           buyer_motive?: string | null
           buyer_timeline?: string | null
+          candidate_motivation?: string | null
+          candidate_notes?: string | null
+          candidate_profession?: string | null
+          candidate_zone?: string | null
           client_name: string
           column_entered_at?: string
           column_id: string
@@ -475,6 +483,10 @@ export type Database = {
           buyer_financing?: string | null
           buyer_motive?: string | null
           buyer_timeline?: string | null
+          candidate_motivation?: string | null
+          candidate_notes?: string | null
+          candidate_profession?: string | null
+          candidate_zone?: string | null
           client_name?: string
           column_entered_at?: string
           column_id?: string

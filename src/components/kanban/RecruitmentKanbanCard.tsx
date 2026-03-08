@@ -39,6 +39,10 @@ export interface RecruitmentCardLead {
   source?: string | null;
   cvUrl?: string | null;
   createdAt?: string;
+  candidateProfession?: string | null;
+  candidateZone?: string | null;
+  candidateMotivation?: string | null;
+  candidateNotes?: string | null;
 }
 
 interface Props {
@@ -60,6 +64,12 @@ const expLabels: Record<string, string> = {
 const expColors: Record<string, string> = {
   com_experiencia: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   sem_experiencia: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+};
+
+const tempBadgeConfig: Record<string, { label: string; emoji: string; colors: string }> = {
+  hot:  { label: 'Quente', emoji: '🔥', colors: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  warm: { label: 'Morno',  emoji: '☀️', colors: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+  cold: { label: 'Frio',   emoji: '❄️', colors: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
 };
 
 const sourceIconMap: Record<string, string> = {
@@ -171,14 +181,24 @@ export function RecruitmentKanbanCard({
     >
       <CardContent className="p-3 space-y-1.5">
 
-        {/* Row 1: Nome + Experiência */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Row 1: Nome + Experiência + Temperatura */}
+        <div className="flex items-center gap-1.5">
           <p className="font-semibold text-sm truncate flex-1">{lead.clientName}</p>
-          {lead.experienceLevel && (
-            <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 shrink-0 border', expColors[lead.experienceLevel] || 'bg-muted text-muted-foreground')}>
-              {expLabels[lead.experienceLevel] || 'N/D'}
-            </Badge>
-          )}
+          <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 shrink-0 border', expColors[lead.experienceLevel || ''] || 'bg-muted text-muted-foreground')}>
+            {expLabels[lead.experienceLevel || ''] || 'N/D'}
+          </Badge>
+          {(() => {
+            const temp = tempBadgeConfig[lead.temperature];
+            return temp ? (
+              <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 shrink-0 border', temp.colors)}>
+                {temp.emoji} {temp.label}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border bg-muted text-muted-foreground">
+                ○ N/D
+              </Badge>
+            );
+          })()}
         </div>
 
         {/* Row 2: Badge Recrutamento + Origem */}

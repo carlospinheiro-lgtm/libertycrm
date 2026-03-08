@@ -117,6 +117,10 @@ function RecrutamentoContent() {
     source: lead.source,
     cvUrl: lead.cv_url,
     createdAt: lead.created_at,
+    candidateProfession: lead.candidate_profession,
+    candidateZone: lead.candidate_zone,
+    candidateMotivation: lead.candidate_motivation,
+    candidateNotes: lead.candidate_notes,
   }));
 
   // Apply filters
