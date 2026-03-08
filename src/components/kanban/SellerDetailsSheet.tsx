@@ -71,7 +71,29 @@ const interactionTypeConfig: Record<string, { label: string; icon: string }> = {
   other: { label: 'Outro', icon: '📌' },
 };
 
-const typologyOptions = ['T0', 'T1', 'T2', 'T3', 'T4+', 'Moradia', 'Terreno', 'Comercial'];
+const buyerPipelineColumns = [
+  { id: 'novo', title: 'Novo' },
+  { id: 'contacto-feito', title: 'Contacto Feito' },
+  { id: 'qualificacao', title: 'Qualificação' },
+  { id: 'ativo', title: 'Ativo (Imóveis enviados)' },
+  { id: 'visitas', title: 'Visitas' },
+  { id: 'proposta-negociacao', title: 'Proposta / Negociação' },
+  { id: 'reserva-cpcv', title: 'Reserva / CPCV' },
+  { id: 'perdido-followup', title: 'Perdido / Follow-up' },
+];
+
+const sellerPipelineColumns = [
+  { id: 'novo', title: 'Novo' },
+  { id: 'contacto-feito', title: 'Contacto Feito' },
+  { id: 'avaliacao', title: 'Avaliação / Estudo de Mercado' },
+  { id: 'apresentacao', title: 'Apresentação de Serviços' },
+  { id: 'negociacao', title: 'Negociação' },
+  { id: 'angariacao', title: 'Angariação' },
+  { id: 'angariacao-reservada', title: 'Angariação Reservada' },
+  { id: 'perdido-followup', title: 'Perdido / Follow-up' },
+];
+
+
 
 export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, onDelete }: Props) {
   const { user } = useAuth();
