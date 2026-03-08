@@ -94,6 +94,8 @@ const sellerPipelineColumns = [
 ];
 
 
+const typologyOptions = ['T0', 'T1', 'T2', 'T3', 'T4+', 'Moradia', 'Terreno', 'Comercial'];
+
 
 export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, onDelete }: Props) {
   const { user } = useAuth();
