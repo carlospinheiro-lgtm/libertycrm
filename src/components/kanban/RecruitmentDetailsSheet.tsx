@@ -13,9 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useRecruitmentInteractions, type RecruitmentInteraction } from '@/hooks/useRecruitmentInteractions';
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
-import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle, CalendarIcon } from 'lucide-react';
+import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle, CalendarIcon, MapPin, Plus, StickyNote } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow, isPast, isToday } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { RecruitmentCardLead } from './RecruitmentKanbanCard';
@@ -43,13 +43,13 @@ const tempButtons = [
 
 const sourceOptions = [
   { value: 'instagram', label: '📸 Instagram' },
-  { value: 'facebook', label: '📘 Facebook' },
   { value: 'referencia', label: '👥 Referência' },
   { value: 'website', label: '🌐 Website' },
+  { value: 'facebook', label: '📱 Facebook' },
   { value: 'idealista', label: '🏠 Idealista' },
-  { value: 'redes_sociais', label: '📱 Redes Sociais' },
+  { value: 'redes_sociais', label: '🤝 Redes Sociais' },
   { value: 'walkin', label: '🚶 Walk-in' },
-  { value: 'evento', label: '🎤 Evento' },
+  { value: 'evento', label: '🎪 Evento' },
   { value: 'outro', label: '📋 Outro' },
 ];
 
@@ -62,12 +62,31 @@ const motivationOptions = [
   { value: 'outro', label: 'Outro' },
 ];
 
-const interactionTypes = [
+const pipelineColumns: Record<string, string> = {
+  'novo-lead': 'Novo Lead',
+  'contactado': 'Contactado',
+  'entrevista-agendada': 'Entrevista Agendada',
+  'entrevistado': 'Entrevistado',
+  'em-decisao': 'Em Decisão',
+  'integrado': 'Integrado',
+  'nao-avancou': 'Não Avançou',
+};
+
+const interactionTypeLabels: Record<string, { emoji: string; label: string }> = {
+  call: { emoji: '📞', label: 'Chamada' },
+  whatsapp: { emoji: '💬', label: 'WhatsApp' },
+  email: { emoji: '📧', label: 'Email' },
+  meeting: { emoji: '🤝', label: 'Reunião' },
+  note: { emoji: '📝', label: 'Nota' },
+  stage_change: { emoji: '➡️', label: 'Mudança de etapa' },
+  other: { emoji: '📄', label: 'Outro' },
+};
+
+const interactionButtons = [
   { value: 'call', label: 'Chamada', icon: Phone },
   { value: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { value: 'email', label: 'Email', icon: Mail },
   { value: 'meeting', label: 'Reunião', icon: Users },
-  { value: 'other', label: 'Outro', icon: FileText },
 ];
 
 function getInitials(name: string) {
@@ -81,7 +100,7 @@ function cleanPhone(phone?: string) {
 export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, onDelete }: Props) {
   const { user } = useAuth();
   const { interactions, addInteraction } = useRecruitmentInteractions(lead?.id);
-  const { tasks, addTask, updateTask } = useLeadTasks(lead?.id);
+  const { tasks, addTask, updateTask, deleteTask } = useLeadTasks(lead?.id);
 
   const [form, setForm] = useState({
     experience_level: '',
@@ -98,6 +117,9 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
 
   const [interactionNote, setInteractionNote] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDate, setNewTaskDate] = useState('');
+  const [taskCalendarOpen, setTaskCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -146,8 +168,37 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     toast.success('Interação registada');
   };
 
+  const handleAddNote = () => {
+    if (!agencyId || !interactionNote.trim()) {
+      toast.error('Escreve uma nota primeiro');
+      return;
+    }
+    addInteraction.mutate({
+      lead_id: lead.id,
+      agency_id: agencyId,
+      type: 'note',
+      note: interactionNote,
+    });
+    setInteractionNote('');
+    toast.success('Nota adicionada');
+  };
+
+  const handleAddTask = () => {
+    if (!agencyId || !newTaskTitle.trim()) return;
+    addTask.mutate({
+      lead_id: lead.id,
+      agency_id: agencyId,
+      title: newTaskTitle.trim(),
+      due_date: newTaskDate || undefined,
+    });
+    setNewTaskTitle('');
+    setNewTaskDate('');
+  };
+
   const selectedDate = form.next_action_at ? new Date(form.next_action_at) : undefined;
+  const taskSelectedDate = newTaskDate ? new Date(newTaskDate) : undefined;
   const phoneClean = cleanPhone(lead.phone);
+  const columnLabel = pipelineColumns[lead.columnId] || lead.columnId;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -201,141 +252,146 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
 
           {/* DADOS TAB */}
           <TabsContent value="dados" className="space-y-4 mt-4">
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">Informação do Candidato</h4>
+            {/* Badge etapa pipeline */}
+            <Badge variant="secondary" className="gap-1.5 text-xs">
+              <MapPin className="h-3 w-3" /> {columnLabel}
+            </Badge>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Experiência</Label>
-                  <Select value={form.experience_level} onValueChange={v => setForm(f => ({ ...f, experience_level: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                    <SelectContent>
-                      {experienceLevels.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Origem</Label>
-                  <Select value={form.source} onValueChange={v => setForm(f => ({ ...f, source: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecionar origem" /></SelectTrigger>
-                    <SelectContent>
-                      {sourceOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Temperatura como botões visuais */}
-              <div className="space-y-1">
-                <Label className="text-xs">Temperatura</Label>
-                <div className="flex gap-1.5 flex-wrap">
-                  {tempButtons.map(t => (
-                    <button
-                      key={t.value}
-                      type="button"
-                      className={cn(
-                        'px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
-                        form.temperature === t.value
-                          ? t.active
-                          : 'bg-background text-muted-foreground border-border hover:bg-muted/50',
-                      )}
-                      onClick={() => setForm(f => ({ ...f, temperature: t.value }))}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">CV (URL)</Label>
-                <Input value={form.cv_url} onChange={e => setForm(f => ({ ...f, cv_url: e.target.value }))} placeholder="https://..." />
-              </div>
-
-              {/* Perfil do Candidato */}
-              <Separator />
-              <h4 className="font-medium text-sm">Perfil do Candidato</h4>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Profissão atual</Label>
-                  <Input
-                    value={form.candidate_profession}
-                    onChange={e => setForm(f => ({ ...f, candidate_profession: e.target.value }))}
-                    placeholder="Ex: Assistente Comercial"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Zona geográfica</Label>
-                  <Input
-                    value={form.candidate_zone}
-                    onChange={e => setForm(f => ({ ...f, candidate_zone: e.target.value }))}
-                    placeholder="Ex: Braga, Guimarães"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">Motivação</Label>
-                <Select value={form.candidate_motivation} onValueChange={v => setForm(f => ({ ...f, candidate_motivation: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar motivação" /></SelectTrigger>
-                  <SelectContent>
-                    {motivationOptions.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">Notas iniciais</Label>
-                <Textarea
-                  value={form.candidate_notes}
-                  onChange={e => setForm(f => ({ ...f, candidate_notes: e.target.value }))}
-                  placeholder="Observações sobre o candidato..."
-                  rows={3}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Próxima Ação</Label>
-                  <Input value={form.next_action_text} onChange={e => setForm(f => ({ ...f, next_action_text: e.target.value }))} placeholder="Descrição" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Data</Label>
-                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          'w-full justify-start text-left font-normal h-10',
-                          !selectedDate && 'text-muted-foreground',
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate
-                          ? format(selectedDate, "d 'de' MMMM yyyy", { locale: pt })
-                          : 'Selecionar data'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => {
-                          setForm(f => ({ ...f, next_action_at: date ? format(date, 'yyyy-MM-dd') : '' }));
-                          setCalendarOpen(false);
-                        }}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+            {/* Temperatura */}
+            <div className="space-y-1">
+              <Label className="text-xs">Temperatura</Label>
+              <div className="flex gap-1.5 flex-wrap">
+                {tempButtons.map(t => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    className={cn(
+                      'px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
+                      form.temperature === t.value
+                        ? t.active
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted/50',
+                    )}
+                    onClick={() => setForm(f => ({ ...f, temperature: t.value }))}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
             </div>
 
+            {/* Próxima Ação + Data */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Próxima Ação</Label>
+                <Input value={form.next_action_text} onChange={e => setForm(f => ({ ...f, next_action_text: e.target.value }))} placeholder="Descrição" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Data</Label>
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal h-10',
+                        !selectedDate && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate
+                        ? format(selectedDate, "d 'de' MMMM yyyy", { locale: pt })
+                        : 'Selecionar data'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        setForm(f => ({ ...f, next_action_at: date ? format(date, 'yyyy-MM-dd') : '' }));
+                        setCalendarOpen(false);
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Informação do Candidato */}
+            <h4 className="font-medium text-sm">Informação do Candidato</h4>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Experiência</Label>
+                <Select value={form.experience_level} onValueChange={v => setForm(f => ({ ...f, experience_level: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    {experienceLevels.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Origem</Label>
+                <Select value={form.source} onValueChange={v => setForm(f => ({ ...f, source: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar origem..." /></SelectTrigger>
+                  <SelectContent>
+                    {sourceOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Profissão atual</Label>
+                <Input
+                  value={form.candidate_profession}
+                  onChange={e => setForm(f => ({ ...f, candidate_profession: e.target.value }))}
+                  placeholder="Ex: Assistente Comercial"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Zona geográfica</Label>
+                <Input
+                  value={form.candidate_zone}
+                  onChange={e => setForm(f => ({ ...f, candidate_zone: e.target.value }))}
+                  placeholder="Ex: Braga, Guimarães"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Motivação</Label>
+              <Select value={form.candidate_motivation} onValueChange={v => setForm(f => ({ ...f, candidate_motivation: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecionar motivação" /></SelectTrigger>
+                <SelectContent>
+                  {motivationOptions.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Notas iniciais</Label>
+              <Textarea
+                value={form.candidate_notes}
+                onChange={e => setForm(f => ({ ...f, candidate_notes: e.target.value }))}
+                placeholder="Observações sobre o candidato..."
+                rows={3}
+              />
+            </div>
+
+            <Separator />
+
+            {/* CV */}
+            <div className="space-y-1">
+              <Label className="text-xs">CV (URL)</Label>
+              <Input value={form.cv_url} onChange={e => setForm(f => ({ ...f, cv_url: e.target.value }))} placeholder="https://..." />
+            </div>
+
+            {/* Botões Guardar + Eliminar */}
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSave} className="flex-1">Guardar</Button>
               <Button variant="destructive" size="icon" onClick={() => { onDelete(lead.id); onOpenChange(false); }}>
@@ -347,15 +403,18 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
           {/* HISTÓRICO TAB */}
           <TabsContent value="historico" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label className="text-xs">Nota (opcional)</Label>
+              <Label className="text-xs">Nota / descrição do contacto</Label>
               <Textarea value={interactionNote} onChange={e => setInteractionNote(e.target.value)} placeholder="Descrição do contacto..." rows={2} />
             </div>
             <div className="flex flex-wrap gap-2">
-              {interactionTypes.map(it => (
+              {interactionButtons.map(it => (
                 <Button key={it.value} variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddInteraction(it.value)}>
                   <it.icon className="h-3 w-3" /> {it.label}
                 </Button>
               ))}
+              <Button variant="outline" size="sm" className="gap-1 text-xs text-amber-600 border-amber-200 hover:bg-amber-50" onClick={handleAddNote}>
+                <StickyNote className="h-3 w-3" /> + Nota
+              </Button>
             </div>
 
             <Separator />
@@ -364,47 +423,115 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
               {interactions.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">Sem interações registadas</p>
               ) : (
-                interactions.map((i: RecruitmentInteraction) => (
-                  <div key={i.id} className="flex gap-3 text-xs border-l-2 border-border pl-3 py-1">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">{i.type}</Badge>
-                        <span className="text-muted-foreground">{i.creator_name}</span>
+                interactions.map((i: RecruitmentInteraction) => {
+                  const typeInfo = interactionTypeLabels[i.type] || { emoji: '📄', label: i.type };
+                  return (
+                    <div key={i.id} className="flex gap-3 text-xs border-l-2 border-border pl-3 py-1">
+                      <span className="text-base shrink-0 leading-none mt-0.5">{typeInfo.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px]">{typeInfo.label}</Badge>
+                          <span className="text-muted-foreground">{i.creator_name}</span>
+                        </div>
+                        {i.note && <p className="mt-1 text-muted-foreground">{i.note}</p>}
                       </div>
-                      {i.note && <p className="mt-1 text-muted-foreground">{i.note}</p>}
+                      <span className="text-muted-foreground shrink-0">
+                        {formatDistanceToNow(new Date(i.created_at), { addSuffix: true, locale: pt })}
+                      </span>
                     </div>
-                    <span className="text-muted-foreground shrink-0">
-                      {new Date(i.created_at).toLocaleDateString('pt-PT')}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </TabsContent>
 
           {/* TAREFAS TAB */}
           <TabsContent value="tarefas" className="space-y-3 mt-4">
-            {tasks.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">Sem tarefas</p>
-            ) : (
-              tasks.map((task: any) => (
-                <div key={task.id} className="flex items-center gap-2 text-xs border rounded-md p-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 shrink-0"
-                    onClick={() => updateTask.mutate({ id: task.id, status: task.status === 'done' ? 'pending' : 'done' })}
-                  >
-                    <CheckCircle className={`h-4 w-4 ${task.status === 'done' ? 'text-green-500' : 'text-muted-foreground'}`} />
+            {/* Nova tarefa inline */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Input
+                  value={newTaskTitle}
+                  onChange={e => setNewTaskTitle(e.target.value)}
+                  placeholder="Nova tarefa..."
+                  onKeyDown={e => e.key === 'Enter' && handleAddTask()}
+                />
+              </div>
+              <Popover open={taskCalendarOpen} onOpenChange={setTaskCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                    <CalendarIcon className="h-4 w-4" />
                   </Button>
-                  <div className="flex-1 min-w-0">
-                    <span className={task.status === 'done' ? 'line-through text-muted-foreground' : ''}>{task.title}</span>
-                    {task.due_date && (
-                      <span className="block text-muted-foreground">{new Date(task.due_date).toLocaleDateString('pt-PT')}</span>
-                    )}
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={taskSelectedDate}
+                    onSelect={(date) => {
+                      setNewTaskDate(date ? format(date, 'yyyy-MM-dd') : '');
+                      setTaskCalendarOpen(false);
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button size="icon" className="h-10 w-10 shrink-0" onClick={handleAddTask} disabled={!newTaskTitle.trim()}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {newTaskDate && (
+              <p className="text-[10px] text-muted-foreground -mt-1">
+                Prazo: {format(new Date(newTaskDate), "d 'de' MMMM yyyy", { locale: pt })}
+              </p>
+            )}
+
+            {tasks.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">Sem tarefas.</p>
+            ) : (
+              tasks.map((task: any) => {
+                const isOverdue = task.status !== 'done' && task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date));
+                return (
+                  <div key={task.id} className="flex items-center gap-2 text-xs border rounded-md p-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 shrink-0"
+                      onClick={() => updateTask.mutate({
+                        id: task.id,
+                        status: task.status === 'done' ? 'pending' : 'done',
+                        completed_at: task.status === 'done' ? null : new Date().toISOString(),
+                      })}
+                    >
+                      <CheckCircle className={`h-4 w-4 ${task.status === 'done' ? 'text-green-500' : 'text-muted-foreground'}`} />
+                    </Button>
+                    <div className="flex-1 min-w-0">
+                      <span className={cn(
+                        task.status === 'done' && 'line-through text-muted-foreground',
+                        isOverdue && 'text-destructive font-medium',
+                      )}>
+                        {task.title}
+                      </span>
+                      {task.due_date && (
+                        <span className={cn(
+                          'block',
+                          isOverdue ? 'text-destructive' : 'text-muted-foreground',
+                        )}>
+                          {format(new Date(task.due_date), "d MMM yyyy", { locale: pt })}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => deleteTask.mutate(task.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </TabsContent>
         </Tabs>
