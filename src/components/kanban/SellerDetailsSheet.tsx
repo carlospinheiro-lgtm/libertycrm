@@ -15,7 +15,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   Flame, Sun, Snowflake, Circle, Trash2, CalendarIcon,
   Phone, Mail, MessageCircle, Plus, X, Clock, MapPin, CheckCircle, Calculator,
+  ArrowRightLeft, Copy,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow, isBefore, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -69,7 +71,31 @@ const interactionTypeConfig: Record<string, { label: string; icon: string }> = {
   other: { label: 'Outro', icon: '📌' },
 };
 
+const buyerPipelineColumns = [
+  { id: 'novo', title: 'Novo' },
+  { id: 'contacto-feito', title: 'Contacto Feito' },
+  { id: 'qualificacao', title: 'Qualificação' },
+  { id: 'ativo', title: 'Ativo (Imóveis enviados)' },
+  { id: 'visitas', title: 'Visitas' },
+  { id: 'proposta-negociacao', title: 'Proposta / Negociação' },
+  { id: 'reserva-cpcv', title: 'Reserva / CPCV' },
+  { id: 'perdido-followup', title: 'Perdido / Follow-up' },
+];
+
+const sellerPipelineColumns = [
+  { id: 'novo', title: 'Novo' },
+  { id: 'contacto-feito', title: 'Contacto Feito' },
+  { id: 'avaliacao', title: 'Avaliação / Estudo de Mercado' },
+  { id: 'apresentacao', title: 'Apresentação de Serviços' },
+  { id: 'negociacao', title: 'Negociação' },
+  { id: 'angariacao', title: 'Angariação' },
+  { id: 'angariacao-reservada', title: 'Angariação Reservada' },
+  { id: 'perdido-followup', title: 'Perdido / Follow-up' },
+];
+
+
 const typologyOptions = ['T0', 'T1', 'T2', 'T3', 'T4+', 'Moradia', 'Terreno', 'Comercial'];
+
 
 export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave, onDelete }: Props) {
   const { user } = useAuth();
@@ -89,6 +115,8 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
   const [visitTime, setVisitTime] = useState('');
   const [visitAddress, setVisitAddress] = useState('');
   const [visitNotes, setVisitNotes] = useState('');
+  const [movePipeline, setMovePipeline] = useState('vendedores');
+  const [moveColumnId, setMoveColumnId] = useState('');
 
   const [form, setForm] = useState<Record<string, any>>({
     property_type: '',
@@ -121,6 +149,8 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
         contract_duration: lead.contractDuration || contractDefault,
         property_typology: Array.isArray((lead as any).propertyTypology) ? (lead as any).propertyTypology : (lead as any).propertyTypology ? [(lead as any).propertyTypology] : [],
       });
+      setMovePipeline('vendedores');
+      setMoveColumnId('');
     }
   }, [lead]);
 
@@ -149,6 +179,54 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
       onDelete(lead.id);
       onOpenChange(false);
     }
+  };
+
+  const currentPipelineColumns = movePipeline === 'vendedores' ? sellerPipelineColumns : buyerPipelineColumns;
+
+  const handleMoveLead = async () => {
+    if (!moveColumnId) return;
+    if (movePipeline === 'vendedores') {
+      onSave(lead.id, { column_id: moveColumnId });
+      const colTitle = sellerPipelineColumns.find(c => c.id === moveColumnId)?.title || moveColumnId;
+      toast.success(`Lead movida para ${colTitle}`);
+    } else {
+      // Duplicate to buyer pipeline
+      const { error } = await supabase.from('leads').insert({
+        client_name: lead.clientName,
+        phone: lead.phone || null,
+        email: lead.email || null,
+        agency_id: agencyId!,
+        user_id: user!.id,
+        lead_type: 'buyer',
+        column_id: moveColumnId,
+        temperature: lead.temperature || 'warm',
+      });
+      if (error) {
+        toast.error('Erro ao duplicar lead: ' + error.message);
+        return;
+      }
+      toast.success('✅ Lead duplicada para CRM Compradores');
+    }
+    onOpenChange(false);
+  };
+
+  const handleDuplicateToBuyers = async () => {
+    if (!moveColumnId || !agencyId || !user) return;
+    const { error } = await supabase.from('leads').insert({
+      client_name: lead.clientName,
+      phone: lead.phone || null,
+      email: lead.email || null,
+      agency_id: agencyId,
+      user_id: user.id,
+      lead_type: 'buyer',
+      column_id: moveColumnId,
+      temperature: lead.temperature || 'warm',
+    });
+    if (error) {
+      toast.error('Erro ao duplicar lead: ' + error.message);
+      return;
+    }
+    toast.success('✅ Lead duplicada para CRM Compradores');
   };
 
   const handleAddInteraction = (type: string) => {
@@ -427,6 +505,54 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
                   <Label className="text-xs">Origem</Label>
                   <Input value={lead.source} disabled className="bg-muted" />
                 </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Move lead section */}
+            <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-border">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">Mover lead</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Pipeline</Label>
+                  <Select value={movePipeline} onValueChange={v => { setMovePipeline(v); setMoveColumnId(''); }}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vendedores">CRM Vendedores</SelectItem>
+                      <SelectItem value="compradores">CRM Compradores</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Etapa</Label>
+                  <Select value={moveColumnId} onValueChange={setMoveColumnId}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                    <SelectContent>
+                      {currentPipelineColumns.map(col => (
+                        <SelectItem key={col.id} value={col.id}>{col.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleMoveLead} disabled={!moveColumnId}>
+                  <ArrowRightLeft className="h-3 w-3" /> Mover
+                </Button>
+                {movePipeline === 'compradores' && (
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleDuplicateToBuyers} disabled={!moveColumnId}>
+                    <Copy className="h-3 w-3" /> Duplicar para CRM Compradores
+                  </Button>
+                )}
+              </div>
+              {movePipeline === 'compradores' && (
+                <p className="text-[10px] text-muted-foreground">
+                  Cria uma cópia deste contacto no pipeline de Compradores
+                </p>
               )}
             </div>
 

@@ -1,47 +1,30 @@
 
 
-## Plano: Adicionar secção "Mover lead" ao SellerDetailsSheet
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### Alterações em `src/components/kanban/SellerDetailsSheet.tsx`
+### 1. Sheet → Dialog (centrado no ecrã)
 
-#### 1. Imports adicionais
-- Adicionar `ArrowRightLeft`, `Copy` ao import de lucide-react
-- Adicionar `supabase` de `@/integrations/supabase/client`
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-#### 2. Constantes de pipeline (como no BuyerDetailsSheet)
-```typescript
-const buyerPipelineColumns = [
-  { id: 'novo', title: 'Novo' },
-  { id: 'contacto-feito', title: 'Contacto Feito' },
-  { id: 'qualificacao', title: 'Qualificação' },
-  { id: 'ativo', title: 'Ativo (Imóveis enviados)' },
-  { id: 'visitas', title: 'Visitas' },
-  { id: 'proposta-negociacao', title: 'Proposta / Negociação' },
-  { id: 'reserva-cpcv', title: 'Reserva / CPCV' },
-  { id: 'perdido-followup', title: 'Perdido / Follow-up' },
-];
-const sellerPipelineColumns = [
-  { id: 'novo', title: 'Novo' },
-  // ... 8 etapas vendedores
-];
-```
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-#### 3. Novos estados
-- `movePipeline` (default `'vendedores'`)
-- `moveColumnId` (default `''`)
-- Reset no `useEffect` quando lead muda
+### 2. Tipologia multi-seleção (tags)
 
-#### 4. Handlers
-- `handleMoveLead`: Se vendedores → `onSave(id, { column_id })` + toast. Se compradores → insert direto via supabase (`lead_type: 'buyer'`, copiando dados do contacto) + toast.
-- `handleDuplicateToBuyers`: Insert via supabase com `lead_type: 'buyer'` + toast.
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-#### 5. UI — Após a secção "Informação Comercial" (linha ~431), antes dos botões Guardar/Eliminar (linha ~433)
-- `<Separator />`
-- Bloco com `bg-muted/30`, ícone `ArrowRightLeft`, título "Mover lead"
-- 2 dropdowns: Pipeline (Vendedores/Compradores) e Etapa (dinâmica)
-- Botão "Mover" + Botão condicional "Duplicar para CRM Compradores" (quando pipeline = compradores)
-- Texto explicativo abaixo do botão duplicar
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
+
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
+
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
 
 ### Ficheiro editado
-- `src/components/kanban/SellerDetailsSheet.tsx`
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 
