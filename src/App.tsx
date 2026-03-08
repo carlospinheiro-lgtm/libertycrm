@@ -20,6 +20,7 @@ import AngariacaoDetalhe from "./pages/AngariacaoDetalhe";
 import ComingSoon from "./pages/ComingSoon";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import SuperAdmin from "./pages/SuperAdmin";
 
 const queryClient = new QueryClient();
 
