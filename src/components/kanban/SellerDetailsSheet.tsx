@@ -323,7 +323,29 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
 
             <div className="space-y-1">
               <Label className="text-xs">Valor Estimado (€)</Label>
-              <Input type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} placeholder="0" />
+              <div className="flex gap-2">
+                <Input type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} placeholder="0" className="flex-1" />
+                {agencyId && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0" title="Calcular comissão">
+                        <Calculator className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="end">
+                      <CommissionCalculator
+                        propertyValue={Number(form.estimated_value) || 0}
+                        isExclusivity={form.seller_exclusivity === 'sim'}
+                        agencyId={agencyId}
+                        onSelectCommission={(pct) => {
+                          setForm(prev => ({ ...prev, commission_percentage: String(pct) }));
+                          toast.success(`Comissão de ${pct}% aplicada`);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
             </div>
 
             {/* Next action with calendar */}
