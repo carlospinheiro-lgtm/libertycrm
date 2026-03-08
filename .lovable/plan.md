@@ -1,30 +1,74 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Correções ao Cartão e Ficha de Recrutamento
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### 1. `RecruitmentKanbanCard.tsx` — Badge temperatura + experiência
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+**Interface**: Adicionar campos `candidateProfession`, `candidateZone`, `candidateMotivation`, `candidateNotes` ao `RecruitmentCardLead`.
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+**Row 1**: Manter nome + badge experiência (já existe mas condicionado a `lead.experienceLevel` — remover o `&&` guard para mostrar sempre, com fallback "N/D"). Adicionar badge temperatura ao lado:
+- `hot` → `🔥 Quente` vermelho
+- `warm` → `☀️ Morno` amarelo  
+- `cold` → `❄️ Frio` azul
 
-### 2. Tipologia multi-seleção (tags)
+Definir `tempBadgeConfig` com cores e labels. Remover qualquer ícone/botão de temperatura solto fora do card (não existe atualmente — confirmar que não há).
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+### 2. `RecruitmentDetailsSheet.tsx` — Dialog centrado
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+**Imports**: Substituir `Sheet/SheetContent/SheetHeader/SheetTitle` por `Dialog/DialogContent` de `@/components/ui/dialog`. Adicionar `CalendarIcon` de lucide, `Calendar` de `@/components/ui/calendar`, `Popover/PopoverContent/PopoverTrigger`, `format` e `pt` de date-fns.
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+**Container**: `<Dialog>` + `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`.
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+### 3. Cabeçalho com avatar + botões
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+Dentro do DialogContent, antes das Tabs:
+- Div com `p-6 pb-0`
+- Avatar circular `bg-purple-600` com iniciais (2 primeiras letras do nome)
+- Nome em `text-lg font-bold` + Badge "Recrutamento" roxo
+- 3 botões: "Ligar" (`href=tel:`) azul, "Email" (`href=mailto:`) cinza, "WhatsApp" (`href=https://wa.me/`) verde
+
+### 4. Temperatura como botões visuais
+
+Substituir `<Select>` da temperatura por 4 botões inline:
+- `🔥 Quente` — `bg-red-100 text-red-700` quando ativo
+- `☀️ Morno` — `bg-amber-100 text-amber-700` quando ativo
+- `❄️ Frio` — `bg-blue-100 text-blue-700` quando ativo
+- `○ Indefinido` (value `''`) — `bg-gray-100 text-gray-600` quando ativo
+
+### 5. Calendário visual
+
+Substituir `<Input type="date">` por `<Popover>` + `<Calendar mode="single">` com `pointer-events-auto`. Botão mostra data formatada em português via `format(date, "d 'de' MMMM yyyy", { locale: pt })` ou "Selecionar data".
+
+### 6. Origem como Select
+
+Substituir `<Input disabled>` da origem por `<Select>` editável com opções:
+`📸 Instagram`, `📘 Facebook`, `👥 Referência`, `🌐 Website`, `🏠 Idealista`, `📱 Redes Sociais`, `🚶 Walk-in`, `🎤 Evento`, `📋 Outro`
+
+Adicionar `source` ao form state e ao `handleSave`.
+
+### 7. Campos extra — Perfil do Candidato
+
+Após o campo CV, nova secção "Perfil do Candidato" com:
+- `candidate_profession` — Input, placeholder "Ex: Assistente Comercial"
+- `candidate_zone` — Input, placeholder "Ex: Braga, Guimarães"
+- `candidate_motivation` — Select: Progressão de carreira / Maior rendimento / Reconversão profissional / Desempregado / Empreendedorismo / Outro
+- `candidate_notes` — Textarea, placeholder "Observações sobre o candidato..."
+
+Adicionar ao form state, inicializar no `useEffect` a partir de `lead.candidateProfession` etc., incluir no `handleSave`.
+
+### 8. Migration SQL
+
+Adicionar colunas à tabela `leads`:
+```sql
+ALTER TABLE public.leads
+  ADD COLUMN IF NOT EXISTS candidate_profession text,
+  ADD COLUMN IF NOT EXISTS candidate_zone text,
+  ADD COLUMN IF NOT EXISTS candidate_motivation text,
+  ADD COLUMN IF NOT EXISTS candidate_notes text;
+```
+
+### Ficheiros editados
+- `src/components/kanban/RecruitmentKanbanCard.tsx` — interface + row 1 badges
+- `src/components/kanban/RecruitmentDetailsSheet.tsx` — reescrita completa
+- Migration SQL — 4 novas colunas em `leads`
 
