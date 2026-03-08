@@ -15,7 +15,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   Flame, Sun, Snowflake, Circle, Trash2, CalendarIcon,
   Phone, Mail, MessageCircle, Plus, X, Clock, MapPin, CheckCircle, Calculator,
+  ArrowRightLeft, Copy,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow, isBefore, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
