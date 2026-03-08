@@ -99,26 +99,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })));
       }
 
-      // Fetch profile
+      // Fetch profile (including is_super_admin)
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('name')
+        .select('name, is_super_admin')
         .eq('id', userId)
         .single();
 
-      // Fetch user agency info
+      // Fetch user agency info (including organization_id via agencies join)
       const { data: userAgencyData } = await supabase
         .from('user_agencies')
-        .select('team_id, agency_id')
+        .select('team_id, agency_id, agencies(organization_id)')
         .eq('user_id', userId)
         .eq('is_active', true)
         .limit(1)
         .single();
 
+      const agencyRow = userAgencyData?.agencies as unknown as { organization_id: string | null } | null;
+
       setUserProfile({
         name: profileData?.name || user?.email || 'Utilizador',
         team_id: userAgencyData?.team_id || null,
         agency_id: userAgencyData?.agency_id || null,
+        is_super_admin: profileData?.is_super_admin ?? false,
+        organization_id: agencyRow?.organization_id ?? null,
       });
 
       // Fetch agencies and teams for name lookups
