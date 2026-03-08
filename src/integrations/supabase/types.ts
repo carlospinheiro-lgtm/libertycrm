@@ -20,6 +20,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          organization_id: string | null
           remax_code: string | null
           updated_at: string | null
         }
@@ -28,6 +29,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          organization_id?: string | null
           remax_code?: string | null
           updated_at?: string | null
         }
@@ -36,10 +38,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          organization_id?: string | null
           remax_code?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agencies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agency_settings: {
         Row: {
@@ -609,6 +620,51 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          billing_email: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          max_agencies: number | null
+          max_users: number | null
+          name: string
+          plan: string | null
+          primary_color: string | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          billing_email?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          max_agencies?: number | null
+          max_users?: number | null
+          name: string
+          plan?: string | null
+          primary_color?: string | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          billing_email?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          max_agencies?: number | null
+          max_users?: number | null
+          name?: string
+          plan?: string | null
+          primary_color?: string | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -616,6 +672,7 @@ export type Database = {
           email: string
           id: string
           is_active: boolean | null
+          is_super_admin: boolean | null
           name: string
           phone: string | null
           updated_at: string | null
@@ -626,6 +683,7 @@ export type Database = {
           email: string
           id: string
           is_active?: boolean | null
+          is_super_admin?: boolean | null
           name: string
           phone?: string | null
           updated_at?: string | null
@@ -636,6 +694,7 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean | null
+          is_super_admin?: boolean | null
           name?: string
           phone?: string | null
           updated_at?: string | null
@@ -1891,6 +1950,7 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:

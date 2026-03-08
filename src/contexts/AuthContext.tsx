@@ -40,6 +40,7 @@ interface AuthContextType {
   // Utilizador atual (compatibilidade com sistema RBAC)
   currentUser: RBACUser | null;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   
   // Helpers de permissões
   hasPermission: (permission: PermissionKey) => boolean;
@@ -79,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userRolesData, setUserRolesData] = useState<{ role: AppRole; agency_id: string }[]>([]);
-  const [userProfile, setUserProfile] = useState<{ name: string; team_id: string | null; agency_id: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ name: string; team_id: string | null; agency_id: string | null; is_super_admin: boolean; organization_id: string | null } | null>(null);
   const [agencies, setAgencies] = useState<{ id: string; name: string }[]>([]);
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
 
@@ -99,26 +100,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })));
       }
 
-      // Fetch profile
+      // Fetch profile (including is_super_admin)
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('name')
+        .select('name, is_super_admin')
         .eq('id', userId)
         .single();
 
-      // Fetch user agency info
+      // Fetch user agency info (including organization_id via agencies join)
       const { data: userAgencyData } = await supabase
         .from('user_agencies')
-        .select('team_id, agency_id')
+        .select('team_id, agency_id, agencies(organization_id)')
         .eq('user_id', userId)
         .eq('is_active', true)
         .limit(1)
         .single();
 
+      const agencyRow = userAgencyData?.agencies as unknown as { organization_id: string | null } | null;
+
       setUserProfile({
         name: profileData?.name || user?.email || 'Utilizador',
         team_id: userAgencyData?.team_id || null,
         agency_id: userAgencyData?.agency_id || null,
+        is_super_admin: profileData?.is_super_admin ?? false,
+        organization_id: agencyRow?.organization_id ?? null,
       });
 
       // Fetch agencies and teams for name lookups
@@ -186,6 +191,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       teamId: userProfile.team_id || undefined,
       isActive: true,
       createdAt: new Date(user.created_at || Date.now()),
+      isSuperAdmin: userProfile.is_super_admin,
+      organizationId: userProfile.organization_id || undefined,
     };
   }, [user, userProfile, userRolesData]);
 
@@ -266,12 +273,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(null);
   }, []);
   
+  const isSuperAdmin = currentUser?.isSuperAdmin ?? false;
+
   const value: AuthContextType = {
     user,
     session,
     isLoading,
     currentUser,
     isAuthenticated,
+    isSuperAdmin,
     hasPermission: hasPermissionCheck,
     hasAnyPermission: hasAnyPermissionCheck,
     getMaxScope,
