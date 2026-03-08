@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -19,9 +20,10 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Save, Bell, Mail, Shield, Clock } from 'lucide-react';
+import { Save, Bell, Mail, Shield, Clock, FileText, Plus, X } from 'lucide-react';
 import { LeadSettingsCard } from './LeadSettingsCard';
 import { useAgencies } from '@/hooks/useAgencies';
+import { useContractDurationSettings, useUpdateContractDurationSettings } from '@/hooks/useAgencySettings';
 
 export function SettingsPanel() {
   const { data: agencies } = useAgencies();
@@ -97,6 +99,11 @@ export function SettingsPanel() {
           )}
         </CardContent>
       </Card>
+
+      {/* Contratos de Angariação */}
+      {selectedAgencyId && (
+        <ContractDurationCard agencyId={selectedAgencyId} />
+      )}
 
       {/* Notificações */}
       <Card>
@@ -245,5 +252,102 @@ export function SettingsPanel() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ContractDurationCard({ agencyId }: { agencyId: string }) {
+  const { data: settings } = useContractDurationSettings(agencyId);
+  const updateSettings = useUpdateContractDurationSettings();
+  const [defaultDays, setDefaultDays] = useState(120);
+  const [options, setOptions] = useState<number[]>([90, 120, 150, 180]);
+  const [newOption, setNewOption] = useState('');
+
+  useEffect(() => {
+    if (settings) {
+      setDefaultDays(settings.defaultDays);
+      setOptions(settings.options);
+    }
+  }, [settings]);
+
+  const addOption = () => {
+    const val = parseInt(newOption);
+    if (!val || val < 30 || options.includes(val)) return;
+    setOptions(prev => [...prev, val].sort((a, b) => a - b));
+    setNewOption('');
+  };
+
+  const removeOption = (val: number) => {
+    setOptions(prev => prev.filter(o => o !== val));
+  };
+
+  const handleSave = () => {
+    const finalDefault = options.includes(defaultDays) ? defaultDays : options[0] || 120;
+    updateSettings.mutate(
+      { agencyId, settingKey: 'contract_duration', settingValue: { defaultDays: finalDefault, options } },
+      { onSuccess: () => toast.success('Configurações de contrato guardadas') }
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">Contratos de Angariação</CardTitle>
+        </div>
+        <CardDescription>Configurar durações disponíveis para os contratos de mediação</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>Duração padrão (dias)</Label>
+          <Input
+            type="number"
+            min={30}
+            value={defaultDays}
+            onChange={e => setDefaultDays(parseInt(e.target.value) || 120)}
+            className="w-32"
+          />
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <Label>Opções disponíveis</Label>
+          <div className="flex flex-wrap gap-2">
+            {options.map(opt => (
+              <Badge key={opt} variant="secondary" className="gap-1 text-sm">
+                {opt}d
+                <button type="button" onClick={() => removeOption(opt)} className="ml-1 hover:text-destructive">
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+          <div className="flex gap-2 items-center">
+            <Input
+              type="number"
+              min={30}
+              placeholder="Ex: 240"
+              value={newOption}
+              onChange={e => setNewOption(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addOption()}
+              className="w-28"
+            />
+            <Button type="button" variant="outline" size="sm" onClick={addOption}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Os agentes só poderão selecionar as durações aqui definidas ao criar ou editar leads de vendedores.
+        </p>
+
+        <Button onClick={handleSave} disabled={updateSettings.isPending} className="gap-2">
+          <Save className="h-4 w-4" />
+          Guardar
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

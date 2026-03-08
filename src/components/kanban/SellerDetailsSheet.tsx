@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useSellerInteractions, type SellerInteraction } from '@/hooks/useSellerInteractions';
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
+import { useContractDurationSettings } from '@/hooks/useAgencySettings';
 import { toast } from 'sonner';
 import type { SellerCardLead } from './SellerKanbanCard';
 
@@ -73,6 +74,9 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
   const { user } = useAuth();
   const { interactions, addInteraction } = useSellerInteractions(lead?.id);
   const { tasks, addTask, updateTask, deleteTask } = useLeadTasks(lead?.id);
+  const { data: contractSettings } = useContractDurationSettings(agencyId);
+  const contractOptions = contractSettings?.options ?? [90, 120, 150, 180];
+  const contractDefault = String(contractSettings?.defaultDays ?? 120);
 
   const [activeTab, setActiveTab] = useState('dados');
   const [interactionNote, setInteractionNote] = useState('');
@@ -113,7 +117,7 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
         seller_exclusivity: lead.sellerExclusivity || '',
         temperature: lead.temperature || 'warm',
         commission_percentage: lead.commissionPercentage?.toString() || '',
-        contract_duration: lead.contractDuration || '',
+        contract_duration: lead.contractDuration || contractDefault,
         property_typology: Array.isArray((lead as any).propertyTypology) ? (lead as any).propertyTypology : (lead as any).propertyTypology ? [(lead as any).propertyTypology] : [],
       });
     }
@@ -385,7 +389,14 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
 
               <div className="space-y-1">
                 <Label className="text-xs">Duração Contrato</Label>
-                <Input value={form.contract_duration} onChange={e => setForm({ ...form, contract_duration: e.target.value })} placeholder="Ex: 6 meses" />
+                <Select value={form.contract_duration} onValueChange={v => setForm({ ...form, contract_duration: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar duração" /></SelectTrigger>
+                  <SelectContent>
+                    {contractOptions.map(opt => (
+                      <SelectItem key={opt} value={String(opt)}>{opt} dias</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {lead.source && (

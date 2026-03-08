@@ -95,3 +95,26 @@ export function useLeadSettings(agencyId: string | undefined) {
 export function useUpdateLeadSettings() {
   return useUpsertAgencySetting();
 }
+
+// Contract Duration Settings
+export interface ContractDurationSettings {
+  defaultDays: number;
+  options: number[];
+}
+
+const DEFAULT_CONTRACT_DURATION: ContractDurationSettings = {
+  defaultDays: 120,
+  options: [90, 120, 150, 180],
+};
+
+export function useContractDurationSettings(agencyId: string | undefined) {
+  const query = useAgencySetting<ContractDurationSettings>(agencyId, 'contract_duration');
+  return {
+    ...query,
+    data: query.data ?? DEFAULT_CONTRACT_DURATION,
+  };
+}
+
+export function useUpdateContractDurationSettings() {
+  return useUpsertAgencySetting();
+}

@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import type { LeadTemperature, Source, SourceCategory } from '@/types';
 import type { KanbanLead, KanbanColumn } from '@/hooks/useKanbanState';
 import { defaultSources, sourceCategoryLabels } from '@/types';
+import { useContractDurationSettings } from '@/hooks/useAgencySettings';
 
 // ✅ Colunas do pipeline Vendedores para duplicação
 const vendedoresColumns: KanbanColumn[] = [
@@ -43,6 +44,7 @@ interface AddLeadDialogProps {
   onAdd: (lead: KanbanLead, duplicateToSeller?: boolean) => void;
   isRecruitment?: boolean;
   leadFlow?: 'vendedores' | 'compradores';
+  agencyId?: string;
 }
 
 // ✅ Tipo de cliente
@@ -63,8 +65,12 @@ const temperatureOptions: { value: LeadTemperature; label: string; icon: React.R
 
 export function AddLeadDialog({
   open, onOpenChange, columns, onAdd,
-  isRecruitment = false, leadFlow = 'compradores',
+  isRecruitment = false, leadFlow = 'compradores', agencyId,
 }: AddLeadDialogProps) {
+  const { data: contractSettings } = useContractDurationSettings(agencyId);
+  const contractOptions = contractSettings?.options ?? [90, 120, 150, 180];
+  const contractDefault = String(contractSettings?.defaultDays ?? 120);
+
   const [formData, setFormData] = useState({
     clientName:              '',
     phone:                   '',
@@ -77,9 +83,9 @@ export function AddLeadDialog({
     nextActivityDate:        undefined as Date | undefined,
     nextActivityDescription: '',
     cvUrl:                   '',
-    // ✅ NOVOS campos
-    columnId:                columns[0]?.id || '',   // Escolher coluna inicial
-    clientType:              'comprador' as ClientType, // Tipo de cliente
+    columnId:                columns[0]?.id || '',
+    clientType:              'comprador' as ClientType,
+    contractDuration:        leadFlow === 'vendedores' ? contractDefault : '',
   });
 
   // ✅ Se "ambos" ou "vendedor", mostrar opção de duplicar no pipeline vendedores
@@ -123,11 +129,10 @@ export function AddLeadDialog({
       nextActivityDate:        formData.nextActivityDate?.toISOString(),
       nextActivityDescription: formData.nextActivityDescription,
       cvUrl:                   isRecruitment ? formData.cvUrl : undefined,
-      // ✅ Guarda o tipo de cliente
       clientType:              formData.clientType,
+      contractDuration:        leadFlow === 'vendedores' ? formData.contractDuration : undefined,
     };
 
-    // ✅ Passa flag de duplicação para o pai tratar
     onAdd(newLead, showDuplicateOption && duplicateToSeller ? true : false);
     onOpenChange(false);
 
@@ -136,6 +141,7 @@ export function AddLeadDialog({
       sourceId: '', notes: '', temperature: 'undefined',
       nextActivityDate: undefined, nextActivityDescription: '', cvUrl: '',
       columnId: columns[0]?.id || '', clientType: 'comprador',
+      contractDuration: contractDefault,
     });
     setDuplicateToSeller(false);
   };
@@ -373,6 +379,24 @@ export function AddLeadDialog({
                 onChange={(e) => setFormData({ ...formData, cvUrl: e.target.value })}
                 placeholder="https://..."
               />
+            </div>
+          )}
+
+          {/* Duração Contrato para vendedores */}
+          {leadFlow === 'vendedores' && !isRecruitment && (
+            <div className="grid gap-2">
+              <Label>Duração do Contrato</Label>
+              <Select
+                value={formData.contractDuration}
+                onValueChange={v => setFormData({ ...formData, contractDuration: v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar duração" /></SelectTrigger>
+                <SelectContent>
+                  {contractOptions.map(opt => (
+                    <SelectItem key={opt} value={String(opt)}>{opt} dias</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 

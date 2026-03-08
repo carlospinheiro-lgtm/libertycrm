@@ -20,6 +20,7 @@ export interface KanbanLead {
   nextActivityDescription?: string;
   cvUrl?: string;
   clientType?: 'comprador' | 'vendedor' | 'ambos';
+  contractDuration?: string;
 }
 
 export interface KanbanColumn {
