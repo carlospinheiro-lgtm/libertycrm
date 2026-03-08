@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import type { LeadTemperature, Source, SourceCategory } from '@/types';
 import type { KanbanLead, KanbanColumn } from '@/hooks/useKanbanState';
 import { defaultSources, sourceCategoryLabels } from '@/types';
+import { useContractDurationSettings } from '@/hooks/useAgencySettings';
 
 // ✅ Colunas do pipeline Vendedores para duplicação
 const vendedoresColumns: KanbanColumn[] = [

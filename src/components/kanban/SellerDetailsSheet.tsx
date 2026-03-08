@@ -117,7 +117,7 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
         seller_exclusivity: lead.sellerExclusivity || '',
         temperature: lead.temperature || 'warm',
         commission_percentage: lead.commissionPercentage?.toString() || '',
-        contract_duration: lead.contractDuration || '',
+        contract_duration: lead.contractDuration || contractDefault,
         property_typology: Array.isArray((lead as any).propertyTypology) ? (lead as any).propertyTypology : (lead as any).propertyTypology ? [(lead as any).propertyTypology] : [],
       });
     }
