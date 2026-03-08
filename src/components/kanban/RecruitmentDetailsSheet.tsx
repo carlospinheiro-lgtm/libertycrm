@@ -154,6 +154,13 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     candidate_notes: '',
   });
 
+  const [movePipeline, setMovePipeline] = useState('recruitment');
+  const [moveStage, setMoveStage] = useState('');
+
+  useEffect(() => {
+    setMoveStage('');
+  }, [movePipeline]);
+
   const [interactionNote, setInteractionNote] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
