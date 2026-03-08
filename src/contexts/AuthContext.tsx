@@ -273,12 +273,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(null);
   }, []);
   
+  const isSuperAdmin = currentUser?.isSuperAdmin ?? false;
+
   const value: AuthContextType = {
     user,
     session,
     isLoading,
     currentUser,
     isAuthenticated,
+    isSuperAdmin,
     hasPermission: hasPermissionCheck,
     hasAnyPermission: hasAnyPermissionCheck,
     getMaxScope,

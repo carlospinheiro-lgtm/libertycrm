@@ -173,6 +173,9 @@ export interface RBACUser {
   roles: AppRole[];
   // Para Assistente de Agente - operar em nome de um agente
   assignedAgentId?: string;
+  // Multi-tenant SaaS
+  isSuperAdmin?: boolean;
+  organizationId?: string;
 }
 
 export interface UserRole {
