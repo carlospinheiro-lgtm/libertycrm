@@ -149,6 +149,8 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
         contract_duration: lead.contractDuration || contractDefault,
         property_typology: Array.isArray((lead as any).propertyTypology) ? (lead as any).propertyTypology : (lead as any).propertyTypology ? [(lead as any).propertyTypology] : [],
       });
+      setMovePipeline('vendedores');
+      setMoveColumnId('');
     }
   }, [lead]);
 
