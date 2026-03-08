@@ -508,6 +508,54 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
               )}
             </div>
 
+            <Separator />
+
+            {/* Move lead section */}
+            <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-border">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                <p className="text-xs font-medium text-muted-foreground">Mover lead</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Pipeline</Label>
+                  <Select value={movePipeline} onValueChange={v => { setMovePipeline(v); setMoveColumnId(''); }}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vendedores">CRM Vendedores</SelectItem>
+                      <SelectItem value="compradores">CRM Compradores</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Etapa</Label>
+                  <Select value={moveColumnId} onValueChange={setMoveColumnId}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                    <SelectContent>
+                      {currentPipelineColumns.map(col => (
+                        <SelectItem key={col.id} value={col.id}>{col.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleMoveLead} disabled={!moveColumnId}>
+                  <ArrowRightLeft className="h-3 w-3" /> Mover
+                </Button>
+                {movePipeline === 'compradores' && (
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleDuplicateToBuyers} disabled={!moveColumnId}>
+                    <Copy className="h-3 w-3" /> Duplicar para CRM Compradores
+                  </Button>
+                )}
+              </div>
+              {movePipeline === 'compradores' && (
+                <p className="text-[10px] text-muted-foreground">
+                  Cria uma cópia deste contacto no pipeline de Compradores
+                </p>
+              )}
+            </div>
+
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSave} className="flex-1">Guardar</Button>
               <Button variant="destructive" size="icon" onClick={handleDelete}>
