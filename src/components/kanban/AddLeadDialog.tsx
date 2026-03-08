@@ -382,6 +382,24 @@ export function AddLeadDialog({
             </div>
           )}
 
+          {/* Duração Contrato para vendedores */}
+          {leadFlow === 'vendedores' && !isRecruitment && (
+            <div className="grid gap-2">
+              <Label>Duração do Contrato</Label>
+              <Select
+                value={formData.contractDuration}
+                onValueChange={v => setFormData({ ...formData, contractDuration: v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar duração" /></SelectTrigger>
+                <SelectContent>
+                  {contractOptions.map(opt => (
+                    <SelectItem key={opt} value={String(opt)}>{opt} dias</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Próxima Atividade */}
           <div className="grid gap-2">
             <Label>Próxima Atividade</Label>
