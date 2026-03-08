@@ -113,6 +113,11 @@ export function SettingsPanel() {
         <ContractDurationCard agencyId={selectedAgencyId} />
       )}
 
+      {/* Comissionamento */}
+      {selectedAgencyId && (
+        <CommissionSettingsCard agencyId={selectedAgencyId} />
+      )}
+
       {/* Notificações */}
       <Card>
         <CardHeader>
