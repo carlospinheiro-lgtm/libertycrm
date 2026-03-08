@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useRecruitmentInteractions, type RecruitmentInteraction } from '@/hooks/useRecruitmentInteractions';
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
-import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle, CalendarIcon, MapPin, Plus, StickyNote } from 'lucide-react';
+import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle, CalendarIcon, MapPin, Plus, StickyNote, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow, isPast, isToday } from 'date-fns';
 import { pt } from 'date-fns/locale';
