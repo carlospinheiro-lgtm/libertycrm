@@ -181,6 +181,54 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
     }
   };
 
+  const currentPipelineColumns = movePipeline === 'vendedores' ? sellerPipelineColumns : buyerPipelineColumns;
+
+  const handleMoveLead = async () => {
+    if (!moveColumnId) return;
+    if (movePipeline === 'vendedores') {
+      onSave(lead.id, { column_id: moveColumnId });
+      const colTitle = sellerPipelineColumns.find(c => c.id === moveColumnId)?.title || moveColumnId;
+      toast.success(`Lead movida para ${colTitle}`);
+    } else {
+      // Duplicate to buyer pipeline
+      const { error } = await supabase.from('leads').insert({
+        client_name: lead.clientName,
+        phone: lead.phone || null,
+        email: lead.email || null,
+        agency_id: agencyId!,
+        user_id: user!.id,
+        lead_type: 'buyer',
+        column_id: moveColumnId,
+        temperature: lead.temperature || 'warm',
+      });
+      if (error) {
+        toast.error('Erro ao duplicar lead: ' + error.message);
+        return;
+      }
+      toast.success('✅ Lead duplicada para CRM Compradores');
+    }
+    onOpenChange(false);
+  };
+
+  const handleDuplicateToBuyers = async () => {
+    if (!moveColumnId || !agencyId || !user) return;
+    const { error } = await supabase.from('leads').insert({
+      client_name: lead.clientName,
+      phone: lead.phone || null,
+      email: lead.email || null,
+      agency_id: agencyId,
+      user_id: user.id,
+      lead_type: 'buyer',
+      column_id: moveColumnId,
+      temperature: lead.temperature || 'warm',
+    });
+    if (error) {
+      toast.error('Erro ao duplicar lead: ' + error.message);
+      return;
+    }
+    toast.success('✅ Lead duplicada para CRM Compradores');
+  };
+
   const handleAddInteraction = (type: string) => {
     if (!agencyId) return;
     addInteraction.mutate({
