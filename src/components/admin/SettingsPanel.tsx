@@ -19,11 +19,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Save, Bell, Mail, Shield, Clock, FileText, Plus, X } from 'lucide-react';
+import { Save, Bell, Mail, Shield, Clock, FileText, Plus, X, DollarSign } from 'lucide-react';
 import { LeadSettingsCard } from './LeadSettingsCard';
 import { useAgencies } from '@/hooks/useAgencies';
-import { useContractDurationSettings, useUpdateContractDurationSettings } from '@/hooks/useAgencySettings';
+import {
+  useContractDurationSettings, useUpdateContractDurationSettings,
+  useCommissionTable, useCommissionSplit, useCommissionRental,
+  useUpdateCommissionSettings,
+  type CommissionTier, DEFAULT_COMMISSION_TIERS,
+} from '@/hooks/useAgencySettings';
 
 export function SettingsPanel() {
   const { data: agencies } = useAgencies();
@@ -103,6 +111,11 @@ export function SettingsPanel() {
       {/* Contratos de Angariação */}
       {selectedAgencyId && (
         <ContractDurationCard agencyId={selectedAgencyId} />
+      )}
+
+      {/* Comissionamento */}
+      {selectedAgencyId && (
+        <CommissionSettingsCard agencyId={selectedAgencyId} />
       )}
 
       {/* Notificações */}
@@ -347,6 +360,214 @@ function ContractDurationCard({ agencyId }: { agencyId: string }) {
           <Save className="h-4 w-4" />
           Guardar
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CommissionSettingsCard({ agencyId }: { agencyId: string }) {
+  const { data: tableSettings } = useCommissionTable(agencyId);
+  const { data: splitSettings } = useCommissionSplit(agencyId);
+  const { data: rentalSettings } = useCommissionRental(agencyId);
+  const updateSettings = useUpdateCommissionSettings();
+
+  const [tiers, setTiers] = useState<CommissionTier[]>(DEFAULT_COMMISSION_TIERS);
+  const [rentalMonths, setRentalMonths] = useState(1.5);
+  const [agentSplit, setAgentSplit] = useState(50);
+  const [coMediacaoSplit, setCoMediacaoSplit] = useState(50);
+
+  useEffect(() => {
+    if (tableSettings) setTiers(tableSettings.tiers);
+  }, [tableSettings]);
+
+  useEffect(() => {
+    if (rentalSettings) setRentalMonths(rentalSettings.months);
+  }, [rentalSettings]);
+
+  useEffect(() => {
+    if (splitSettings) {
+      setAgentSplit(splitSettings.agentSplit);
+      setCoMediacaoSplit(splitSettings.coMediacaoSplit);
+    }
+  }, [splitSettings]);
+
+  const updateTier = (idx: number, field: keyof CommissionTier, value: string) => {
+    setTiers(prev => prev.map((t, i) => i === idx ? { ...t, [field]: field === 'from' ? Number(value) : field === 'to' ? (value === '' ? null : Number(value)) : value } : t));
+  };
+
+  const addTier = () => {
+    const lastTo = tiers.length > 0 ? (tiers[tiers.length - 1].to ?? 999999) : 0;
+    setTiers(prev => [...prev, { from: lastTo + 1, to: null, fee1: '5%', fee2: '4%' }]);
+  };
+
+  const removeTier = (idx: number) => {
+    setTiers(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const saveTable = () => {
+    updateSettings.mutate(
+      { agencyId, settingKey: 'commission_table', settingValue: { tiers } },
+      { onSuccess: () => toast.success('Tabela de honorários guardada') }
+    );
+  };
+
+  const saveRental = () => {
+    updateSettings.mutate(
+      { agencyId, settingKey: 'commission_rental', settingValue: { months: rentalMonths } },
+      { onSuccess: () => toast.success('Honorários de arrendamento guardados') }
+    );
+  };
+
+  const saveSplits = () => {
+    updateSettings.mutate(
+      { agencyId, settingKey: 'commission_split', settingValue: { agentSplit, coMediacaoSplit } },
+      { onSuccess: () => toast.success('Divisões de comissão guardadas') }
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base">Comissionamento</CardTitle>
+        </div>
+        <CardDescription>Tabela de honorários, arrendamento e divisão de comissões</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* 2a. Tabela de Honorários (Venda) */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm">Tabela de Honorários (Venda)</h4>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Valor (de)</TableHead>
+                  <TableHead className="text-xs">Valor (até)</TableHead>
+                  <TableHead className="text-xs">Honorário 1</TableHead>
+                  <TableHead className="text-xs">Honorário 2</TableHead>
+                  <TableHead className="text-xs w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tiers.map((tier, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell className="p-1">
+                      <Input className="h-8 text-xs" type="number" value={tier.from} onChange={e => updateTier(idx, 'from', e.target.value)} />
+                    </TableCell>
+                    <TableCell className="p-1">
+                      <Input className="h-8 text-xs" placeholder="∞" value={tier.to ?? ''} onChange={e => updateTier(idx, 'to', e.target.value)} />
+                    </TableCell>
+                    <TableCell className="p-1">
+                      <Input className="h-8 text-xs" value={tier.fee1} onChange={e => updateTier(idx, 'fee1', e.target.value)} />
+                    </TableCell>
+                    <TableCell className="p-1">
+                      <Input className="h-8 text-xs" value={tier.fee2} onChange={e => updateTier(idx, 'fee2', e.target.value)} />
+                    </TableCell>
+                    <TableCell className="p-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeTier(idx)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={addTier}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar escalão
+            </Button>
+            <Button size="sm" onClick={saveTable} disabled={updateSettings.isPending}>
+              <Save className="h-4 w-4 mr-1" /> Guardar Tabela
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Valores em regime de exclusividade. IVA acresce sempre.
+          </p>
+        </div>
+
+        <Separator />
+
+        {/* 2b. Arrendamento */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm">Arrendamento</h4>
+          <div className="space-y-1">
+            <Label className="text-xs">Honorários de arrendamento (rendas)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="0.1"
+                min={0}
+                value={rentalMonths}
+                onChange={e => setRentalMonths(parseFloat(e.target.value) || 0)}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">rendas</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Número de rendas mensais cobradas como honorário.</p>
+          </div>
+          <Button size="sm" onClick={saveRental} disabled={updateSettings.isPending}>
+            <Save className="h-4 w-4 mr-1" /> Guardar
+          </Button>
+        </div>
+
+        <Separator />
+
+        {/* 2c. Divisão de Comissão */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm">Divisão de Comissão</h4>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Divisão padrão angariador / vendedor</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={agentSplit}
+                onChange={e => setAgentSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                className="w-20 text-center"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+              <span className="text-muted-foreground">/</span>
+              <Input
+                type="number"
+                value={100 - agentSplit}
+                disabled
+                className="w-20 text-center bg-muted"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Divisão padrão em co-mediação</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={coMediacaoSplit}
+                onChange={e => setCoMediacaoSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                className="w-20 text-center"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+              <span className="text-muted-foreground">/</span>
+              <Input
+                type="number"
+                value={100 - coMediacaoSplit}
+                disabled
+                className="w-20 text-center bg-muted"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+          </div>
+
+          <Button size="sm" onClick={saveSplits} disabled={updateSettings.isPending}>
+            <Save className="h-4 w-4 mr-1" /> Guardar Divisões
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -14,7 +14,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Flame, Sun, Snowflake, Circle, Trash2, CalendarIcon,
-  Phone, Mail, MessageCircle, Plus, X, Clock, MapPin, CheckCircle,
+  Phone, Mail, MessageCircle, Plus, X, Clock, MapPin, CheckCircle, Calculator,
 } from 'lucide-react';
 import { format, formatDistanceToNow, isBefore, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -23,6 +23,7 @@ import { useSellerInteractions, type SellerInteraction } from '@/hooks/useSeller
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContractDurationSettings } from '@/hooks/useAgencySettings';
+import { CommissionCalculator } from '@/components/commission/CommissionCalculator';
 import { toast } from 'sonner';
 import type { SellerCardLead } from './SellerKanbanCard';
 
@@ -322,7 +323,29 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
 
             <div className="space-y-1">
               <Label className="text-xs">Valor Estimado (€)</Label>
-              <Input type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} placeholder="0" />
+              <div className="flex gap-2">
+                <Input type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} placeholder="0" className="flex-1" />
+                {agencyId && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0" title="Calcular comissão">
+                        <Calculator className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="end">
+                      <CommissionCalculator
+                        propertyValue={Number(form.estimated_value) || 0}
+                        isExclusivity={form.seller_exclusivity === 'sim'}
+                        agencyId={agencyId}
+                        onSelectCommission={(pct) => {
+                          setForm(prev => ({ ...prev, commission_percentage: String(pct) }));
+                          toast.success(`Comissão de ${pct}% aplicada`);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
             </div>
 
             {/* Next action with calendar */}
