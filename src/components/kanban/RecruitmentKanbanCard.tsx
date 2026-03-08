@@ -39,6 +39,10 @@ export interface RecruitmentCardLead {
   source?: string | null;
   cvUrl?: string | null;
   createdAt?: string;
+  candidateProfession?: string | null;
+  candidateZone?: string | null;
+  candidateMotivation?: string | null;
+  candidateNotes?: string | null;
 }
 
 interface Props {
