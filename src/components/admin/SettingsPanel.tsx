@@ -19,11 +19,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Save, Bell, Mail, Shield, Clock, FileText, Plus, X } from 'lucide-react';
+import { Save, Bell, Mail, Shield, Clock, FileText, Plus, X, DollarSign } from 'lucide-react';
 import { LeadSettingsCard } from './LeadSettingsCard';
 import { useAgencies } from '@/hooks/useAgencies';
-import { useContractDurationSettings, useUpdateContractDurationSettings } from '@/hooks/useAgencySettings';
+import {
+  useContractDurationSettings, useUpdateContractDurationSettings,
+  useCommissionTable, useCommissionSplit, useCommissionRental,
+  useUpdateCommissionSettings,
+  type CommissionTier, DEFAULT_COMMISSION_TIERS,
+} from '@/hooks/useAgencySettings';
 
 export function SettingsPanel() {
   const { data: agencies } = useAgencies();
