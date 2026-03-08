@@ -100,6 +100,11 @@ export function SettingsPanel() {
         </CardContent>
       </Card>
 
+      {/* Contratos de Angariação */}
+      {selectedAgencyId && (
+        <ContractDurationCard agencyId={selectedAgencyId} />
+      )}
+
       {/* Notificações */}
       <Card>
         <CardHeader>
