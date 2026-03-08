@@ -213,8 +213,8 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
     setForm({ ...form, property_typology: (form.property_typology || []).filter((_: string, i: number) => i !== idx) });
   };
 
-  const notes = interactions.filter((i: SellerInteraction) => i.type === 'note');
-  const contactInteractions = interactions.filter((i: SellerInteraction) => i.type !== 'note');
+  const notes = interactions.filter((i: SellerInteraction) => (i.type as string) === 'note');
+  const contactInteractions = interactions.filter((i: SellerInteraction) => (i.type as string) !== 'note');
   const visits = tasks.filter((t: any) => t.title?.startsWith('Visita:'));
   const regularTasks = tasks.filter((t: any) => !t.title?.startsWith('Visita:'));
 
