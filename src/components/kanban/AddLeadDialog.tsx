@@ -44,6 +44,7 @@ interface AddLeadDialogProps {
   onAdd: (lead: KanbanLead, duplicateToSeller?: boolean) => void;
   isRecruitment?: boolean;
   leadFlow?: 'vendedores' | 'compradores';
+  agencyId?: string;
 }
 
 // ✅ Tipo de cliente
