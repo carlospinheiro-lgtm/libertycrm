@@ -181,14 +181,24 @@ export function RecruitmentKanbanCard({
     >
       <CardContent className="p-3 space-y-1.5">
 
-        {/* Row 1: Nome + Experiência */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Row 1: Nome + Experiência + Temperatura */}
+        <div className="flex items-center gap-1.5">
           <p className="font-semibold text-sm truncate flex-1">{lead.clientName}</p>
-          {lead.experienceLevel && (
-            <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 shrink-0 border', expColors[lead.experienceLevel] || 'bg-muted text-muted-foreground')}>
-              {expLabels[lead.experienceLevel] || 'N/D'}
-            </Badge>
-          )}
+          <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 shrink-0 border', expColors[lead.experienceLevel || ''] || 'bg-muted text-muted-foreground')}>
+            {expLabels[lead.experienceLevel || ''] || 'N/D'}
+          </Badge>
+          {(() => {
+            const temp = tempBadgeConfig[lead.temperature];
+            return temp ? (
+              <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 shrink-0 border', temp.colors)}>
+                {temp.emoji} {temp.label}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border bg-muted text-muted-foreground">
+                ○ N/D
+              </Badge>
+            );
+          })()}
         </div>
 
         {/* Row 2: Badge Recrutamento + Origem */}
