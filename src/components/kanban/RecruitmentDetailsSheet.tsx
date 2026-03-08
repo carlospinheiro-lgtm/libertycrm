@@ -13,7 +13,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useRecruitmentInteractions, type RecruitmentInteraction } from '@/hooks/useRecruitmentInteractions';
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
-import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle, CalendarIcon, MapPin, Plus, StickyNote, ExternalLink } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Phone, Mail, MessageCircle, Users, FileText, Trash2, CheckCircle, CalendarIcon, MapPin, Plus, StickyNote, ExternalLink, ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow, isPast, isToday } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -72,6 +73,44 @@ const pipelineColumns: Record<string, string> = {
   'nao-avancou': 'Não Avançou',
 };
 
+const pipelineStages: Record<string, { value: string; label: string }[]> = {
+  recruitment: [
+    { value: 'novo-lead', label: 'Novo Lead' },
+    { value: 'contactado', label: 'Contactado' },
+    { value: 'entrevista-agendada', label: 'Entrevista Agendada' },
+    { value: 'entrevistado', label: 'Entrevistado' },
+    { value: 'em-decisao', label: 'Em Decisão' },
+    { value: 'integrado', label: 'Integrado' },
+    { value: 'nao-avancou', label: 'Não Avançou' },
+  ],
+  buyer: [
+    { value: 'novo', label: 'Novo' },
+    { value: 'contacto-feito', label: 'Contacto Feito' },
+    { value: 'qualificacao', label: 'Qualificação' },
+    { value: 'ativo', label: 'Ativo' },
+    { value: 'visitas', label: 'Visitas' },
+    { value: 'proposta-negociacao', label: 'Proposta/Negociação' },
+    { value: 'reserva-cpcv', label: 'Reserva/CPCV' },
+    { value: 'perdido-followup', label: 'Perdido/Follow-up' },
+  ],
+  seller: [
+    { value: 'novo', label: 'Novo' },
+    { value: 'contacto-feito', label: 'Contacto Feito' },
+    { value: 'avaliacao', label: 'Avaliação/Estudo de Mercado' },
+    { value: 'apresentacao', label: 'Apresentação de Serviços' },
+    { value: 'negociacao', label: 'Negociação' },
+    { value: 'angariacao', label: 'Angariação' },
+    { value: 'angariacao-reservada', label: 'Angariação Reservada' },
+    { value: 'perdido-followup', label: 'Perdido/Follow-up' },
+  ],
+};
+
+const pipelineLabels: Record<string, string> = {
+  recruitment: 'CRM Recrutamento',
+  buyer: 'CRM Compradores',
+  seller: 'CRM Vendedores',
+};
+
 const interactionTypeLabels: Record<string, { emoji: string; label: string }> = {
   call: { emoji: '📞', label: 'Chamada' },
   whatsapp: { emoji: '💬', label: 'WhatsApp' },
@@ -114,6 +153,13 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     candidate_motivation: '',
     candidate_notes: '',
   });
+
+  const [movePipeline, setMovePipeline] = useState('recruitment');
+  const [moveStage, setMoveStage] = useState('');
+
+  useEffect(() => {
+    setMoveStage('');
+  }, [movePipeline]);
 
   const [interactionNote, setInteractionNote] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -181,6 +227,35 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     });
     setInteractionNote('');
     toast.success('Nota adicionada');
+  };
+  const handleMoveLead = async () => {
+    if (!moveStage || !agencyId) {
+      toast.error('Seleciona uma etapa');
+      return;
+    }
+
+    if (movePipeline === 'recruitment') {
+      onSave(lead.id, { column_id: moveStage });
+      const stageLabel = pipelineStages.recruitment.find(s => s.value === moveStage)?.label || moveStage;
+      toast.success(`Lead movida para ${stageLabel}`);
+    } else {
+      const leadType = movePipeline === 'buyer' ? 'buyer' : 'seller';
+      const { error } = await supabase.from('leads').insert({
+        client_name: lead.clientName,
+        phone: lead.phone || null,
+        email: lead.email || null,
+        agency_id: agencyId,
+        user_id: user!.id,
+        lead_type: leadType,
+        column_id: moveStage,
+        temperature: 'warm',
+      });
+      if (error) {
+        toast.error('Erro ao duplicar: ' + error.message);
+        return;
+      }
+      toast.success(`✅ Candidato duplicado para ${pipelineLabels[movePipeline]}`);
+    }
   };
 
   const handleAddTask = () => {
@@ -408,6 +483,54 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
               </div>
               <p className="text-xs text-muted-foreground">
                 Partilha o ficheiro com permissão "qualquer pessoa com o link pode ver" antes de colar aqui
+              </p>
+            </div>
+
+            <Separator />
+
+            {/* Mover lead */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+                <h4 className="font-medium text-sm">Mover lead</h4>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Pipeline</Label>
+                  <Select value={movePipeline} onValueChange={setMovePipeline}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recruitment">CRM Recrutamento</SelectItem>
+                      <SelectItem value="buyer">CRM Compradores</SelectItem>
+                      <SelectItem value="seller">CRM Vendedores</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Etapa</Label>
+                  <Select value={moveStage} onValueChange={setMoveStage}>
+                    <SelectTrigger><SelectValue placeholder="Selecionar etapa..." /></SelectTrigger>
+                    <SelectContent>
+                      {pipelineStages[movePipeline]?.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                disabled={!moveStage}
+                onClick={handleMoveLead}
+              >
+                <ArrowLeftRight className="h-4 w-4" /> Mover
+              </Button>
+
+              <p className="text-xs text-muted-foreground">
+                Mover dentro do recrutamento altera a etapa. Mover para outro pipeline cria uma cópia do contacto.
               </p>
             </div>
 

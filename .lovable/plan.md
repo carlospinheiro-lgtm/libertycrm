@@ -1,32 +1,30 @@
 
 
-## Plano: Secção "Mover lead" no RecruitmentDetailsSheet
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### Alterações em `src/components/kanban/RecruitmentDetailsSheet.tsx`
+### 1. Sheet → Dialog (centrado no ecrã)
 
-**Imports**: Adicionar `ArrowLeftRight` de lucide-react, `supabase` de `@/integrations/supabase/client`.
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-**Estado**: Adicionar `movePipeline` (default `'recruitment'`) e `moveStage` (default `''`).
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-**Dados estáticos**: Definir `pipelineStages` com 3 chaves:
-- `recruitment`: 7 etapas do recrutamento (novo-lead, contactado, etc.)
-- `buyer`: 8 etapas dos compradores (novo, contacto-feito, etc.)
-- `seller`: 8 etapas dos vendedores (novo, contacto-feito, avaliacao, etc.)
+### 2. Tipologia multi-seleção (tags)
 
-**Handler `handleMoveLead`**:
-- Se `movePipeline === 'recruitment'`: chama `onSave(lead.id, { column_id: moveStage })` + toast "Lead movida para [etapa]"
-- Se `buyer` ou `seller`: insere novo registo em `leads` via supabase com `lead_type: 'buyer'|'seller'`, copiando `client_name`, `phone`, `email`, `agency_id`, `user_id`, `column_id` + toast "✅ Candidato duplicado para [pipeline]"
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-**UI**: Após o CV e antes dos botões Guardar/Eliminar:
-- `<Separator>`
-- Título com `ArrowLeftRight` + "Mover lead"
-- Select "Pipeline" com 3 opções
-- Select "Etapa" dinâmico baseado no pipeline selecionado
-- Botão "Mover" com ícone `ArrowLeftRight`
-- Texto informativo em `text-xs text-muted-foreground`
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
 
-Reset `moveStage` quando `movePipeline` muda.
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
 
-### Ficheiros editados
-- `src/components/kanban/RecruitmentDetailsSheet.tsx`
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+
+### Ficheiro editado
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 
