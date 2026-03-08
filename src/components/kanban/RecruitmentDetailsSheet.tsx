@@ -486,6 +486,54 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
               </p>
             </div>
 
+            <Separator />
+
+            {/* Mover lead */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+                <h4 className="font-medium text-sm">Mover lead</h4>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Pipeline</Label>
+                  <Select value={movePipeline} onValueChange={setMovePipeline}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recruitment">CRM Recrutamento</SelectItem>
+                      <SelectItem value="buyer">CRM Compradores</SelectItem>
+                      <SelectItem value="seller">CRM Vendedores</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Etapa</Label>
+                  <Select value={moveStage} onValueChange={setMoveStage}>
+                    <SelectTrigger><SelectValue placeholder="Selecionar etapa..." /></SelectTrigger>
+                    <SelectContent>
+                      {pipelineStages[movePipeline]?.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                disabled={!moveStage}
+                onClick={handleMoveLead}
+              >
+                <ArrowLeftRight className="h-4 w-4" /> Mover
+              </Button>
+
+              <p className="text-xs text-muted-foreground">
+                Mover dentro do recrutamento altera a etapa. Mover para outro pipeline cria uma cópia do contacto.
+              </p>
+            </div>
+
             {/* Botões Guardar + Eliminar */}
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSave} className="flex-1">Guardar</Button>
