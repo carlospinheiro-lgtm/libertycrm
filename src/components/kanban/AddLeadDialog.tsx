@@ -65,8 +65,12 @@ const temperatureOptions: { value: LeadTemperature; label: string; icon: React.R
 
 export function AddLeadDialog({
   open, onOpenChange, columns, onAdd,
-  isRecruitment = false, leadFlow = 'compradores',
+  isRecruitment = false, leadFlow = 'compradores', agencyId,
 }: AddLeadDialogProps) {
+  const { data: contractSettings } = useContractDurationSettings(agencyId);
+  const contractOptions = contractSettings?.options ?? [90, 120, 150, 180];
+  const contractDefault = String(contractSettings?.defaultDays ?? 120);
+
   const [formData, setFormData] = useState({
     clientName:              '',
     phone:                   '',
@@ -79,9 +83,9 @@ export function AddLeadDialog({
     nextActivityDate:        undefined as Date | undefined,
     nextActivityDescription: '',
     cvUrl:                   '',
-    // ✅ NOVOS campos
-    columnId:                columns[0]?.id || '',   // Escolher coluna inicial
-    clientType:              'comprador' as ClientType, // Tipo de cliente
+    columnId:                columns[0]?.id || '',
+    clientType:              'comprador' as ClientType,
+    contractDuration:        leadFlow === 'vendedores' ? contractDefault : '',
   });
 
   // ✅ Se "ambos" ou "vendedor", mostrar opção de duplicar no pipeline vendedores
