@@ -228,8 +228,37 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     setInteractionNote('');
     toast.success('Nota adicionada');
   };
+  const handleMoveLead = async () => {
+    if (!moveStage || !agencyId) {
+      toast.error('Seleciona uma etapa');
+      return;
+    }
 
-  const handleAddTask = () => {
+    if (movePipeline === 'recruitment') {
+      onSave(lead.id, { column_id: moveStage });
+      const stageLabel = pipelineStages.recruitment.find(s => s.value === moveStage)?.label || moveStage;
+      toast.success(`Lead movida para ${stageLabel}`);
+    } else {
+      const leadType = movePipeline === 'buyer' ? 'buyer' : 'seller';
+      const { error } = await supabase.from('leads').insert({
+        client_name: lead.clientName,
+        phone: lead.phone || null,
+        email: lead.email || null,
+        agency_id: agencyId,
+        user_id: user!.id,
+        lead_type: leadType,
+        column_id: moveStage,
+        temperature: 'warm',
+      });
+      if (error) {
+        toast.error('Erro ao duplicar: ' + error.message);
+        return;
+      }
+      toast.success(`✅ Candidato duplicado para ${pipelineLabels[movePipeline]}`);
+    }
+  };
+
+
     if (!agencyId || !newTaskTitle.trim()) return;
     addTask.mutate({
       lead_id: lead.id,
