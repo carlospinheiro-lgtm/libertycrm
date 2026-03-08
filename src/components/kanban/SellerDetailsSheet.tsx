@@ -74,6 +74,9 @@ export function SellerDetailsSheet({ open, onOpenChange, lead, agencyId, onSave,
   const { user } = useAuth();
   const { interactions, addInteraction } = useSellerInteractions(lead?.id);
   const { tasks, addTask, updateTask, deleteTask } = useLeadTasks(lead?.id);
+  const { data: contractSettings } = useContractDurationSettings(agencyId);
+  const contractOptions = contractSettings?.options ?? [90, 120, 150, 180];
+  const contractDefault = String(contractSettings?.defaultDays ?? 120);
 
   const [activeTab, setActiveTab] = useState('dados');
   const [interactionNote, setInteractionNote] = useState('');
