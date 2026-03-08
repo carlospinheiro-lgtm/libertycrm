@@ -40,6 +40,7 @@ interface AuthContextType {
   // Utilizador atual (compatibilidade com sistema RBAC)
   currentUser: RBACUser | null;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   
   // Helpers de permissões
   hasPermission: (permission: PermissionKey) => boolean;
