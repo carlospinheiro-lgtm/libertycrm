@@ -258,7 +258,7 @@ export function RecruitmentDetailsSheet({ open, onOpenChange, lead, agencyId, on
     }
   };
 
-
+  const handleAddTask = () => {
     if (!agencyId || !newTaskTitle.trim()) return;
     addTask.mutate({
       lead_id: lead.id,
