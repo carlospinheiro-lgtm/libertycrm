@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useSellerInteractions, type SellerInteraction } from '@/hooks/useSellerInteractions';
 import { useLeadTasks } from '@/hooks/useLeadTasks';
 import { useAuth } from '@/contexts/AuthContext';
+import { useContractDurationSettings } from '@/hooks/useAgencySettings';
 import { toast } from 'sonner';
 import type { SellerCardLead } from './SellerKanbanCard';
 
