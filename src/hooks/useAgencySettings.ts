@@ -118,3 +118,71 @@ export function useContractDurationSettings(agencyId: string | undefined) {
 export function useUpdateContractDurationSettings() {
   return useUpsertAgencySetting();
 }
+
+// Commission Table Settings
+export interface CommissionTier {
+  from: number;
+  to: number | null;
+  fee1: string;
+  fee2: string;
+}
+
+export interface CommissionTableSettings {
+  tiers: CommissionTier[];
+}
+
+export const DEFAULT_COMMISSION_TIERS: CommissionTier[] = [
+  { from: 0, to: 20000, fee1: '20%', fee2: '15%' },
+  { from: 20001, to: 50000, fee1: '5000€', fee2: '4000€' },
+  { from: 50001, to: 100000, fee1: '6000€', fee2: '5000€' },
+  { from: 100001, to: 999999, fee1: '6%', fee2: '5%' },
+  { from: 1000000, to: null, fee1: '5%', fee2: '4%' },
+];
+
+export function useCommissionTable(agencyId: string | undefined) {
+  const query = useAgencySetting<CommissionTableSettings>(agencyId, 'commission_table');
+  return {
+    ...query,
+    data: query.data ?? { tiers: DEFAULT_COMMISSION_TIERS },
+  };
+}
+
+// Commission Split Settings
+export interface CommissionSplitSettings {
+  agentSplit: number;
+  coMediacaoSplit: number;
+}
+
+const DEFAULT_COMMISSION_SPLIT: CommissionSplitSettings = {
+  agentSplit: 50,
+  coMediacaoSplit: 50,
+};
+
+export function useCommissionSplit(agencyId: string | undefined) {
+  const query = useAgencySetting<CommissionSplitSettings>(agencyId, 'commission_split');
+  return {
+    ...query,
+    data: query.data ?? DEFAULT_COMMISSION_SPLIT,
+  };
+}
+
+// Commission Rental Settings
+export interface CommissionRentalSettings {
+  months: number;
+}
+
+const DEFAULT_COMMISSION_RENTAL: CommissionRentalSettings = {
+  months: 1.5,
+};
+
+export function useCommissionRental(agencyId: string | undefined) {
+  const query = useAgencySetting<CommissionRentalSettings>(agencyId, 'commission_rental');
+  return {
+    ...query,
+    data: query.data ?? DEFAULT_COMMISSION_RENTAL,
+  };
+}
+
+export function useUpdateCommissionSettings() {
+  return useUpsertAgencySetting();
+}
