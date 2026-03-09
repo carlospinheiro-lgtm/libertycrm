@@ -11,6 +11,8 @@ import { format, isBefore, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AddDealSheet } from '@/components/processos/AddDealSheet';
+import { DealDetailsSheet } from '@/components/processos/DealDetailsSheet';
 
 const STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: 'Referência', className: 'bg-muted text-muted-foreground' },
