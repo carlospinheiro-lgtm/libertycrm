@@ -239,7 +239,7 @@ export default function Processos() {
                 <FileText className="h-12 w-12 text-muted-foreground/40 mb-4" />
                 <h3 className="text-lg font-semibold mb-1">Sem processos</h3>
                 <p className="text-muted-foreground text-sm mb-4">Ainda não existem processos registados.</p>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => setNewDealOpen(true)}>
                   <Plus className="h-4 w-4" />
                   Adicionar primeiro processo
                 </Button>
