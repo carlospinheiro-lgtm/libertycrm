@@ -193,10 +193,16 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
               {/* FINANCEIRO */}
               <TabsContent value="financeiro" className="space-y-4 mt-4">
                 <FieldGrid>
+                  <Field label="Comissão Consultor (€)" value={fin.consultant_commission} onChange={v => setFin(p => ({ ...p, consultant_commission: v }))} type="number" />
                   <Field label="Comissão Loja (€)" value={fin.commission_store} onChange={v => setFin(p => ({ ...p, commission_store: v }))} type="number" />
                   <Field label="Comissão Remax (€)" value={fin.commission_remax} onChange={v => setFin(p => ({ ...p, commission_remax: v }))} type="number" />
                   <Field label="Margem (€)" value={fin.margin} onChange={v => setFin(p => ({ ...p, margin: v }))} type="number" />
-                  <Field label="Desconto Despesas (%)" value={fin.discount_pct} onChange={v => setFin(p => ({ ...p, discount_pct: v }))} type="number" />
+                  <Field label="Desconto Despesas (%)" value={fin.discount_pct} onChange={v => {
+                    const pct = parseFloat(v) || 0;
+                    const commission = parseFloat(fin.consultant_commission) || 0;
+                    const calculatedDiscount = commission * (pct / 100);
+                    setFin(p => ({ ...p, discount_pct: v, expense_discount: pct === 0 ? '' : calculatedDiscount.toFixed(2) }));
+                  }} type="number" />
                   <Field label="Valor Desconto (€)" value={fin.expense_discount} onChange={v => setFin(p => ({ ...p, expense_discount: v }))} type="number" />
                   <Field label="Margem Comercial (€)" value={fin.primary_margin} onChange={v => setFin(p => ({ ...p, primary_margin: v }))} type="number" />
                   <Field label="Nº Fatura" value={fin.invoice_number} onChange={v => setFin(p => ({ ...p, invoice_number: v }))} />
