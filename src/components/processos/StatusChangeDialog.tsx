@@ -108,7 +108,7 @@ export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
                 <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} placeholder="FAT-001" />
               </div>
               <div className="space-y-1.5">
-                <Label>Data Emissão</Label>
+                <Label>Data Fatura</Label>
                 <DatePick value={invoiceDate} onChange={setInvoiceDate} />
               </div>
             </>
