@@ -3,7 +3,8 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useDeals, Deal, useUpdateDeal } from '@/hooks/useDeals';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useConsultants } from '@/hooks/useConsultants';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -51,19 +52,7 @@ export default function Pagamentos() {
   const [markingPaid, setMarkingPaid] = useState(false);
 
   // Fetch consultants for tier/commission info
-  const { data: consultants = [] } = useQuery({
-    queryKey: ['consultants', agencyId],
-    queryFn: async () => {
-      if (!agencyId) return [];
-      const { data, error } = await supabase
-        .from('consultants')
-        .select('name, tier, commission_pct')
-        .eq('agency_id', agencyId);
-      if (error) throw error;
-      return (data || []) as { name: string; tier: string | null; commission_pct: number | null }[];
-    },
-    enabled: !!agencyId,
-  });
+  const { data: consultants = [] } = useConsultants();
 
   const consultantMap = useMemo(() => {
     const map = new Map<string, ConsultantInfo>();

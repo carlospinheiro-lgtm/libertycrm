@@ -19,9 +19,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConsultants } from '@/hooks/useConsultants';
 
 const STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: 'Referência', className: 'bg-muted text-muted-foreground' },
@@ -57,28 +56,11 @@ function formatDate(dateStr: string | null | undefined) {
 }
 
 function ConsultantCell({ deal }: { deal: Deal }) {
-  const { currentUser } = useAuth();
-  const agencyId = currentUser?.agencyId;
   const updateDeal = useUpdateDeal();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  const { data: consultants = [] } = useQuery({
-    queryKey: ['consultants-list', agencyId],
-    queryFn: async () => {
-      if (!agencyId) return [];
-      const { data, error } = await supabase
-        .from('consultants')
-        .select('id, name, nif, commission_pct')
-        .eq('agency_id', agencyId)
-        .eq('is_active', true)
-        .order('name');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!agencyId,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: consultants = [] } = useConsultants();
 
   const filtered = consultants.filter(c => {
     if (!search) return true;
