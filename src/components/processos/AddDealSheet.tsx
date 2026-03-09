@@ -53,8 +53,16 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
   };
 
   const handleSave = async () => {
-    if (!pvNumber.trim() || !dealType || !consultantName.trim() || !saleValue || !commissionPct || !address.trim()) {
-      toast.error('Preencha todos os campos obrigatórios');
+    const missing: string[] = [];
+    if (!pvNumber.trim()) missing.push('Nº PV');
+    if (!dealType) missing.push('Tipo');
+    if (!consultantName.trim()) missing.push('Consultor');
+    if (saleValue === '' || saleValue === undefined) missing.push('Valor Venda');
+    if (commissionPct === '' || commissionPct === undefined) missing.push('% Comissão');
+    if (!address.trim()) missing.push('Morada');
+
+    if (missing.length > 0) {
+      toast.error(`Campos obrigatórios em falta: ${missing.join(', ')}`);
       return;
     }
 
@@ -81,7 +89,12 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao criar processo');
+      console.error('Erro ao criar processo:', err);
+      if (err.message === 'Sem agência') {
+        toast.error('Erro: sem agência associada ao utilizador. Contacte o administrador.');
+      } else {
+        toast.error(err.message || 'Erro ao criar processo');
+      }
     }
   };
 
