@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import LeadsCompradores from "./pages/LeadsCompradores";
 import LeadsVendedores from "./pages/LeadsVendedores";
 import Recrutamento from "./pages/Recrutamento";
+import Processos from "./pages/Processos";
 
 import Objetivos from "./pages/Objetivos";
 import Origens from "./pages/Origens";
