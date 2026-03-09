@@ -51,19 +51,7 @@ export default function Pagamentos() {
   const [markingPaid, setMarkingPaid] = useState(false);
 
   // Fetch consultants for tier/commission info
-  const { data: consultants = [] } = useQuery({
-    queryKey: ['consultants', agencyId],
-    queryFn: async () => {
-      if (!agencyId) return [];
-      const { data, error } = await supabase
-        .from('consultants')
-        .select('name, tier, commission_pct')
-        .eq('agency_id', agencyId);
-      if (error) throw error;
-      return (data || []) as { name: string; tier: string | null; commission_pct: number | null }[];
-    },
-    enabled: !!agencyId,
-  });
+  const { data: consultants = [] } = useConsultants();
 
   const consultantMap = useMemo(() => {
     const map = new Map<string, ConsultantInfo>();
