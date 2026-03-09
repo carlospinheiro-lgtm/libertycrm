@@ -1,30 +1,23 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Converter Honorários % de decimal para percentagem
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### Problema
+O Excel tem `0.40` (formato decimal) mas `parseNum` guarda diretamente como `0.40`, resultando em "0.4%" na UI em vez de "40%".
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+### Alteração em `src/pages/Importacao.tsx`
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+Na linha ~604, após o `parseNum`, multiplicar por 100 se o valor for ≤ 1:
 
-### 2. Tipologia multi-seleção (tags)
+```typescript
+commission_pct: (() => {
+  const raw = parseNum(get(row, 'Honorários %', 'honorarios_%', 'honorarios', 'commission_pct'));
+  return raw !== null && raw > 0 && raw <= 1 ? Math.round(raw * 10000) / 100 : raw;
+})(),
+```
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+Lógica: se `0 < valor ≤ 1`, assume formato decimal e multiplica por 100. Valores já em percentagem (e.g. `40`) ficam inalterados.
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
-
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
-
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
-
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+### Ficheiro
+- `src/pages/Importacao.tsx` — 1 linha alterada
 
