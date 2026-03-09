@@ -315,6 +315,9 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
       existingMap.set(`${d.pv_number}|${d.deal_type}`, d.id);
     });
 
+    let successCount = 0;
+    let failCount = 0;
+
     for (const row of rowsToImport) {
       const baseFields = {
         agency_id: agencyId,
@@ -351,11 +354,23 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
 
         if (existingId) {
           if (action === 'update') {
-            await supabase.from('deals').update({ ...baseFields, ...side }).eq('id', existingId);
+            const { error } = await supabase.from('deals').update({ ...baseFields, ...side } as any).eq('id', existingId);
+            if (error) {
+              console.error('Erro ao atualizar deal:', error, { key });
+              failCount++;
+            } else {
+              successCount++;
+            }
           }
           // skip: do nothing
         } else {
-          await supabase.from('deals').insert({ ...baseFields, ...side });
+          const { error } = await supabase.from('deals').insert({ ...baseFields, ...side } as any).select();
+          if (error) {
+            console.error('Erro ao inserir deal:', error, { key, baseFields, side });
+            failCount++;
+          } else {
+            successCount++;
+          }
         }
 
         imported++;
@@ -364,7 +379,11 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
     }
 
     setImporting(false);
-    toast({ title: `✅ ${rowsToImport.length} processos importados (${total} registos)` });
+    if (failCount > 0) {
+      toast({ title: `⚠️ ${successCount} registos criados, ${failCount} falhados`, description: 'Veja a consola para detalhes dos erros.', variant: 'destructive' });
+    } else {
+      toast({ title: `✅ ${rowsToImport.length} processos importados (${successCount} registos criados)` });
+    }
   }, [agencyId, parsed, toast]);
 
   const handleImport = useCallback(async (limit?: number) => {
