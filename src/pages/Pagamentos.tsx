@@ -13,6 +13,11 @@ function formatCurrency(value: number | null | undefined): string {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
+function getCommission(d: Deal): number {
+  if (d.consultant_commission && d.consultant_commission > 0) return d.consultant_commission;
+  return (d.commission_store || 0) * 0.47;
+}
+
 interface ConsultantRow {
   name: string;
   deals: Deal[];
@@ -51,7 +56,7 @@ export default function Pagamentos() {
 
     const rows: ConsultantRow[] = [];
     map.forEach((consultantDeals, name) => {
-      const grossCommission = consultantDeals.reduce((s, d) => s + (d.consultant_commission || 0), 0);
+      const grossCommission = consultantDeals.reduce((s, d) => s + getCommission(d), 0);
       const expenseDiscount = consultantDeals.reduce((s, d) => s + (d.expense_discount || 0), 0);
       rows.push({
         name,
@@ -166,7 +171,7 @@ export default function Pagamentos() {
               </TableHeader>
               <TableBody>
                 {extratoConsultant?.deals.map(d => {
-                  const commission = d.consultant_commission || 0;
+                  const commission = getCommission(d);
                   const discount = d.expense_discount || 0;
                   const hasDiscount = (d.discount_pct ?? 0) > 0;
                   return (

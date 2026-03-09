@@ -1,37 +1,30 @@
 
 
-## Plano: Corrigir Comissão Consultor e adicionar campo % Honorário Consultor
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### Problema
-A `consultant_commission` nos deals está a null/0 porque nunca é preenchida na criação. A página Pagamentos usa esse valor diretamente, logo mostra 0€.
+### 1. Sheet → Dialog (centrado no ecrã)
 
-### Alterações
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-**1. `src/pages/Pagamentos.tsx`** — Fallback no cálculo
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-Na agregação por consultor, quando `consultant_commission` é 0 ou null, usar fallback: `commission_store × 0.47`.
+### 2. Tipologia multi-seleção (tags)
 
-```typescript
-const getCommission = (d: Deal) => {
-  if (d.consultant_commission) return d.consultant_commission;
-  return (d.commission_store || 0) * 0.47;
-};
-```
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-Aplicar este helper no `reduce` do `grossCommission` e no extrato individual.
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
 
-**2. `src/components/processos/AddDealSheet.tsx`** — Novo campo "% Honorário Consultor"
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
 
-- Adicionar estado `consultantPct` (string)
-- Calcular `consultantCommission = commissionStore × (consultantPct / 100)`
-- Mostrar na secção opcional, com o valor calculado em € ao lado (read-only)
-- Incluir `consultant_commission` no payload do save
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
 
-**3. `src/components/processos/DealDetailsSheet.tsx`** — Tab Financeiro
-
-O campo `consultant_commission` já é editável (linha 196). Sem alteração necessária neste ficheiro.
-
-### Ficheiros a alterar
-- `src/pages/Pagamentos.tsx`
-- `src/components/processos/AddDealSheet.tsx`
+### Ficheiro editado
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 

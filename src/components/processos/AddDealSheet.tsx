@@ -39,6 +39,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
   const [cpcvDate, setCpcvDate] = useState<Date>();
   const [deedDate, setDeedDate] = useState<Date>();
   const [notes, setNotes] = useState('');
+  const [consultantPct, setConsultantPct] = useState('');
 
   // Populate fields when editing
   useEffect(() => {
@@ -58,6 +59,12 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       setCpcvDate(deal.cpcv_date ? new Date(deal.cpcv_date) : undefined);
       setDeedDate(deal.deed_date ? new Date(deal.deed_date) : undefined);
       setNotes(deal.notes || '');
+      // Calculate consultantPct from existing data if possible
+      if (deal.consultant_commission && deal.commission_store && deal.commission_store > 0) {
+        setConsultantPct(String(((deal.consultant_commission / deal.commission_store) * 100).toFixed(2)));
+      } else {
+        setConsultantPct('');
+      }
     } else {
       reset();
     }
@@ -71,11 +78,19 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
     return '';
   }, [saleValue, commissionPct]);
 
+  const consultantCommission = useMemo(() => {
+    if (commissionStore && consultantPct) {
+      const calc = parseFloat(commissionStore) * (parseFloat(consultantPct) / 100);
+      return isNaN(calc) ? '' : calc.toFixed(2);
+    }
+    return '';
+  }, [commissionStore, consultantPct]);
+
   const reset = () => {
     setPvNumber(''); setDealType(''); setConsultantName(''); setSaleValue('');
     setCommissionPct(''); setAddress(''); setMunicipality(''); setPartnerAgency('');
     setProcessManager(''); setReportedMonth(format(new Date(), 'yy-MM')); setBuyerName(''); setBuyerNif('');
-    setCpcvDate(undefined); setDeedDate(undefined); setNotes('');
+    setCpcvDate(undefined); setDeedDate(undefined); setNotes(''); setConsultantPct('');
   };
 
   const handleSave = async () => {
@@ -109,6 +124,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       cpcv_date: cpcvDate ? format(cpcvDate, 'yyyy-MM-dd') : null,
       deed_date: deedDate ? format(deedDate, 'yyyy-MM-dd') : null,
       notes: notes.trim() || null,
+      consultant_commission: consultantCommission ? parseFloat(consultantCommission) : null,
     };
 
     try {
@@ -207,6 +223,20 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
               <Label>Mês Reportado</Label>
               <Input value={reportedMonth} onChange={e => setReportedMonth(e.target.value)} placeholder="26-03" />
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>% Honorário Consultor</Label>
+              <Input type="number" value={consultantPct} onChange={e => setConsultantPct(e.target.value)} placeholder="47" />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label>Comissão Consultor (calculada)</Label>
+              <Input type="number" value={consultantCommission} readOnly className="bg-muted" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Nome Comprador</Label>
               <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} />
