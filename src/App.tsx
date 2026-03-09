@@ -22,7 +22,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SuperAdmin from "./pages/SuperAdmin";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient(); // v2
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
