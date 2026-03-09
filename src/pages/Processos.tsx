@@ -221,7 +221,7 @@ export default function Processos() {
               ))}
             </SelectContent>
           </Select>
-          <Button className="gap-2 ml-auto">
+          <Button className="gap-2 ml-auto" onClick={() => setNewDealOpen(true)}>
             <Plus className="h-4 w-4" />
             Novo Processo
           </Button>
