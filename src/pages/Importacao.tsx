@@ -445,10 +445,15 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
           )}
 
           {parsed.length > 0 && !importing && (
-            <Button className="w-full" onClick={handleImport} disabled={importing}>
-              <Upload className="h-4 w-4 mr-2" />
-              Importar {parsed.length} processos ({parsed.length * 2} registos)
-            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => handleImport(10)} disabled={importing}>
+                Testar com 10 registos
+              </Button>
+              <Button className="flex-1" onClick={() => handleImport()} disabled={importing}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar {parsed.length} processos ({parsed.length * 2} registos)
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
