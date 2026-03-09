@@ -39,6 +39,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
   const [cpcvDate, setCpcvDate] = useState<Date>();
   const [deedDate, setDeedDate] = useState<Date>();
   const [notes, setNotes] = useState('');
+  const [consultantPct, setConsultantPct] = useState('');
 
   // Populate fields when editing
   useEffect(() => {

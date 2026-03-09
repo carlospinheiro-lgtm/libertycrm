@@ -171,7 +171,7 @@ export default function Pagamentos() {
               </TableHeader>
               <TableBody>
                 {extratoConsultant?.deals.map(d => {
-                  const commission = d.consultant_commission || 0;
+                  const commission = getCommission(d);
                   const discount = d.expense_discount || 0;
                   const hasDiscount = (d.discount_pct ?? 0) > 0;
                   return (
