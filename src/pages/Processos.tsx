@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Plus, Eye, TrendingUp, Receipt, Wallet, Clock, Search, ArrowUpDown, Pencil, Trash2 } from 'lucide-react';
-import { useDeals, useDeleteDeal, Deal } from '@/hooks/useDeals';
+import { FileText, Plus, Eye, TrendingUp, Receipt, Wallet, Clock, Search, ArrowUpDown, Pencil, Trash2, ChevronDown, Loader2 } from 'lucide-react';
+import { useDeals, useDeleteDeal, useUpdateDeal, Deal } from '@/hooks/useDeals';
 import { format, isBefore, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +17,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: 'Referência', className: 'bg-muted text-muted-foreground' },
@@ -48,8 +52,97 @@ function formatDate(dateStr: string | null | undefined) {
   try {
     return format(new Date(dateStr), 'dd/MM/yyyy');
   } catch {
-    return dateStr;
+    return '—';
   }
+}
+
+function ConsultantCell({ deal }: { deal: Deal }) {
+  const { currentUser } = useAuth();
+  const agencyId = currentUser?.agencyId;
+  const updateDeal = useUpdateDeal();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const { data: consultants = [] } = useQuery({
+    queryKey: ['consultants-list', agencyId],
+    queryFn: async () => {
+      if (!agencyId) return [];
+      const { data, error } = await supabase
+        .from('consultants')
+        .select('id, name, nif, commission_pct')
+        .eq('agency_id', agencyId)
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!agencyId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const filtered = consultants.filter(c => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return c.name.toLowerCase().includes(q) || (c.nif && c.nif.toLowerCase().includes(q));
+  });
+
+  const handleSelect = (consultant: { name: string; commission_pct: number | null }) => {
+    const pct = consultant.commission_pct ?? 47;
+    const commission = (deal.commission_store || 0) * (pct / 100);
+    setOpen(false);
+    setSearch('');
+    updateDeal.mutate(
+      { id: deal.id, consultant_name: consultant.name, consultant_commission: Math.round(commission * 100) / 100 },
+      {
+        onSuccess: () => toast.success(`Consultor atualizado para ${consultant.name}`),
+        onError: () => toast.error('Erro ao atualizar consultor'),
+      }
+    );
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(''); }}>
+      <PopoverTrigger asChild>
+        <button className="group flex items-center gap-1 w-full px-4 py-2 text-left text-sm hover:bg-muted/50 rounded transition-colors">
+          {updateDeal.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          ) : (
+            <>
+              <span className="truncate">{deal.consultant_name || '—'}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <div className="p-2 border-b">
+          <Input
+            placeholder="Pesquisar nome ou NIF..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 text-sm"
+            autoFocus
+          />
+        </div>
+        <div className="max-h-52 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground p-3 text-center">Sem resultados</p>
+          ) : (
+            filtered.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => handleSelect(c)}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between"
+              >
+                <span className="truncate">{c.name}</span>
+                {c.nif && <span className="text-xs text-muted-foreground ml-2 shrink-0">{c.nif}</span>}
+              </button>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function Processos() {
@@ -301,7 +394,9 @@ export default function Processos() {
                               <span className="text-sm text-muted-foreground">{deal.deal_type || '—'}</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm">{deal.consultant_name || '—'}</TableCell>
+                          <TableCell className="text-sm p-0">
+                            <ConsultantCell deal={deal} />
+                          </TableCell>
                           <TableCell className="text-sm max-w-[180px] truncate">{deal.address || '—'}</TableCell>
                           <TableCell className="text-sm font-medium">{formatCurrency(deal.sale_value)}</TableCell>
                           <TableCell className="text-sm">{formatCurrency(deal.commission_store)}</TableCell>
