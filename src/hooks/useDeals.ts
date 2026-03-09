@@ -119,6 +119,20 @@ export function useUpdateDeal() {
   });
 }
 
+export function useDeleteDeal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('deals').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+    },
+  });
+}
+
 export function useChangeStatus() {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();

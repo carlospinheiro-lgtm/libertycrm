@@ -5,14 +5,19 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Plus, Eye, TrendingUp, Receipt, Wallet, Clock, Search, ArrowUpDown } from 'lucide-react';
-import { useDeals, Deal } from '@/hooks/useDeals';
+import { FileText, Plus, Eye, TrendingUp, Receipt, Wallet, Clock, Search, ArrowUpDown, Pencil, Trash2 } from 'lucide-react';
+import { useDeals, useDeleteDeal, Deal } from '@/hooks/useDeals';
 import { format, isBefore, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddDealSheet } from '@/components/processos/AddDealSheet';
 import { DealDetailsSheet } from '@/components/processos/DealDetailsSheet';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 const STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: 'Referência', className: 'bg-muted text-muted-foreground' },
@@ -49,8 +54,11 @@ function formatDate(dateStr: string | null | undefined) {
 
 export default function Processos() {
   const { data: deals = [], isLoading } = useDeals();
+  const deleteDeal = useDeleteDeal();
 
   const [newDealOpen, setNewDealOpen] = useState(false);
+  const [editDeal, setEditDeal] = useState<Deal | null>(null);
+  const [deleteDealTarget, setDeleteDealTarget] = useState<Deal | null>(null);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
   // Filters
@@ -91,7 +99,9 @@ export default function Processos() {
 
     return {
       countThisMonth: thisMonth.length,
-      totalInvoiced: deals.reduce((sum, d) => sum + (d.invoice_value || 0), 0),
+      totalInvoiced: deals
+        .filter(d => (d.deal_status ?? 0) >= 1)
+        .reduce((sum, d) => sum + (d.invoice_value ?? d.commission_store ?? 0), 0),
       totalCommission: deals.reduce((sum, d) => sum + (d.commission_store || 0), 0),
       pendingPayment: deals.filter(d => (d.deal_status ?? 0) < 2).length,
     };
@@ -155,6 +165,17 @@ export default function Processos() {
   const isOverdue = (d: Deal) => {
     if (!d.deed_date) return false;
     return isBefore(new Date(d.deed_date), new Date()) && (d.deal_status ?? 0) < 2;
+  };
+
+  const handleDelete = async () => {
+    if (!deleteDealTarget) return;
+    try {
+      await deleteDeal.mutateAsync(deleteDealTarget.id);
+      toast.success('Processo apagado com sucesso');
+      setDeleteDealTarget(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao apagar processo');
+    }
   };
 
   return (
@@ -260,7 +281,7 @@ export default function Processos() {
                         <SortableHeader label="Estado" field="deal_status" current={sortField} dir={sortDir} onSort={toggleSort} />
                         <TableHead>Escritura</TableHead>
                         <TableHead>Recebimento</TableHead>
-                        <TableHead className="w-[80px]">Ações</TableHead>
+                        <TableHead className="w-[120px]">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -293,9 +314,17 @@ export default function Processos() {
                           <TableCell className="text-sm">{formatDate(deal.deed_date)}</TableCell>
                           <TableCell className="text-sm">{formatDate(deal.received_date)}</TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedDeal(deal)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedDeal(deal)} title="Ver ficha">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditDeal(deal)} title="Editar">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteDealTarget(deal)} title="Apagar">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -322,7 +351,26 @@ export default function Processos() {
       </div>
 
       <AddDealSheet open={newDealOpen} onOpenChange={setNewDealOpen} />
+      <AddDealSheet open={!!editDeal} onOpenChange={open => { if (!open) setEditDeal(null); }} deal={editDeal} />
       <DealDetailsSheet deal={selectedDeal} open={!!selectedDeal} onOpenChange={open => { if (!open) setSelectedDeal(null); }} />
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteDealTarget} onOpenChange={open => { if (!open) setDeleteDealTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar processo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tens a certeza que queres apagar o processo {deleteDealTarget?.pv_number || ''}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
