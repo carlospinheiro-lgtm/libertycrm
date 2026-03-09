@@ -278,6 +278,7 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
   const [duplicateAction, setDuplicateAction] = useState<DuplicateAction>(null);
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [dupCount, setDupCount] = useState(0);
+  const [importLimit, setImportLimit] = useState<number | null>(null);
 
   const handleFile = useCallback(async (f: File) => {
     setFile(f);
@@ -293,14 +294,16 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
     }
   }, [toast]);
 
-  const doImport = useCallback(async (action: DuplicateAction) => {
+  const doImport = useCallback(async (action: DuplicateAction, limit?: number | null) => {
     setImporting(true);
     setProgress(0);
     let imported = 0;
-    const total = parsed.length * 2; // 2 registos por linha
+    
+    const rowsToImport = limit ? parsed.slice(0, limit) : parsed;
+    const total = rowsToImport.length * 2; // 2 registos por linha
 
     // Verificar duplicados existentes
-    const pvNumbers = [...new Set(parsed.map(p => p.pv_number).filter(Boolean))];
+    const pvNumbers = [...new Set(rowsToImport.map(p => p.pv_number).filter(Boolean))];
     const { data: existingDeals } = await supabase
       .from('deals')
       .select('pv_number, deal_type, id')
@@ -312,7 +315,7 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
       existingMap.set(`${d.pv_number}|${d.deal_type}`, d.id);
     });
 
-    for (const row of parsed) {
+    for (const row of rowsToImport) {
       const baseFields = {
         agency_id: agencyId,
         pv_number: row.pv_number || null,
@@ -361,14 +364,17 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
     }
 
     setImporting(false);
-    toast({ title: `✅ ${parsed.length} processos importados (${total} registos)` });
+    toast({ title: `✅ ${rowsToImport.length} processos importados (${total} registos)` });
   }, [agencyId, parsed, toast]);
 
-  const handleImport = useCallback(async () => {
+  const handleImport = useCallback(async (limit?: number) => {
     if (!parsed.length || !agencyId) return;
 
+    setImportLimit(limit || null);
+    const rowsToImport = limit ? parsed.slice(0, limit) : parsed;
+
     // Check for duplicates first
-    const pvNumbers = [...new Set(parsed.map(p => p.pv_number).filter(Boolean))];
+    const pvNumbers = [...new Set(rowsToImport.map(p => p.pv_number).filter(Boolean))];
     const { data: existing } = await supabase
       .from('deals')
       .select('pv_number, deal_type')
@@ -376,7 +382,7 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
       .in('pv_number', pvNumbers);
 
     const existingKeys = new Set(existing?.map(d => `${d.pv_number}|${d.deal_type}`) ?? []);
-    const dups = parsed.reduce((count, row) => {
+    const dups = rowsToImport.reduce((count, row) => {
       return count
         + (existingKeys.has(`${row.pv_number}|AngariaçãoVenda`) ? 1 : 0)
         + (existingKeys.has(`${row.pv_number}|Venda`) ? 1 : 0);
@@ -386,14 +392,14 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
       setDupCount(dups);
       setShowDupDialog(true);
     } else {
-      await doImport(null);
+      await doImport(null, limit);
     }
   }, [parsed, agencyId, doImport]);
 
   const handleDupDecision = useCallback(async (action: DuplicateAction) => {
     setShowDupDialog(false);
-    await doImport(action);
-  }, [doImport]);
+    await doImport(action, importLimit);
+  }, [doImport, importLimit]);
 
   return (
     <div className="space-y-6">
