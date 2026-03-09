@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,15 +11,18 @@ import { CalendarIcon, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { useCreateDeal } from '@/hooks/useDeals';
+import { useCreateDeal, useUpdateDeal, Deal } from '@/hooks/useDeals';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  deal?: Deal | null;
 }
 
-export function AddDealSheet({ open, onOpenChange }: Props) {
+export function AddDealSheet({ open, onOpenChange, deal }: Props) {
   const createDeal = useCreateDeal();
+  const updateDeal = useUpdateDeal();
+  const isEdit = !!deal;
 
   const [pvNumber, setPvNumber] = useState('');
   const [dealType, setDealType] = useState('');
@@ -30,12 +33,35 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
   const [municipality, setMunicipality] = useState('');
   const [partnerAgency, setPartnerAgency] = useState('');
   const [processManager, setProcessManager] = useState('');
-  const [reportedMonth, setReportedMonth] = useState('');
+  const [reportedMonth, setReportedMonth] = useState(format(new Date(), 'yy-MM'));
   const [buyerName, setBuyerName] = useState('');
   const [buyerNif, setBuyerNif] = useState('');
   const [cpcvDate, setCpcvDate] = useState<Date>();
   const [deedDate, setDeedDate] = useState<Date>();
   const [notes, setNotes] = useState('');
+
+  // Populate fields when editing
+  useEffect(() => {
+    if (deal) {
+      setPvNumber(deal.pv_number || '');
+      setDealType(deal.deal_type || '');
+      setConsultantName(deal.consultant_name || '');
+      setSaleValue(deal.sale_value != null ? String(deal.sale_value) : '');
+      setCommissionPct(deal.commission_pct != null ? String(deal.commission_pct) : '');
+      setAddress(deal.address || '');
+      setMunicipality(deal.municipality || '');
+      setPartnerAgency(deal.partner_agency || '');
+      setProcessManager(deal.process_manager || '');
+      setReportedMonth(deal.reported_month || format(new Date(), 'yy-MM'));
+      setBuyerName(deal.buyer_name || '');
+      setBuyerNif(deal.buyer_nif || '');
+      setCpcvDate(deal.cpcv_date ? new Date(deal.cpcv_date) : undefined);
+      setDeedDate(deal.deed_date ? new Date(deal.deed_date) : undefined);
+      setNotes(deal.notes || '');
+    } else {
+      reset();
+    }
+  }, [deal]);
 
   const commissionStore = useMemo(() => {
     if (saleValue && commissionPct) {
@@ -48,7 +74,7 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
   const reset = () => {
     setPvNumber(''); setDealType(''); setConsultantName(''); setSaleValue('');
     setCommissionPct(''); setAddress(''); setMunicipality(''); setPartnerAgency('');
-    setProcessManager(''); setReportedMonth(''); setBuyerName(''); setBuyerNif('');
+    setProcessManager(''); setReportedMonth(format(new Date(), 'yy-MM')); setBuyerName(''); setBuyerNif('');
     setCpcvDate(undefined); setDeedDate(undefined); setNotes('');
   };
 
@@ -66,43 +92,52 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
       return;
     }
 
+    const payload = {
+      pv_number: pvNumber.trim(),
+      deal_type: dealType,
+      consultant_name: consultantName.trim(),
+      sale_value: parseFloat(saleValue),
+      commission_pct: parseFloat(commissionPct),
+      commission_store: commissionStore ? parseFloat(commissionStore) : null,
+      address: address.trim(),
+      municipality: municipality.trim() || null,
+      partner_agency: partnerAgency.trim() || null,
+      process_manager: processManager.trim() || null,
+      reported_month: reportedMonth.trim() || null,
+      buyer_name: buyerName.trim() || null,
+      buyer_nif: buyerNif.trim() || null,
+      cpcv_date: cpcvDate ? format(cpcvDate, 'yyyy-MM-dd') : null,
+      deed_date: deedDate ? format(deedDate, 'yyyy-MM-dd') : null,
+      notes: notes.trim() || null,
+    };
+
     try {
-      await createDeal.mutateAsync({
-        pv_number: pvNumber.trim(),
-        deal_type: dealType,
-        consultant_name: consultantName.trim(),
-        sale_value: parseFloat(saleValue),
-        commission_pct: parseFloat(commissionPct),
-        commission_store: commissionStore ? parseFloat(commissionStore) : null,
-        address: address.trim(),
-        municipality: municipality.trim() || null,
-        partner_agency: partnerAgency.trim() || null,
-        process_manager: processManager.trim() || null,
-        reported_month: reportedMonth.trim() || null,
-        buyer_name: buyerName.trim() || null,
-        buyer_nif: buyerNif.trim() || null,
-        cpcv_date: cpcvDate ? format(cpcvDate, 'yyyy-MM-dd') : null,
-        deed_date: deedDate ? format(deedDate, 'yyyy-MM-dd') : null,
-        notes: notes.trim() || null,
-      });
-      toast.success('✅ Processo criado com sucesso');
+      if (isEdit) {
+        await updateDeal.mutateAsync({ id: deal!.id, ...payload });
+        toast.success('✅ Processo atualizado com sucesso');
+      } else {
+        await createDeal.mutateAsync(payload);
+        toast.success('✅ Processo criado com sucesso');
+      }
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      console.error('Erro ao criar processo:', err);
+      console.error('Erro ao guardar processo:', err);
       if (err.message === 'Sem agência') {
         toast.error('Erro: sem agência associada ao utilizador. Contacte o administrador.');
       } else {
-        toast.error(err.message || 'Erro ao criar processo');
+        toast.error(err.message || 'Erro ao guardar processo');
       }
     }
   };
+
+  const isPending = createDeal.isPending || updateDeal.isPending;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Novo Processo</SheetTitle>
+          <SheetTitle>{isEdit ? 'Editar Processo' : 'Novo Processo'}</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-4 mt-6">
@@ -192,9 +227,9 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
           </div>
 
-          <Button onClick={handleSave} disabled={createDeal.isPending} className="w-full gap-2">
+          <Button onClick={handleSave} disabled={isPending} className="w-full gap-2">
             <Save className="h-4 w-4" />
-            {createDeal.isPending ? 'A guardar…' : 'Criar Processo'}
+            {isPending ? 'A guardar…' : isEdit ? 'Guardar Alterações' : 'Criar Processo'}
           </Button>
         </div>
       </SheetContent>
