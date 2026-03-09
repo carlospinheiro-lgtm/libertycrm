@@ -1,30 +1,28 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Corrigir validação e submit do AddDealSheet
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### Diagnóstico
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+Após análise do código, a validação na linha 56 parece correta sintaticamente. Os problemas prováveis são:
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+1. **`agencyId` é `null`** — o `useCreateDeal` lança "Sem agência" antes do insert, que é capturado no catch genérico. Se o utilizador não tem `user_agencies` activo, isto falha silenciosamente.
 
-### 2. Tipologia multi-seleção (tags)
+2. **Campos numéricos com valor "0"** — `!saleValue` é `true` quando `saleValue === "0"`, bloqueando o submit incorrectamente. O mesmo para `commissionPct`.
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+3. **Erro de ref no DateField** — warning "Function components cannot be given refs" do `PopoverTrigger asChild` a tentar passar ref ao `DateField`. Não bloqueia o submit mas pode causar comportamento inesperado.
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+### Alterações em `src/components/processos/AddDealSheet.tsx`
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+1. **Corrigir validação numérica** — mudar `!saleValue` para `saleValue === ''` e `!commissionPct` para `commissionPct === ''`, para aceitar "0" como valor válido.
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+2. **Melhorar feedback de erro** — mostrar toast com campos específicos em falta em vez de mensagem genérica.
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+3. **Tratar "Sem agência"** — adicionar validação prévia de `agencyId` com mensagem clara, e log no catch para debugging.
+
+4. **Corrigir DateField ref warning** — não é bloqueante mas vamos corrigir para limpar os logs.
+
+### Ficheiro a alterar
+
+`src/components/processos/AddDealSheet.tsx` — função `handleSave` (linhas 55-86) e validação numérica.
 
