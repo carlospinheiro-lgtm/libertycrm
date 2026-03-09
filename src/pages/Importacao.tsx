@@ -385,7 +385,6 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
 
     if (dups > 0) {
       setDupCount(dups);
-      pendingImportRef.current = (action: DuplicateAction) => doImport(action);
       setShowDupDialog(true);
     } else {
       await doImport(null);
