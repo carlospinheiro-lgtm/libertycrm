@@ -293,7 +293,7 @@ export default function Processos() {
                           <TableCell className="text-sm">{formatDate(deal.deed_date)}</TableCell>
                           <TableCell className="text-sm">{formatDate(deal.received_date)}</TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedDeal(deal)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TableCell>
