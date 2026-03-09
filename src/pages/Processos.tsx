@@ -394,7 +394,9 @@ export default function Processos() {
                               <span className="text-sm text-muted-foreground">{deal.deal_type || '—'}</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm">{deal.consultant_name || '—'}</TableCell>
+                          <TableCell className="text-sm p-0">
+                            <ConsultantCell deal={deal} />
+                          </TableCell>
                           <TableCell className="text-sm max-w-[180px] truncate">{deal.address || '—'}</TableCell>
                           <TableCell className="text-sm font-medium">{formatCurrency(deal.sale_value)}</TableCell>
                           <TableCell className="text-sm">{formatCurrency(deal.commission_store)}</TableCell>
