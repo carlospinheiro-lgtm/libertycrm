@@ -38,6 +38,10 @@ export interface Deal {
   received_date: string | null;
   consultant_paid_date: string | null;
   partner_paid_date: string | null;
+  referral_pct: number | null;
+  referral_name: string | null;
+  referral_amount: number | null;
+  agency_net: number | null;
   buyer_nif: string | null;
   buyer_name: string | null;
   archive_ref: string | null;

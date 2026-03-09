@@ -142,6 +142,7 @@ export type Database = {
       consultants: {
         Row: {
           accumulated_12m: number | null
+          accumulated_12m_confirmed: boolean | null
           agency_id: string | null
           commission_pct: number | null
           commission_system: string | null
@@ -150,6 +151,7 @@ export type Database = {
           has_company: boolean | null
           id: string
           is_active: boolean | null
+          is_team_member: boolean | null
           name: string
           nif: string | null
           team: string | null
@@ -159,6 +161,7 @@ export type Database = {
         }
         Insert: {
           accumulated_12m?: number | null
+          accumulated_12m_confirmed?: boolean | null
           agency_id?: string | null
           commission_pct?: number | null
           commission_system?: string | null
@@ -167,6 +170,7 @@ export type Database = {
           has_company?: boolean | null
           id?: string
           is_active?: boolean | null
+          is_team_member?: boolean | null
           name: string
           nif?: string | null
           team?: string | null
@@ -176,6 +180,7 @@ export type Database = {
         }
         Update: {
           accumulated_12m?: number | null
+          accumulated_12m_confirmed?: boolean | null
           agency_id?: string | null
           commission_pct?: number | null
           commission_system?: string | null
@@ -184,6 +189,7 @@ export type Database = {
           has_company?: boolean | null
           id?: string
           is_active?: boolean | null
+          is_team_member?: boolean | null
           name?: string
           nif?: string | null
           team?: string | null
@@ -253,6 +259,7 @@ export type Database = {
         Row: {
           address: string | null
           agency_id: string
+          agency_net: number | null
           archive_ref: string | null
           buyer_name: string | null
           buyer_nif: string | null
@@ -298,6 +305,9 @@ export type Database = {
           pv_number: string | null
           received_date: string | null
           received_month: string | null
+          referral_amount: number | null
+          referral_name: string | null
+          referral_pct: number | null
           reported_month: string | null
           sale_value: number | null
           side_fraction: number | null
@@ -308,6 +318,7 @@ export type Database = {
         Insert: {
           address?: string | null
           agency_id: string
+          agency_net?: number | null
           archive_ref?: string | null
           buyer_name?: string | null
           buyer_nif?: string | null
@@ -353,6 +364,9 @@ export type Database = {
           pv_number?: string | null
           received_date?: string | null
           received_month?: string | null
+          referral_amount?: number | null
+          referral_name?: string | null
+          referral_pct?: number | null
           reported_month?: string | null
           sale_value?: number | null
           side_fraction?: number | null
@@ -363,6 +377,7 @@ export type Database = {
         Update: {
           address?: string | null
           agency_id?: string
+          agency_net?: number | null
           archive_ref?: string | null
           buyer_name?: string | null
           buyer_nif?: string | null
@@ -408,6 +423,9 @@ export type Database = {
           pv_number?: string | null
           received_date?: string | null
           received_month?: string | null
+          referral_amount?: number | null
+          referral_name?: string | null
+          referral_pct?: number | null
           reported_month?: string | null
           sale_value?: number | null
           side_fraction?: number | null

@@ -19,14 +19,42 @@ function formatCurrency(value: number | null | undefined): string {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
-function getCommission(d: Deal): number {
-  if (d.consultant_commission && d.consultant_commission > 0) return d.consultant_commission;
-  return (d.commission_store || 0) * 0.47;
-}
+import { calculateCommission } from '@/lib/commissionCalc';
+import type { Consultant } from '@/hooks/useConsultants';
 
 interface ConsultantInfo {
   tier: string | null;
   commission_pct: number | null;
+  commission_system: string | null;
+  has_company: boolean | null;
+  accumulated_12m: number | null;
+  is_team_member: boolean | null;
+}
+
+function getCommission(d: Deal, consultantMap: Map<string, ConsultantInfo>): number {
+  // Priority 1: already stored (Maxwork deals)
+  if (d.consultant_commission && d.consultant_commission > 0) return d.consultant_commission;
+  // Priority 2: recalculate if we have enough data
+  if (d.sale_value && d.commission_pct && d.consultant_name) {
+    const info = consultantMap.get(d.consultant_name.toLowerCase());
+    if (info) {
+      const result = calculateCommission({
+        saleValue: d.sale_value,
+        commissionPct: d.commission_pct,
+        sideFraction: d.side_fraction ?? 0.5,
+        referralPct: d.referral_pct ?? 0,
+        consultant: {
+          commission_system: info.commission_system,
+          has_company: info.has_company,
+          accumulated_12m: info.accumulated_12m,
+          is_team_member: info.is_team_member,
+        },
+      });
+      return result.agentAmount;
+    }
+  }
+  // Priority 3: fallback
+  return (d.commission_store || 0) * 0.47;
 }
 
 interface ConsultantRow {
@@ -57,7 +85,14 @@ export default function Pagamentos() {
   const consultantMap = useMemo(() => {
     const map = new Map<string, ConsultantInfo>();
     consultants.forEach(c => {
-      map.set(c.name.toLowerCase(), { tier: c.tier, commission_pct: c.commission_pct });
+      map.set(c.name.toLowerCase(), {
+        tier: c.tier,
+        commission_pct: c.commission_pct,
+        commission_system: c.commission_system,
+        has_company: c.has_company,
+        accumulated_12m: c.accumulated_12m,
+        is_team_member: c.is_team_member,
+      });
     });
     return map;
   }, [consultants]);
@@ -84,7 +119,7 @@ export default function Pagamentos() {
 
     const rows: ConsultantRow[] = [];
     map.forEach((consultantDeals, name) => {
-      const grossCommission = consultantDeals.reduce((s, d) => s + getCommission(d), 0);
+      const grossCommission = consultantDeals.reduce((s, d) => s + getCommission(d, consultantMap), 0);
       const expenseDiscount = consultantDeals.reduce((s, d) => s + (d.expense_discount || 0), 0);
       const isPaid = consultantDeals.length > 0 && consultantDeals.every(d => !!d.consultant_paid_date);
       const paidDates = consultantDeals.filter(d => d.consultant_paid_date).map(d => d.consultant_paid_date!);
@@ -260,7 +295,7 @@ export default function Pagamentos() {
                 </TableHeader>
                 <TableBody>
                   {extratoConsultant.deals.map(d => {
-                    const commission = getCommission(d);
+                    const commission = getCommission(d, consultantMap);
                     const discount = d.expense_discount || 0;
                     const hasDiscount = (d.discount_pct ?? 0) > 0;
                     return (
