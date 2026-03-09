@@ -121,7 +121,7 @@ export function useUpdateDeal() {
 
 export function useChangeStatus() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -142,11 +142,11 @@ export function useChangeStatus() {
         .eq('id', deal.id);
       if (updateError) throw updateError;
 
-      // Insert history
+      // Insert history with user name
       const { error: histError } = await supabase.from('deal_history').insert({
         deal_id: deal.id,
         agency_id: deal.agency_id,
-        changed_by: user?.id || null,
+        changed_by: currentUser?.name || null,
         old_status: deal.deal_status ?? 0,
         new_status: newStatus,
         note: note || null,
