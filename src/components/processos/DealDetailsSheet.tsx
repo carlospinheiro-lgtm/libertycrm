@@ -30,9 +30,9 @@ const TYPE_MAP: Record<string, { label: string; className: string }> = {
 };
 
 const STATUS_ACTIONS: Record<number, { label: string; className: string }> = {
-  0: { label: 'Emitir Fatura', className: 'bg-warning text-warning-foreground hover:bg-warning/90' },
+  0: { label: 'Registar Nº Fatura', className: 'bg-gray-600 text-white hover:bg-gray-700' },
   1: { label: 'Marcar Recebido', className: 'bg-emerald-600 text-white hover:bg-emerald-700' },
-  2: { label: 'Pagar Consultor', className: 'bg-primary text-primary-foreground hover:bg-primary/90' },
+  2: { label: 'Confirmar Pagamento ao Consultor', className: 'bg-blue-600 text-white hover:bg-blue-700' },
 };
 
 interface Props {

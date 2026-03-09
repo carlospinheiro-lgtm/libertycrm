@@ -18,9 +18,9 @@ interface Props {
 }
 
 const CONFIGS: Record<number, { title: string; buttonLabel: string; buttonClass: string }> = {
-  0: { title: 'Registar Fatura', buttonLabel: 'Registar', buttonClass: 'bg-warning text-warning-foreground hover:bg-warning/90' },
-  1: { title: 'Marcar Recebido', buttonLabel: 'Confirmar Recebimento', buttonClass: 'bg-emerald-600 text-white hover:bg-emerald-700' },
-  2: { title: 'Pagar Consultor', buttonLabel: 'Confirmar Pagamento', buttonClass: 'bg-primary text-primary-foreground hover:bg-primary/90' },
+  0: { title: 'Registar Nº Fatura', buttonLabel: 'Registar', buttonClass: 'bg-gray-600 text-white hover:bg-gray-700' },
+  1: { title: 'Marcar Recebido', buttonLabel: 'Confirmar', buttonClass: 'bg-emerald-600 text-white hover:bg-emerald-700' },
+  2: { title: 'Confirmar Pagamento ao Consultor', buttonLabel: 'Confirmar', buttonClass: 'bg-blue-600 text-white hover:bg-blue-700' },
 };
 
 export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
@@ -108,7 +108,7 @@ export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
                 <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} placeholder="FAT-001" />
               </div>
               <div className="space-y-1.5">
-                <Label>Data Emissão</Label>
+                <Label>Data Fatura</Label>
                 <DatePick value={invoiceDate} onChange={setInvoiceDate} />
               </div>
             </>
