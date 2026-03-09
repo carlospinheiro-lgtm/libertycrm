@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -23,24 +24,56 @@ const CONFIGS: Record<number, { title: string; buttonLabel: string; buttonClass:
   2: { title: 'Pagar Consultor', buttonLabel: 'Confirmar Pagamento', buttonClass: 'bg-primary text-primary-foreground hover:bg-primary/90' },
 };
 
+// Generate month options for received_month (last 12 months + next 3)
+function generateMonthOptions() {
+  const options: { value: string; label: string }[] = [];
+  const now = new Date();
+  for (let i = -12; i <= 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const value = format(d, 'yyyy-MM');
+    const label = format(d, 'MMMM yyyy');
+    options.push({ value, label });
+  }
+  return options;
+}
+
+const MONTH_OPTIONS = generateMonthOptions();
+
 export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
   const changeStatus = useChangeStatus();
   const status = deal?.deal_status ?? 0;
   const config = CONFIGS[status];
 
+  // Status 0 -> 1 fields
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState<Date>();
   const [invoiceValue, setInvoiceValue] = useState('');
+  const [invoiceRecipient, setInvoiceRecipient] = useState('');
+
+  // Status 1 -> 2 fields
   const [receivedDate, setReceivedDate] = useState<Date>();
+  const [receivedMonth, setReceivedMonth] = useState('');
+
+  // Status 2 -> 3 fields
   const [paidDate, setPaidDate] = useState<Date>();
 
   if (!deal || !config) return null;
+
+  const resetFields = () => {
+    setInvoiceNumber('');
+    setInvoiceDate(undefined);
+    setInvoiceValue('');
+    setInvoiceRecipient('');
+    setReceivedDate(undefined);
+    setReceivedMonth('');
+    setPaidDate(undefined);
+  };
 
   const handleConfirm = async () => {
     try {
       if (status === 0) {
         if (!invoiceNumber.trim() || !invoiceDate || !invoiceValue) {
-          toast.error('Preencha todos os campos da fatura');
+          toast.error('Preencha Nº Fatura, Data e Valor');
           return;
         }
         await changeStatus.mutateAsync({
@@ -50,6 +83,7 @@ export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
             invoice_number: invoiceNumber.trim(),
             invoice_date: format(invoiceDate, 'yyyy-MM-dd'),
             invoice_value: parseFloat(invoiceValue),
+            invoice_recipient: invoiceRecipient.trim() || null,
           },
           note: `Fatura ${invoiceNumber.trim()} emitida`,
         });
@@ -61,7 +95,10 @@ export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
         await changeStatus.mutateAsync({
           deal,
           newStatus: 2,
-          extraFields: { received_date: format(receivedDate, 'yyyy-MM-dd') },
+          extraFields: {
+            received_date: format(receivedDate, 'yyyy-MM-dd'),
+            received_month: receivedMonth || format(receivedDate, 'yyyy-MM'),
+          },
           note: `Recebido a ${format(receivedDate, 'dd/MM/yyyy')}`,
         });
       } else if (status === 2) {
@@ -78,8 +115,7 @@ export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
       }
       toast.success('Estado atualizado com sucesso');
       onOpenChange(false);
-      setInvoiceNumber(''); setInvoiceDate(undefined); setInvoiceValue('');
-      setReceivedDate(undefined); setPaidDate(undefined);
+      resetFields();
     } catch (err: any) {
       toast.error(err.message || 'Erro ao atualizar estado');
     }
@@ -108,13 +144,32 @@ export function StatusChangeDialog({ deal, open, onOpenChange }: Props) {
                 <Label>Valor Fatura (€)</Label>
                 <Input type="number" value={invoiceValue} onChange={e => setInvoiceValue(e.target.value)} />
               </div>
+              <div className="space-y-1.5">
+                <Label>Destinatário</Label>
+                <Input value={invoiceRecipient} onChange={e => setInvoiceRecipient(e.target.value)} placeholder="Nome do destinatário" />
+              </div>
             </>
           )}
           {status === 1 && (
-            <div className="space-y-1.5">
-              <Label>Data de Recebimento</Label>
-              <DatePick value={receivedDate} onChange={setReceivedDate} />
-            </div>
+            <>
+              <div className="space-y-1.5">
+                <Label>Data de Recebimento</Label>
+                <DatePick value={receivedDate} onChange={setReceivedDate} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Mês de Recebimento</Label>
+                <Select value={receivedMonth} onValueChange={setReceivedMonth}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTH_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
           )}
           {status === 2 && (
             <div className="space-y-1.5">
