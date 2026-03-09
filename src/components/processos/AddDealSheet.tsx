@@ -59,6 +59,12 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       setCpcvDate(deal.cpcv_date ? new Date(deal.cpcv_date) : undefined);
       setDeedDate(deal.deed_date ? new Date(deal.deed_date) : undefined);
       setNotes(deal.notes || '');
+      // Calculate consultantPct from existing data if possible
+      if (deal.consultant_commission && deal.commission_store && deal.commission_store > 0) {
+        setConsultantPct(String(((deal.consultant_commission / deal.commission_store) * 100).toFixed(2)));
+      } else {
+        setConsultantPct('');
+      }
     } else {
       reset();
     }
