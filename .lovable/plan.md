@@ -1,30 +1,28 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Corrigir importação silenciosa de processos
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### Problema identificado
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+A importação de processos não tem **tratamento de erros** nos `insert` e `update` do Supabase (linha 358). Se o insert falhar (e.g. RLS, tipo de dados, etc.), o erro é silenciosamente ignorado e o toast mostra sucesso. Atualmente existem **0 registos importados** na BD — apenas 1 deal que foi criado manualmente.
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+### Correções
 
-### 2. Tipologia multi-seleção (tags)
+**Ficheiro: `src/pages/Importacao.tsx`**
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+1. **Adicionar error handling nos inserts/updates** — capturar `error` do Supabase e:
+   - Fazer `console.error` com o detalhe do erro
+   - Contar falhas vs sucessos
+   - Mostrar toast com contagem real de inserções bem-sucedidas vs falhadas
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+2. **Usar `as any` no insert** para evitar conflitos de tipos TypeScript que possam causar problemas de compilação (padrão já usado no `useDeals.ts`).
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+3. **Adicionar `.select()` ao insert** para confirmar que o registo foi criado.
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+4. **Toast final com resultado real**: "✅ X processos importados (Y registos criados, Z falhados)"
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+**Ficheiro: `src/hooks/useDeals.ts`** — sem alterações necessárias, a query já filtra por `agency_id`.
+
+### Resumo de alterações
+- `src/pages/Importacao.tsx` — adicionar error handling e logging nos inserts da tab Processos (e Consultores/Equipas por consistência)
 
