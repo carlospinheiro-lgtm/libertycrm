@@ -320,6 +320,9 @@ export default function Processos() {
           </CardContent>
         </Card>
       </div>
+
+      <AddDealSheet open={newDealOpen} onOpenChange={setNewDealOpen} />
+      <DealDetailsSheet deal={selectedDeal} open={!!selectedDeal} onOpenChange={open => { if (!open) setSelectedDeal(null); }} />
     </DashboardLayout>
   );
 }
