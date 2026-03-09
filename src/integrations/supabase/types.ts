@@ -139,6 +139,68 @@ export type Database = {
           },
         ]
       }
+      consultants: {
+        Row: {
+          accumulated_12m: number | null
+          agency_id: string | null
+          commission_pct: number | null
+          commission_system: string | null
+          created_at: string | null
+          entry_date: string | null
+          has_company: boolean | null
+          id: string
+          is_active: boolean | null
+          name: string
+          nif: string | null
+          team: string | null
+          team_leader: string | null
+          tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accumulated_12m?: number | null
+          agency_id?: string | null
+          commission_pct?: number | null
+          commission_system?: string | null
+          created_at?: string | null
+          entry_date?: string | null
+          has_company?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          nif?: string | null
+          team?: string | null
+          team_leader?: string | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accumulated_12m?: number | null
+          agency_id?: string | null
+          commission_pct?: number | null
+          commission_system?: string | null
+          created_at?: string | null
+          entry_date?: string | null
+          has_company?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          nif?: string | null
+          team?: string | null
+          team_leader?: string | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultants_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_history: {
         Row: {
           agency_id: string
