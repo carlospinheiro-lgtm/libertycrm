@@ -246,6 +246,15 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
               <Input value={buyerNif} onChange={e => setBuyerNif(e.target.value)} />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <DateField label="Data CPCV" value={cpcvDate} onChange={setCpcvDate} />
+            <DateField label="Data Escritura" value={deedDate} onChange={setDeedDate} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Notas</Label>
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
           </div>
 
           <Button onClick={handleSave} disabled={isPending} className="w-full gap-2">
