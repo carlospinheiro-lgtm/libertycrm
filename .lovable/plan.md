@@ -1,47 +1,30 @@
 
 
-## Plano: Sistema de Descontos Manuais e Página de Pagamentos
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### 1. Auto-cálculo no tab Financeiro (`DealDetailsSheet.tsx`)
+### 1. Sheet → Dialog (centrado no ecrã)
 
-Quando `discount_pct` muda, calcular automaticamente:
-`expense_discount = consultant_commission × (discount_pct / 100)`
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-- Adicionar campo `consultant_commission` ao estado `fin` (read-only, vindo do deal)
-- No handler de `discount_pct`, recalcular `expense_discount` automaticamente
-- Campo `expense_discount` continua editável (override manual possível)
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-### 2. Nova página Pagamentos (`src/pages/Pagamentos.tsx`)
+### 2. Tipologia multi-seleção (tags)
 
-**Filtros no topo:**
-- Seletor de mês (reported_month dos deals)
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-**Tabela de consultores** (agrupada por `consultant_name`):
-| Consultor | Nº Processos | Comissão Bruta | Desconto Despesas | Comissão Líquida |
-|-----------|-------------|----------------|-------------------|------------------|
-Onde:
-- Comissão Bruta = `sum(consultant_commission)` dos deals do mês
-- Desconto Despesas = `sum(expense_discount)` dos deals do mês
-- Comissão Líquida = Comissão Bruta - Desconto Despesas
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
 
-**Botão "Ver Extrato"** → abre Sheet com detalhe por processo:
-| PV | Tipo | Valor Venda | Comissão Consultor | Desconto Despesas | Líquido |
-Se `discount_pct = 0` ou null → coluna desconto mostra "—"
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
 
-### 3. Rota e Sidebar
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
 
-- Adicionar rota `/pagamentos` em `App.tsx`
-- Substituir a rota `/contas` (Contas Correntes / ComingSoon) pela nova página Pagamentos
-- Atualizar label no Sidebar: "Contas Correntes" → "Pagamentos"
-
-### Ficheiros a criar
-- `src/pages/Pagamentos.tsx` — página completa com tabela de consultores e sheet de extrato
-
-### Ficheiros a alterar
-- `src/components/processos/DealDetailsSheet.tsx` — auto-cálculo expense_discount
-- `src/App.tsx` — rota `/pagamentos`
-- `src/components/layout/Sidebar.tsx` — label do menu
-
-### Sem alterações de base de dados
-Todos os campos necessários (`discount_pct`, `expense_discount`, `consultant_commission`, `consultant_name`, `reported_month`) já existem na tabela `deals`.
+### Ficheiro editado
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 

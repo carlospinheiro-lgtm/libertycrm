@@ -19,6 +19,7 @@ import ProjetoDetalhe from "./pages/ProjetoDetalhe";
 import Angariacoes from "./pages/Angariacoes";
 import AngariacaoDetalhe from "./pages/AngariacaoDetalhe";
 import ComingSoon from "./pages/ComingSoon";
+import Pagamentos from "./pages/Pagamentos";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -40,7 +41,7 @@ const App = () => (
             <Route path="/recrutamento" element={<ProtectedRoute><Recrutamento /></ProtectedRoute>} />
             <Route path="/processos" element={<ProtectedRoute><Processos /></ProtectedRoute>} />
             <Route path="/atividades" element={<ProtectedRoute><ComingSoon title="Mapa de Atividades" /></ProtectedRoute>} />
-            <Route path="/contas" element={<ProtectedRoute><ComingSoon title="Contas Correntes" /></ProtectedRoute>} />
+            <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
             <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
             <Route path="/origens" element={<ProtectedRoute><Origens /></ProtectedRoute>} />
             <Route path="/agenda" element={<ProtectedRoute><ComingSoon title="Agenda" /></ProtectedRoute>} />
