@@ -1,38 +1,30 @@
 
 
-## Plano: Melhorar extrato e estado de pagamento
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### 1. Consultar tabela `consultants` para enriquecer o cabeçalho
+### 1. Sheet → Dialog (centrado no ecrã)
 
-- Na página Pagamentos, fazer query à tabela `consultants` (por `agency_id`) para obter `tier` e `commission_pct` de cada consultor
-- Fazer match por `name` entre `deals.consultant_name` e `consultants.name`
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-### 2. Cabeçalho do extrato (Sheet)
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-Acima da tabela, mostrar:
-- **Nome** do consultor em destaque (h2/large)
-- **Escalão** (tier) — badge se existir na tabela consultants
-- **% comissão** — do consultant ou fallback 47%
-- **Mês** selecionado
+### 2. Tipologia multi-seleção (tags)
 
-### 3. Botão "Marcar Pago" no fundo do extrato
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-- Botão azul no final do Sheet
-- Ao clicar: `Popover` ou `AlertDialog` de confirmação com texto "Confirmar pagamento de X€ a [nome] em [data hoje]?"
-- Ao confirmar: update `consultant_paid_date = today` em todos os deals do extrato via `useUpdateDeal` (batch)
-- Toast de sucesso "Pagamento registado"
-- Se já todos pagos, botão desabilitado com texto "Já pago"
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
 
-### 4. Badge de estado na tabela principal
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
 
-Nova coluna "Estado" na tabela de consultores:
-- Se **todos** os deals do consultor têm `consultant_paid_date` preenchido → Badge verde "Pago" + data mais recente
-- Senão → Badge cinza "Pendente"
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
 
-### 5. Interface `ConsultantRow` atualizada
-
-Adicionar campos: `isPaid`, `paidDate`, `tier`, `commissionPct`
-
-### Ficheiros a alterar
-- `src/pages/Pagamentos.tsx` — todas as alterações (query consultants, cabeçalho, botão, badge)
+### Ficheiro editado
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 
