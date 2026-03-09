@@ -124,6 +124,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       cpcv_date: cpcvDate ? format(cpcvDate, 'yyyy-MM-dd') : null,
       deed_date: deedDate ? format(deedDate, 'yyyy-MM-dd') : null,
       notes: notes.trim() || null,
+      consultant_commission: consultantCommission ? parseFloat(consultantCommission) : null,
     };
 
     try {
