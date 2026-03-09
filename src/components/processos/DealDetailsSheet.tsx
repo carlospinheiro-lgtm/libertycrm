@@ -81,6 +81,7 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
       docs_missing: deal.docs_missing || '',
     });
     setFin({
+      consultant_commission: deal.consultant_commission ?? '',
       commission_store: deal.commission_store ?? '',
       commission_remax: deal.commission_remax ?? '',
       margin: deal.margin ?? '',
