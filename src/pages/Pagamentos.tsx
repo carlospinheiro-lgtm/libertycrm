@@ -85,7 +85,14 @@ export default function Pagamentos() {
   const consultantMap = useMemo(() => {
     const map = new Map<string, ConsultantInfo>();
     consultants.forEach(c => {
-      map.set(c.name.toLowerCase(), { tier: c.tier, commission_pct: c.commission_pct });
+      map.set(c.name.toLowerCase(), {
+        tier: c.tier,
+        commission_pct: c.commission_pct,
+        commission_system: c.commission_system,
+        has_company: c.has_company,
+        accumulated_12m: c.accumulated_12m,
+        is_team_member: c.is_team_member,
+      });
     });
     return map;
   }, [consultants]);
