@@ -50,6 +50,9 @@ function formatDate(dateStr: string | null | undefined) {
 export default function Processos() {
   const { data: deals = [], isLoading } = useDeals();
 
+  const [newDealOpen, setNewDealOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
