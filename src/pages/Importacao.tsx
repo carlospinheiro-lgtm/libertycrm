@@ -278,7 +278,6 @@ function TabProcessos({ agencyId }: { agencyId: string }) {
   const [duplicateAction, setDuplicateAction] = useState<DuplicateAction>(null);
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [dupCount, setDupCount] = useState(0);
-  const pendingImportRef = useRef<(() => Promise<void>) | null>(null);
 
   const handleFile = useCallback(async (f: File) => {
     setFile(f);
