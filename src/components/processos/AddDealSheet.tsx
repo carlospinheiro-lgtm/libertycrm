@@ -39,7 +39,7 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
 
   const commissionStore = useMemo(() => {
     if (saleValue && commissionPct) {
-      const calc = parseFloat(saleValue) * parseFloat(commissionPct);
+      const calc = parseFloat(saleValue) * (parseFloat(commissionPct) / 100);
       return isNaN(calc) ? '' : calc.toFixed(2);
     }
     return '';
