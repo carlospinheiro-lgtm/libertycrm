@@ -289,6 +289,7 @@ export type Database = {
           maxwork_id: string | null
           municipality: string | null
           notes: string | null
+          parish: string | null
           partner_agency: string | null
           partner_invoice_number: string | null
           partner_paid_date: string | null
@@ -343,6 +344,7 @@ export type Database = {
           maxwork_id?: string | null
           municipality?: string | null
           notes?: string | null
+          parish?: string | null
           partner_agency?: string | null
           partner_invoice_number?: string | null
           partner_paid_date?: string | null
@@ -397,6 +399,7 @@ export type Database = {
           maxwork_id?: string | null
           municipality?: string | null
           notes?: string | null
+          parish?: string | null
           partner_agency?: string | null
           partner_invoice_number?: string | null
           partner_paid_date?: string | null
