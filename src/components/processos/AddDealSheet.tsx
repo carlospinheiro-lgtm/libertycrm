@@ -23,9 +23,27 @@ interface Props {
 }
 
 export function AddDealSheet({ open, onOpenChange, deal }: Props) {
+  const { currentUser } = useAuth();
+  const agencyId = currentUser?.agencyId;
   const createDeal = useCreateDeal();
   const updateDeal = useUpdateDeal();
   const isEdit = !!deal;
+
+  const { data: activeConsultants = [] } = useQuery({
+    queryKey: ['consultants-active', agencyId],
+    queryFn: async () => {
+      if (!agencyId) return [];
+      const { data, error } = await supabase
+        .from('consultants')
+        .select('id, name, commission_pct')
+        .eq('agency_id', agencyId)
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!agencyId,
+  });
 
   const [pvNumber, setPvNumber] = useState('');
   const [dealType, setDealType] = useState('');
