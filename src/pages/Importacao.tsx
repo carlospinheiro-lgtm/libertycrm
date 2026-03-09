@@ -733,7 +733,7 @@ function TabConsultores({ agencyId }: { agencyId: string }) {
         <CardContent>
           <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
             {[
-              ['Utilizador', 'name'],
+              ['Agente', 'name'],
               ['Agente NIF', 'nif'],
               ['Data de Adesão', 'entry_date'],
               ['Escalão', 'tier (A/B/C)'],
