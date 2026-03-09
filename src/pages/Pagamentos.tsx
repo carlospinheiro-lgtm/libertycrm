@@ -19,14 +19,42 @@ function formatCurrency(value: number | null | undefined): string {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
-function getCommission(d: Deal): number {
-  if (d.consultant_commission && d.consultant_commission > 0) return d.consultant_commission;
-  return (d.commission_store || 0) * 0.47;
-}
+import { calculateCommission } from '@/lib/commissionCalc';
+import type { Consultant } from '@/hooks/useConsultants';
 
 interface ConsultantInfo {
   tier: string | null;
   commission_pct: number | null;
+  commission_system: string | null;
+  has_company: boolean | null;
+  accumulated_12m: number | null;
+  is_team_member: boolean | null;
+}
+
+function getCommission(d: Deal, consultantMap: Map<string, ConsultantInfo>): number {
+  // Priority 1: already stored (Maxwork deals)
+  if (d.consultant_commission && d.consultant_commission > 0) return d.consultant_commission;
+  // Priority 2: recalculate if we have enough data
+  if (d.sale_value && d.commission_pct && d.consultant_name) {
+    const info = consultantMap.get(d.consultant_name.toLowerCase());
+    if (info) {
+      const result = calculateCommission({
+        saleValue: d.sale_value,
+        commissionPct: d.commission_pct,
+        sideFraction: d.side_fraction ?? 0.5,
+        referralPct: d.referral_pct ?? 0,
+        consultant: {
+          commission_system: info.commission_system,
+          has_company: info.has_company,
+          accumulated_12m: info.accumulated_12m,
+          is_team_member: info.is_team_member,
+        },
+      });
+      return result.agentAmount;
+    }
+  }
+  // Priority 3: fallback
+  return (d.commission_store || 0) * 0.47;
 }
 
 interface ConsultantRow {
