@@ -13,6 +13,11 @@ function formatCurrency(value: number | null | undefined): string {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
+function getCommission(d: Deal): number {
+  if (d.consultant_commission && d.consultant_commission > 0) return d.consultant_commission;
+  return (d.commission_store || 0) * 0.47;
+}
+
 interface ConsultantRow {
   name: string;
   deals: Deal[];
