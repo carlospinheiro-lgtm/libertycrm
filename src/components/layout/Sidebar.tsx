@@ -16,6 +16,7 @@ import {
   Tag,
   FolderKanban,
   UserCheck,
+  Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,6 +53,7 @@ const menuItems: MenuItem[] = [
 
 const adminMenuItems: MenuItem[] = [
   { icon: Tag, label: 'Origens', path: '/origens', permissions: ['origins.manage', 'marketing.manage'] },
+  { icon: Upload, label: 'Importação', path: '/importacao' },
 ];
 
 interface SidebarProps {

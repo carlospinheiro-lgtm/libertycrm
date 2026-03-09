@@ -1,48 +1,30 @@
 
 
-## Plano: Página de Importação Maxwork
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### Migração DB
+### 1. Sheet → Dialog (centrado no ecrã)
 
-Adicionar coluna `parish` à tabela `deals` (text, nullable) para mapear "Freguesia" do ficheiro.
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-### Criar `src/pages/Importacao.tsx`
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-Página com 3 tabs usando `Tabs` do shadcn:
+### 2. Tipologia multi-seleção (tags)
 
-**Tab Processos (SaleProcesses.xls)**
-- Upload XLSX → parse com `xlsx` library (já instalada)
-- Preview tabela com 5 primeiras linhas
-- Mapeamento de colunas conforme especificado (Título→pv_number, Imóvel→maxwork_id, etc.)
-- `deal_status`: "Receb. em falta"→1, "Concluído"→3, outros→0
-- Cada linha gera 2 registos deals (Angariação + Venda) com campos distintos
-- Detecção interna: se Agência Angariadora = Agência Comprador ∈ {"Liberty","Liberty II"}
-- Verificação duplicados por `pv_number + deal_type` antes de inserir
-- Dialog de decisão: "Atualizar existentes" ou "Ignorar duplicados"
-- Botão "Importar X processos" com progresso e toast
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-**Tab Consultores (CommissionSystem.xlsx)**
-- Upload → preview 5 linhas
-- Mapeamento: Utilizador→name, Agente NIF→nif, Data de Adesão→entry_date, Escalão→tier, Tipo de Sistema→commission_system, Empresa→has_company, Honorários %→commission_pct, Faturação Último Ano→accumulated_12m
-- Upsert por `nif` (se existe→atualiza, senão→cria)
-- Botão "Importar X consultores" + toast
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
 
-**Tab Equipas (Teams.xlsx)**
-- Upload → preview 5 linhas
-- Por NIF, atualiza `team` e `team_leader` na tabela consultants
-- Lógica team_leader: se "Chefe de Equipa?"=true → team_leader = próprio nome; senão → encontrar o líder da mesma equipa no ficheiro
-- Botão "Importar equipas" + toast
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
 
-### Sidebar
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
 
-Adicionar `{ icon: Upload, label: 'Importação', path: '/importacao' }` ao array `adminMenuItems` (secção Configurações).
-
-### App.tsx
-
-Adicionar rota `/importacao` → `Importacao`.
-
-### Ficheiros
-- **Migração**: adicionar `parish` a `deals`
-- **Criar**: `src/pages/Importacao.tsx`
-- **Editar**: `src/App.tsx`, `src/components/layout/Sidebar.tsx`
+### Ficheiro editado
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 

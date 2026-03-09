@@ -21,6 +21,7 @@ import AngariacaoDetalhe from "./pages/AngariacaoDetalhe";
 import ComingSoon from "./pages/ComingSoon";
 import Pagamentos from "./pages/Pagamentos";
 import Consultores from "./pages/Consultores";
+import Importacao from "./pages/Importacao";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/angariacoes/:id" element={<ProtectedRoute><AngariacaoDetalhe /></ProtectedRoute>} />
             <Route path="/projetos" element={<ProtectedRoute><Projetos /></ProtectedRoute>} />
             <Route path="/projetos/:id" element={<ProtectedRoute><ProjetoDetalhe /></ProtectedRoute>} />
+            <Route path="/importacao" element={<ProtectedRoute><Importacao /></ProtectedRoute>} />
             <Route path="/superadmin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
