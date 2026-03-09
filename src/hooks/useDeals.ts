@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -74,5 +74,87 @@ export function useDeals() {
       return (data || []) as Deal[];
     },
     enabled: !!agencyId,
+  });
+}
+
+export function useCreateDeal() {
+  const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
+  const agencyId = currentUser?.agencyId;
+
+  return useMutation({
+    mutationFn: async (deal: Partial<Deal>) => {
+      if (!agencyId) throw new Error('Sem agência');
+      const { data, error } = await supabase
+        .from('deals')
+        .insert({ ...deal, agency_id: agencyId, deal_status: 0 } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+    },
+  });
+}
+
+export function useUpdateDeal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Deal> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('deals')
+        .update(updates as any)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+    },
+  });
+}
+
+export function useChangeStatus() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      deal,
+      newStatus,
+      extraFields,
+      note,
+    }: {
+      deal: Deal;
+      newStatus: number;
+      extraFields?: Record<string, any>;
+      note?: string;
+    }) => {
+      // Update deal
+      const { error: updateError } = await supabase
+        .from('deals')
+        .update({ deal_status: newStatus, ...(extraFields || {}) } as any)
+        .eq('id', deal.id);
+      if (updateError) throw updateError;
+
+      // Insert history
+      const { error: histError } = await supabase.from('deal_history').insert({
+        deal_id: deal.id,
+        agency_id: deal.agency_id,
+        changed_by: user?.id || null,
+        old_status: deal.deal_status ?? 0,
+        new_status: newStatus,
+        note: note || null,
+      });
+      if (histError) throw histError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+    },
   });
 }
