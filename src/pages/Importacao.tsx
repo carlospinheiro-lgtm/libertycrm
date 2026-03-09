@@ -595,7 +595,7 @@ function parseConsultorRows(rawRows: Record<string, unknown>[]): ConsultorImport
                      sys === 'Fixo' || sys?.toLowerCase() === 'fixo' ? 'Fixo' : null;
 
     return {
-      name: get(row, 'Utilizador', 'utilizador', 'name', 'nome'),
+      name: get(row, 'Agente', 'agente', 'Utilizador', 'utilizador', 'name', 'nome'),
       nif: get(row, 'Agente NIF', 'agente_nif', 'nif'),
       entry_date: parseDate(get(row, 'Data de Adesão', 'data_de_adesao', 'data_adesao', 'entry_date')),
       tier: validTier,
