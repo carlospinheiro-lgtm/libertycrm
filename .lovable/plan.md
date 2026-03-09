@@ -1,30 +1,40 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Corrigir 3 problemas no CRM Processual
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### 1. KPI "Faturação total" sempre a 0€
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+**Problema**: Linha 94 soma apenas `invoice_value`, que pode estar vazio para deals com status >= 1.
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+**Correção** em `src/pages/Processos.tsx` linha 94:
+- Filtrar deals com `deal_status >= 1`
+- Usar `invoice_value ?? commission_store ?? 0` como fallback
 
-### 2. Tipologia multi-seleção (tags)
+### 2. Botões editar e apagar na tabela
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+**Alterações em `src/pages/Processos.tsx`**:
+- Adicionar state `editDeal` para controlar edição
+- Adicionar state `deleteDeal` para controlar confirmação de apagar
+- Na coluna Ações (linha 295-299): adicionar ícone lápis (abre AddDealSheet em modo edição) e ícone lixo (abre AlertDialog)
+- Adicionar AlertDialog de confirmação com mensagem "Tens a certeza que queres apagar o processo PV-XXX?"
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+**Alterações em `src/hooks/useDeals.ts`**:
+- Adicionar hook `useDeleteDeal` com mutation que apaga da tabela deals
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+**Alterações em `src/components/processos/AddDealSheet.tsx`**:
+- Aceitar prop opcional `deal?: Deal` para modo edição
+- Pré-preencher campos quando `deal` existe
+- No submit: chamar `useUpdateDeal` em vez de `useCreateDeal`
+- Título muda para "Editar Processo" quando em modo edição
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+### 3. Campo "Mês Reportado" com default
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+**Alteração em `src/components/processos/AddDealSheet.tsx`**:
+- Inicializar `reportedMonth` com `format(new Date(), 'yy-MM')` em vez de string vazia (apenas quando não há deal para editar)
+
+### Ficheiros a alterar
+
+- `src/pages/Processos.tsx` — KPI fix, botões editar/apagar, AlertDialog
+- `src/hooks/useDeals.ts` — adicionar `useDeleteDeal`
+- `src/components/processos/AddDealSheet.tsx` — modo edição + default reported_month
 
