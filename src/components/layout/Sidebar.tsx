@@ -15,6 +15,7 @@ import {
   Building2,
   Tag,
   FolderKanban,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
