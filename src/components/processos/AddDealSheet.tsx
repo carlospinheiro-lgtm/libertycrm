@@ -223,6 +223,20 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
               <Label>Mês Reportado</Label>
               <Input value={reportedMonth} onChange={e => setReportedMonth(e.target.value)} placeholder="26-03" />
             </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>% Honorário Consultor</Label>
+              <Input type="number" value={consultantPct} onChange={e => setConsultantPct(e.target.value)} placeholder="47" />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label>Comissão Consultor (calculada)</Label>
+              <Input type="number" value={consultantCommission} readOnly className="bg-muted" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Nome Comprador</Label>
               <Input value={buyerName} onChange={e => setBuyerName(e.target.value)} />
@@ -232,15 +246,6 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
               <Input value={buyerNif} onChange={e => setBuyerNif(e.target.value)} />
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <DateField label="Data CPCV" value={cpcvDate} onChange={setCpcvDate} />
-            <DateField label="Data Escritura" value={deedDate} onChange={setDeedDate} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Notas</Label>
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
           </div>
 
           <Button onClick={handleSave} disabled={isPending} className="w-full gap-2">
