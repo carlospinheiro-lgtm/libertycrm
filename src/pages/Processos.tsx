@@ -19,9 +19,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConsultants } from '@/hooks/useConsultants';
 
 const STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: 'Referência', className: 'bg-muted text-muted-foreground' },
