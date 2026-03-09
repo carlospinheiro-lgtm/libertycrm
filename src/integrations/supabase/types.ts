@@ -139,6 +139,227 @@ export type Database = {
           },
         ]
       }
+      deal_history: {
+        Row: {
+          agency_id: string
+          changed_by: string | null
+          created_at: string | null
+          deal_id: string
+          id: string
+          new_status: number | null
+          note: string | null
+          old_status: number | null
+        }
+        Insert: {
+          agency_id: string
+          changed_by?: string | null
+          created_at?: string | null
+          deal_id: string
+          id?: string
+          new_status?: number | null
+          note?: string | null
+          old_status?: number | null
+        }
+        Update: {
+          agency_id?: string
+          changed_by?: string | null
+          created_at?: string | null
+          deal_id?: string
+          id?: string
+          new_status?: number | null
+          note?: string | null
+          old_status?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_history_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_history_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          address: string | null
+          agency_id: string
+          archive_ref: string | null
+          buyer_name: string | null
+          buyer_nif: string | null
+          closed: boolean | null
+          commission_pct: number | null
+          commission_remax: number | null
+          commission_store: number | null
+          conditional: string | null
+          consultant_commission: number | null
+          consultant_name: string | null
+          consultant_paid_date: string | null
+          cpcv_date: string | null
+          cpcv_pct: number | null
+          created_at: string | null
+          deal_status: number | null
+          deal_type: string | null
+          deed_date: string | null
+          deed_days: number | null
+          deed_pct: number | null
+          discount_pct: number | null
+          docs_missing: string | null
+          expense_discount: number | null
+          financing_bank: string | null
+          financing_commission: number | null
+          financing_status: string | null
+          financing_value: number | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          invoice_recipient: string | null
+          invoice_total_vat: number | null
+          invoice_value: number | null
+          margin: number | null
+          maxwork_id: string | null
+          municipality: string | null
+          notes: string | null
+          partner_agency: string | null
+          partner_invoice_number: string | null
+          partner_paid_date: string | null
+          primary_margin: number | null
+          process_manager: string | null
+          pv_number: string | null
+          received_date: string | null
+          received_month: string | null
+          reported_month: string | null
+          sale_value: number | null
+          side_fraction: number | null
+          signal_returned: number | null
+          signal_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          agency_id: string
+          archive_ref?: string | null
+          buyer_name?: string | null
+          buyer_nif?: string | null
+          closed?: boolean | null
+          commission_pct?: number | null
+          commission_remax?: number | null
+          commission_store?: number | null
+          conditional?: string | null
+          consultant_commission?: number | null
+          consultant_name?: string | null
+          consultant_paid_date?: string | null
+          cpcv_date?: string | null
+          cpcv_pct?: number | null
+          created_at?: string | null
+          deal_status?: number | null
+          deal_type?: string | null
+          deed_date?: string | null
+          deed_days?: number | null
+          deed_pct?: number | null
+          discount_pct?: number | null
+          docs_missing?: string | null
+          expense_discount?: number | null
+          financing_bank?: string | null
+          financing_commission?: number | null
+          financing_status?: string | null
+          financing_value?: number | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          invoice_recipient?: string | null
+          invoice_total_vat?: number | null
+          invoice_value?: number | null
+          margin?: number | null
+          maxwork_id?: string | null
+          municipality?: string | null
+          notes?: string | null
+          partner_agency?: string | null
+          partner_invoice_number?: string | null
+          partner_paid_date?: string | null
+          primary_margin?: number | null
+          process_manager?: string | null
+          pv_number?: string | null
+          received_date?: string | null
+          received_month?: string | null
+          reported_month?: string | null
+          sale_value?: number | null
+          side_fraction?: number | null
+          signal_returned?: number | null
+          signal_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          agency_id?: string
+          archive_ref?: string | null
+          buyer_name?: string | null
+          buyer_nif?: string | null
+          closed?: boolean | null
+          commission_pct?: number | null
+          commission_remax?: number | null
+          commission_store?: number | null
+          conditional?: string | null
+          consultant_commission?: number | null
+          consultant_name?: string | null
+          consultant_paid_date?: string | null
+          cpcv_date?: string | null
+          cpcv_pct?: number | null
+          created_at?: string | null
+          deal_status?: number | null
+          deal_type?: string | null
+          deed_date?: string | null
+          deed_days?: number | null
+          deed_pct?: number | null
+          discount_pct?: number | null
+          docs_missing?: string | null
+          expense_discount?: number | null
+          financing_bank?: string | null
+          financing_commission?: number | null
+          financing_status?: string | null
+          financing_value?: number | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          invoice_recipient?: string | null
+          invoice_total_vat?: number | null
+          invoice_value?: number | null
+          margin?: number | null
+          maxwork_id?: string | null
+          municipality?: string | null
+          notes?: string | null
+          partner_agency?: string | null
+          partner_invoice_number?: string | null
+          partner_paid_date?: string | null
+          primary_margin?: number | null
+          process_manager?: string | null
+          pv_number?: string | null
+          received_date?: string | null
+          received_month?: string | null
+          reported_month?: string | null
+          sale_value?: number | null
+          side_fraction?: number | null
+          signal_returned?: number | null
+          signal_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           agency_id: string

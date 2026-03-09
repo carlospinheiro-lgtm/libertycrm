@@ -9,7 +9,7 @@ import Index from "./pages/Index";
 import LeadsCompradores from "./pages/LeadsCompradores";
 import LeadsVendedores from "./pages/LeadsVendedores";
 import Recrutamento from "./pages/Recrutamento";
-import Processos from "./pages/Processos";
+
 import Objetivos from "./pages/Objetivos";
 import Origens from "./pages/Origens";
 import Administracao from "./pages/Administracao";
@@ -37,7 +37,7 @@ const App = () => (
             <Route path="/leads-compradores" element={<ProtectedRoute><LeadsCompradores /></ProtectedRoute>} />
             <Route path="/leads-vendedores" element={<ProtectedRoute><LeadsVendedores /></ProtectedRoute>} />
             <Route path="/recrutamento" element={<ProtectedRoute><Recrutamento /></ProtectedRoute>} />
-            <Route path="/processos" element={<ProtectedRoute><Processos /></ProtectedRoute>} />
+            <Route path="/processos" element={<ProtectedRoute><ComingSoon title="CRM Processual" /></ProtectedRoute>} />
             <Route path="/atividades" element={<ProtectedRoute><ComingSoon title="Mapa de Atividades" /></ProtectedRoute>} />
             <Route path="/contas" element={<ProtectedRoute><ComingSoon title="Contas Correntes" /></ProtectedRoute>} />
             <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
