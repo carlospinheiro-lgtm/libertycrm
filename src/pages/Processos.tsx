@@ -11,6 +11,8 @@ import { format, isBefore, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AddDealSheet } from '@/components/processos/AddDealSheet';
+import { DealDetailsSheet } from '@/components/processos/DealDetailsSheet';
 
 const STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: 'Referência', className: 'bg-muted text-muted-foreground' },
@@ -47,6 +49,9 @@ function formatDate(dateStr: string | null | undefined) {
 
 export default function Processos() {
   const { data: deals = [], isLoading } = useDeals();
+
+  const [newDealOpen, setNewDealOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -216,7 +221,7 @@ export default function Processos() {
               ))}
             </SelectContent>
           </Select>
-          <Button className="gap-2 ml-auto">
+          <Button className="gap-2 ml-auto" onClick={() => setNewDealOpen(true)}>
             <Plus className="h-4 w-4" />
             Novo Processo
           </Button>
@@ -234,7 +239,7 @@ export default function Processos() {
                 <FileText className="h-12 w-12 text-muted-foreground/40 mb-4" />
                 <h3 className="text-lg font-semibold mb-1">Sem processos</h3>
                 <p className="text-muted-foreground text-sm mb-4">Ainda não existem processos registados.</p>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => setNewDealOpen(true)}>
                   <Plus className="h-4 w-4" />
                   Adicionar primeiro processo
                 </Button>
@@ -288,7 +293,7 @@ export default function Processos() {
                           <TableCell className="text-sm">{formatDate(deal.deed_date)}</TableCell>
                           <TableCell className="text-sm">{formatDate(deal.received_date)}</TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedDeal(deal)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TableCell>
@@ -315,6 +320,9 @@ export default function Processos() {
           </CardContent>
         </Card>
       </div>
+
+      <AddDealSheet open={newDealOpen} onOpenChange={setNewDealOpen} />
+      <DealDetailsSheet deal={selectedDeal} open={!!selectedDeal} onOpenChange={open => { if (!open) setSelectedDeal(null); }} />
     </DashboardLayout>
   );
 }
