@@ -1,30 +1,53 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Criar tabela `consultants`
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### Migration SQL
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+Ficheiro: nova migration em `supabase/migrations/`
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+**Alterações vs SQL original do utilizador:**
+- CHECK constraints substituídos por trigger de validação (requisito Lovable — CHECK constraints causam problemas na restauração)
+- Adicionadas políticas RLS para acesso por agência (padrão consistente com as outras tabelas)
+- Adicionado trigger `update_updated_at_column` para manter `updated_at` atualizado
 
-### 2. Tipologia multi-seleção (tags)
+### Estrutura da tabela
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+```text
+consultants
+├── id (uuid PK)
+├── agency_id (uuid FK → agencies)
+├── name (text NOT NULL)
+├── nif (text)
+├── entry_date (date)
+├── tier (text) — validado por trigger: A, B, C
+├── commission_system (text) — validado por trigger: Alternativo, Fixo
+├── has_company (boolean, default false)
+├── commission_pct (numeric)
+├── team (text)
+├── team_leader (text)
+├── is_active (boolean, default true)
+├── accumulated_12m (numeric, default 0)
+├── created_at / updated_at (timestamptz)
+```
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+### RLS Policies (mesmo padrão que `deals`)
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+- **SELECT**: `has_agency_access(auth.uid(), agency_id)`
+- **INSERT**: `has_agency_access(auth.uid(), agency_id)`
+- **UPDATE**: `has_agency_access(auth.uid(), agency_id)`
+- **DELETE**: `has_agency_access(auth.uid(), agency_id)`
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+### Validation Trigger
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+Trigger `BEFORE INSERT OR UPDATE` que valida:
+- `tier` IN ('A','B','C') ou NULL
+- `commission_system` IN ('Alternativo','Fixo') ou NULL
+
+### Tipos TypeScript
+
+Regenerados automaticamente após a migration — sem edição manual.
+
+### Ficheiros a alterar
+- Nova migration SQL (único ficheiro)
 
