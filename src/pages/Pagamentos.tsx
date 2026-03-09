@@ -295,7 +295,7 @@ export default function Pagamentos() {
                 </TableHeader>
                 <TableBody>
                   {extratoConsultant.deals.map(d => {
-                    const commission = getCommission(d);
+                    const commission = getCommission(d, consultantMap);
                     const discount = d.expense_discount || 0;
                     const hasDiscount = (d.discount_pct ?? 0) > 0;
                     return (
