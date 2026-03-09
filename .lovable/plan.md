@@ -1,30 +1,31 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Página de Consultores e integração com CRM Processual
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### 1. Criar `src/pages/Consultores.tsx`
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+Página completa com:
+- **Cabeçalho**: Título "Consultores" com ícone Users + botão azul "+ Novo Consultor"
+- **Tabela**: Query `consultants` filtrada por `agency_id`. Colunas: Nome, NIF, Escalão (badge colorido A=azul/B=amarelo/C=cinza), % Comissão, Sistema, Equipa, Acumulado 12M (€), Ativo (Switch toggle), Ações (editar/apagar)
+- **Sheet "Novo Consultor"**: Formulário com todos os campos (nome*, NIF, entry_date, tier Select A/B/C, commission_system Select, commission_pct, has_company toggle, team, team_leader, accumulated_12m, is_active toggle)
+- **Edição**: Mesma Sheet pré-preenchida com dados existentes
+- **Eliminar**: AlertDialog de confirmação → delete da tabela
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+### 2. Rota e Sidebar
 
-### 2. Tipologia multi-seleção (tags)
+- `App.tsx`: Adicionar rota `/consultores` → `Consultores`
+- `Sidebar.tsx`: Adicionar item `{ icon: Users, label: 'Consultores', path: '/consultores' }` entre Pagamentos e Objetivos. Usar ícone `UserCheck` (para não conflitar com Users já usado no CRM Compradores)
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+### 3. Alterar `AddDealSheet.tsx` — Select de consultores
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+- Substituir o campo `Input` de "Consultor" por um `Select` que busca consultores ativos da tabela `consultants` (filtrado por `agency_id`)
+- Ao selecionar consultor: preencher `consultantName` com o nome, e se o consultor tem `commission_pct`, preencher `consultantPct` automaticamente → recalcula `consultantCommission`
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+### Ficheiros a criar
+- `src/pages/Consultores.tsx`
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
-
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+### Ficheiros a alterar
+- `src/App.tsx` — nova rota
+- `src/components/layout/Sidebar.tsx` — novo item no menu
+- `src/components/processos/AddDealSheet.tsx` — Select de consultores
 
