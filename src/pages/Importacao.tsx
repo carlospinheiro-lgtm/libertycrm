@@ -66,20 +66,50 @@ function get(row: Record<string, string>, ...keys: string[]): string {
   return '';
 }
 
-function parseDate(raw: string): string | null {
-  if (!raw) return null;
-  const cleaned = raw.trim();
-  if (!cleaned) return null;
-  // Try ISO-like first
-  const iso = new Date(cleaned);
-  if (!isNaN(iso.getTime())) return iso.toISOString().split('T')[0];
-  // dd/mm/yyyy
-  const parts = cleaned.split('/');
-  if (parts.length === 3) {
-    const [d, m, y] = parts;
-    const dt = new Date(Number(y), Number(m) - 1, Number(d));
-    if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
+function parseDate(raw: string | number): string | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  
+  // Handle Excel serial date numbers (e.g. 46096 = a date in 2026)
+  const num = typeof raw === 'number' ? raw : Number(raw);
+  if (!isNaN(num) && num > 25000 && num < 100000) {
+    // Excel serial: days since 1899-12-30
+    const excelEpoch = new Date(1899, 11, 30);
+    const result = new Date(excelEpoch.getTime() + num * 86400000);
+    if (!isNaN(result.getTime())) {
+      const y = result.getFullYear();
+      if (y >= 1900 && y <= 2100) return result.toISOString().split('T')[0];
+    }
+    return null;
   }
+
+  const cleaned = String(raw).trim();
+  if (!cleaned) return null;
+  
+  // dd/mm/yyyy or dd-mm-yyyy
+  const parts = cleaned.split(/[\/\-]/);
+  if (parts.length === 3) {
+    const [a, b, c] = parts.map(Number);
+    // dd/mm/yyyy
+    if (a <= 31 && b <= 12 && c >= 1900) {
+      const dt = new Date(c, b - 1, a);
+      if (!isNaN(dt.getTime()) && dt.getFullYear() >= 1900 && dt.getFullYear() <= 2100) 
+        return dt.toISOString().split('T')[0];
+    }
+    // yyyy-mm-dd
+    if (a >= 1900 && b <= 12 && c <= 31) {
+      const dt = new Date(a, b - 1, c);
+      if (!isNaN(dt.getTime()) && dt.getFullYear() >= 1900 && dt.getFullYear() <= 2100) 
+        return dt.toISOString().split('T')[0];
+    }
+  }
+  
+  // Last resort: try native parse but validate year range
+  const iso = new Date(cleaned);
+  if (!isNaN(iso.getTime())) {
+    const y = iso.getFullYear();
+    if (y >= 1900 && y <= 2100) return iso.toISOString().split('T')[0];
+  }
+  
   return null;
 }
 
