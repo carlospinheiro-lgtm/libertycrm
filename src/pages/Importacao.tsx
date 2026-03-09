@@ -936,7 +936,16 @@ function TabEquipas({ agencyId }: { agencyId: string }) {
 
 export default function Importacao() {
   const { currentUser } = useAuth();
-  const agencyId = currentUser?.agencyId ?? '';
+  const { data: agencies = [], isLoading: agenciesLoading } = useActiveAgencies();
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string | null>(currentUser?.agencyId ?? null);
+  const [tabKey, setTabKey] = useState(0);
+
+  const handleAgencyChange = (id: string) => {
+    if (id !== selectedAgencyId) {
+      setSelectedAgencyId(id);
+      setTabKey((k) => k + 1);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -952,14 +961,45 @@ export default function Importacao() {
           </div>
         </div>
 
-        {!agencyId ? (
+        {/* Agency selector */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            <span>Agência de destino</span>
+          </div>
+          {agenciesLoading ? (
+            <div className="flex gap-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-9 w-32 rounded-md bg-muted animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {agencies.map((agency) => (
+                <Button
+                  key={agency.id}
+                  size="sm"
+                  variant={selectedAgencyId === agency.id ? 'default' : 'outline'}
+                  onClick={() => handleAgencyChange(agency.id)}
+                >
+                  {agency.name}
+                  {agency.remax_code && (
+                    <span className="ml-1 text-xs opacity-70">({agency.remax_code})</span>
+                  )}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {!selectedAgencyId ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground text-sm">
-              Sem agência associada. Por favor contacte o administrador.
+              Selecione uma agência acima para iniciar a importação.
             </CardContent>
           </Card>
         ) : (
-          <Tabs defaultValue="processos" className="space-y-6">
+          <Tabs key={tabKey} defaultValue="processos" className="space-y-6">
             <TabsList className="h-10">
               <TabsTrigger value="processos">Processos</TabsTrigger>
               <TabsTrigger value="consultores">Consultores</TabsTrigger>
@@ -967,13 +1007,13 @@ export default function Importacao() {
             </TabsList>
 
             <TabsContent value="processos">
-              <TabProcessos agencyId={agencyId} />
+              <TabProcessos agencyId={selectedAgencyId} />
             </TabsContent>
             <TabsContent value="consultores">
-              <TabConsultores agencyId={agencyId} />
+              <TabConsultores agencyId={selectedAgencyId} />
             </TabsContent>
             <TabsContent value="equipas">
-              <TabEquipas agencyId={agencyId} />
+              <TabEquipas agencyId={selectedAgencyId} />
             </TabsContent>
           </Tabs>
         )}
