@@ -1,30 +1,46 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Coluna Consultor editável com dropdown na página Processos
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### Problema
+A coluna "Consultor" mostra texto estático. Precisa de ser um dropdown editável com pesquisa, que atualiza `consultant_name` e recalcula `consultant_commission`.
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+### Alterações em `src/pages/Processos.tsx`
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+**1. Novo componente inline `ConsultantCell`**
 
-### 2. Tipologia multi-seleção (tags)
+Componente que renderiza dentro da `TableCell` do consultor (linha 304). Comportamento:
+- Estado normal: mostra nome + ícone `ChevronDown` discreto no hover
+- Ao clicar: abre `Popover` com `Input` de pesquisa + lista de consultores filtrada por nome/NIF
+- Busca consultores da agência via query (`consultants` table, `name`, `nif`, `commission_pct`, filtrado por `agency_id` e `is_active = true`)
+- Ao selecionar: chama `useUpdateDeal` com `consultant_name` e `consultant_commission` recalculada
+- Fórmula: `consultant_commission = commission_store * (consultant.commission_pct / 100)`, fallback `commission_pct = 47` se null
+- Mostra `Loader2` spinner enquanto guarda, toast de confirmação
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+**2. Imports adicionais**
+- `Popover, PopoverTrigger, PopoverContent` de `@/components/ui/popover`
+- `Loader2, ChevronDown` de `lucide-react`
+- `useUpdateDeal` de `@/hooks/useDeals`
+- `useAuth` de `@/contexts/AuthContext`
+- `supabase` de `@/integrations/supabase/client`
+- `useQuery` de `@tanstack/react-query`
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+**3. Substituir linha 304**
+```
+<TableCell className="text-sm">{deal.consultant_name || '—'}</TableCell>
+```
+por:
+```
+<TableCell className="text-sm p-0">
+  <ConsultantCell deal={deal} />
+</TableCell>
+```
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+**4. Lógica do `ConsultantCell`**
+- Query local para consultores da agência (cached, `staleTime: 5min`)
+- Filtra lista por texto digitado (match em `name` ou `nif`)
+- Ao selecionar, fecha popover, mostra spinner, faz update, toast
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
-
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+### Ficheiro
+- `src/pages/Processos.tsx` — ~80 linhas adicionadas
 
