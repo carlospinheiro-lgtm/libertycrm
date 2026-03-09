@@ -78,11 +78,19 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
     return '';
   }, [saleValue, commissionPct]);
 
+  const consultantCommission = useMemo(() => {
+    if (commissionStore && consultantPct) {
+      const calc = parseFloat(commissionStore) * (parseFloat(consultantPct) / 100);
+      return isNaN(calc) ? '' : calc.toFixed(2);
+    }
+    return '';
+  }, [commissionStore, consultantPct]);
+
   const reset = () => {
     setPvNumber(''); setDealType(''); setConsultantName(''); setSaleValue('');
     setCommissionPct(''); setAddress(''); setMunicipality(''); setPartnerAgency('');
     setProcessManager(''); setReportedMonth(format(new Date(), 'yy-MM')); setBuyerName(''); setBuyerNif('');
-    setCpcvDate(undefined); setDeedDate(undefined); setNotes('');
+    setCpcvDate(undefined); setDeedDate(undefined); setNotes(''); setConsultantPct('');
   };
 
   const handleSave = async () => {
