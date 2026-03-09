@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Plus, Eye, TrendingUp, Receipt, Wallet, Clock, Search, ArrowUpDown, Pencil, Trash2 } from 'lucide-react';
-import { useDeals, useDeleteDeal, Deal } from '@/hooks/useDeals';
+import { FileText, Plus, Eye, TrendingUp, Receipt, Wallet, Clock, Search, ArrowUpDown, Pencil, Trash2, ChevronDown, Loader2 } from 'lucide-react';
+import { useDeals, useDeleteDeal, useUpdateDeal, Deal } from '@/hooks/useDeals';
 import { format, isBefore, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +17,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STATUS_MAP: Record<number, { label: string; className: string }> = {
   0: { label: 'Referência', className: 'bg-muted text-muted-foreground' },
