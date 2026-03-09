@@ -201,7 +201,23 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
 
           <div className="space-y-1.5">
             <Label>Consultor *</Label>
-            <Input value={consultantName} onChange={e => setConsultantName(e.target.value)} placeholder="Nome do consultor" />
+            <Select
+              value={consultantName}
+              onValueChange={(val) => {
+                setConsultantName(val);
+                const found = activeConsultants.find(c => c.name === val);
+                if (found?.commission_pct != null) {
+                  setConsultantPct(String(found.commission_pct));
+                }
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecionar consultor" /></SelectTrigger>
+              <SelectContent>
+                {activeConsultants.map(c => (
+                  <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
