@@ -595,7 +595,7 @@ function parseConsultorRows(rawRows: Record<string, unknown>[]): ConsultorImport
                      sys === 'Fixo' || sys?.toLowerCase() === 'fixo' ? 'Fixo' : null;
 
     return {
-      name: get(row, 'Utilizador', 'utilizador', 'name', 'nome'),
+      name: get(row, 'Agente', 'agente', 'Utilizador', 'utilizador', 'name', 'nome'),
       nif: get(row, 'Agente NIF', 'agente_nif', 'nif'),
       entry_date: parseDate(get(row, 'Data de Adesão', 'data_de_adesao', 'data_adesao', 'entry_date')),
       tier: validTier,
@@ -604,7 +604,7 @@ function parseConsultorRows(rawRows: Record<string, unknown>[]): ConsultorImport
       commission_pct: parseNum(get(row, 'Honorários %', 'honorarios_%', 'honorarios', 'commission_pct')),
       accumulated_12m: parseNum(get(row, 'Faturação Último Ano', 'faturacao_ultimo_ano', 'accumulated_12m', 'faturacao')),
     };
-  }).filter(r => r.name);
+  }).filter(r => r.name && r.nif);
 }
 
 function TabConsultores({ agencyId }: { agencyId: string }) {
@@ -733,7 +733,7 @@ function TabConsultores({ agencyId }: { agencyId: string }) {
         <CardContent>
           <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
             {[
-              ['Utilizador', 'name'],
+              ['Agente', 'name'],
               ['Agente NIF', 'nif'],
               ['Data de Adesão', 'entry_date'],
               ['Escalão', 'tier (A/B/C)'],
