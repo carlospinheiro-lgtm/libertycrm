@@ -47,6 +47,15 @@ function formatCurrency(value: number | null | undefined) {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 }
 
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return '—';
+  try {
+    return format(new Date(dateStr), 'dd/MM/yyyy');
+  } catch {
+    return '—';
+  }
+}
+
 function ConsultantCell({ deal }: { deal: Deal }) {
   const { currentUser } = useAuth();
   const agencyId = currentUser?.agencyId;
