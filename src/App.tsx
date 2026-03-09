@@ -20,6 +20,7 @@ import Angariacoes from "./pages/Angariacoes";
 import AngariacaoDetalhe from "./pages/AngariacaoDetalhe";
 import ComingSoon from "./pages/ComingSoon";
 import Pagamentos from "./pages/Pagamentos";
+import Consultores from "./pages/Consultores";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/processos" element={<ProtectedRoute><Processos /></ProtectedRoute>} />
             <Route path="/atividades" element={<ProtectedRoute><ComingSoon title="Mapa de Atividades" /></ProtectedRoute>} />
             <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
+            <Route path="/consultores" element={<ProtectedRoute><Consultores /></ProtectedRoute>} />
             <Route path="/objetivos" element={<ProtectedRoute><Objetivos /></ProtectedRoute>} />
             <Route path="/origens" element={<ProtectedRoute><Origens /></ProtectedRoute>} />
             <Route path="/agenda" element={<ProtectedRoute><ComingSoon title="Agenda" /></ProtectedRoute>} />

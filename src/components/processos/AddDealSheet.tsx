@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useCreateDeal, useUpdateDeal, Deal } from '@/hooks/useDeals';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   open: boolean;
@@ -20,9 +23,27 @@ interface Props {
 }
 
 export function AddDealSheet({ open, onOpenChange, deal }: Props) {
+  const { currentUser } = useAuth();
+  const agencyId = currentUser?.agencyId;
   const createDeal = useCreateDeal();
   const updateDeal = useUpdateDeal();
   const isEdit = !!deal;
+
+  const { data: activeConsultants = [] } = useQuery({
+    queryKey: ['consultants-active', agencyId],
+    queryFn: async () => {
+      if (!agencyId) return [];
+      const { data, error } = await supabase
+        .from('consultants')
+        .select('id, name, commission_pct')
+        .eq('agency_id', agencyId)
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!agencyId,
+  });
 
   const [pvNumber, setPvNumber] = useState('');
   const [dealType, setDealType] = useState('');
@@ -180,7 +201,23 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
 
           <div className="space-y-1.5">
             <Label>Consultor *</Label>
-            <Input value={consultantName} onChange={e => setConsultantName(e.target.value)} placeholder="Nome do consultor" />
+            <Select
+              value={consultantName}
+              onValueChange={(val) => {
+                setConsultantName(val);
+                const found = activeConsultants.find(c => c.name === val);
+                if (found?.commission_pct != null) {
+                  setConsultantPct(String(found.commission_pct));
+                }
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecionar consultor" /></SelectTrigger>
+              <SelectContent>
+                {activeConsultants.map(c => (
+                  <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-3 gap-4">

@@ -15,6 +15,7 @@ import {
   Building2,
   Tag,
   FolderKanban,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +43,7 @@ const menuItems: MenuItem[] = [
   { icon: FileText, label: 'CRM Processual', path: '/processos', permissions: ['process.read.own', 'process.read.team', 'process.read.agency', 'process.read.group'] },
   { icon: CalendarDays, label: 'Mapa de Atividades', path: '/atividades', permissions: ['execution.create', 'execution.edit'] },
   { icon: Wallet, label: 'Pagamentos', path: '/pagamentos', permissions: ['finance.read.agency', 'finance.read.group'] },
+  { icon: UserCheck, label: 'Consultores', path: '/consultores' },
   { icon: Target, label: 'Objetivos', path: '/objetivos', permissions: ['objectives.read.own', 'objectives.read.team', 'objectives.read.agency', 'objectives.read.group'] },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: Calendar, label: 'Agenda', path: '/agenda' },
