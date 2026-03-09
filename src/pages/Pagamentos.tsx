@@ -119,7 +119,7 @@ export default function Pagamentos() {
 
     const rows: ConsultantRow[] = [];
     map.forEach((consultantDeals, name) => {
-      const grossCommission = consultantDeals.reduce((s, d) => s + getCommission(d), 0);
+      const grossCommission = consultantDeals.reduce((s, d) => s + getCommission(d, consultantMap), 0);
       const expenseDiscount = consultantDeals.reduce((s, d) => s + (d.expense_discount || 0), 0);
       const isPaid = consultantDeals.length > 0 && consultantDeals.every(d => !!d.consultant_paid_date);
       const paidDates = consultantDeals.filter(d => d.consultant_paid_date).map(d => d.consultant_paid_date!);
