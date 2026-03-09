@@ -21,6 +21,7 @@ import AngariacaoDetalhe from "./pages/AngariacaoDetalhe";
 import ComingSoon from "./pages/ComingSoon";
 import Pagamentos from "./pages/Pagamentos";
 import Consultores from "./pages/Consultores";
+import Importacao from "./pages/Importacao";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SuperAdmin from "./pages/SuperAdmin";
