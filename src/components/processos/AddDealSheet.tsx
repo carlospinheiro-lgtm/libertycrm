@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { pt } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useCreateDeal } from '@/hooks/useDeals';
 
@@ -27,8 +26,6 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
   const [consultantName, setConsultantName] = useState('');
   const [saleValue, setSaleValue] = useState('');
   const [commissionPct, setCommissionPct] = useState('');
-  const [commissionStore, setCommissionStore] = useState('');
-  const [commissionManual, setCommissionManual] = useState(false);
   const [address, setAddress] = useState('');
   const [municipality, setMunicipality] = useState('');
   const [partnerAgency, setPartnerAgency] = useState('');
@@ -37,26 +34,22 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
   const [buyerName, setBuyerName] = useState('');
   const [buyerNif, setBuyerNif] = useState('');
   const [cpcvDate, setCpcvDate] = useState<Date>();
-  const [cpcvPct, setCpcvPct] = useState('100');
   const [deedDate, setDeedDate] = useState<Date>();
-  const [deedPct, setDeedPct] = useState('100');
   const [notes, setNotes] = useState('');
 
-  // Auto-calculate commission_store
-  useEffect(() => {
-    if (!commissionManual && saleValue && commissionPct) {
-      const calc = (parseFloat(saleValue) * parseFloat(commissionPct)) / 100;
-      setCommissionStore(isNaN(calc) ? '' : calc.toFixed(2));
+  const commissionStore = useMemo(() => {
+    if (saleValue && commissionPct) {
+      const calc = parseFloat(saleValue) * parseFloat(commissionPct);
+      return isNaN(calc) ? '' : calc.toFixed(2);
     }
-  }, [saleValue, commissionPct, commissionManual]);
+    return '';
+  }, [saleValue, commissionPct]);
 
   const reset = () => {
     setPvNumber(''); setDealType(''); setConsultantName(''); setSaleValue('');
-    setCommissionPct(''); setCommissionStore(''); setCommissionManual(false);
-    setAddress(''); setMunicipality(''); setPartnerAgency(''); setProcessManager('');
-    setReportedMonth(''); setBuyerName(''); setBuyerNif('');
-    setCpcvDate(undefined); setCpcvPct('100'); setDeedDate(undefined); setDeedPct('100');
-    setNotes('');
+    setCommissionPct(''); setAddress(''); setMunicipality(''); setPartnerAgency('');
+    setProcessManager(''); setReportedMonth(''); setBuyerName(''); setBuyerNif('');
+    setCpcvDate(undefined); setDeedDate(undefined); setNotes('');
   };
 
   const handleSave = async () => {
@@ -81,9 +74,7 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
         buyer_name: buyerName.trim() || null,
         buyer_nif: buyerNif.trim() || null,
         cpcv_date: cpcvDate ? format(cpcvDate, 'yyyy-MM-dd') : null,
-        cpcv_pct: cpcvPct ? parseFloat(cpcvPct) : null,
         deed_date: deedDate ? format(deedDate, 'yyyy-MM-dd') : null,
-        deed_pct: deedPct ? parseFloat(deedPct) : null,
         notes: notes.trim() || null,
       });
       toast.success('✅ Processo criado com sucesso');
@@ -138,14 +129,8 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
               <Input type="number" value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="5" />
             </div>
             <div className="space-y-1.5">
-              <Label>Comissão Loja (€)</Label>
-              <Input
-                type="number"
-                value={commissionStore}
-                onChange={e => { setCommissionStore(e.target.value); setCommissionManual(true); }}
-                onBlur={() => { if (!commissionStore) setCommissionManual(false); }}
-                className={!commissionManual ? 'bg-muted' : ''}
-              />
+              <Label>Comissão Loja (calculada)</Label>
+              <Input type="number" value={commissionStore} readOnly className="bg-muted" />
             </div>
           </div>
 
@@ -186,15 +171,7 @@ export function AddDealSheet({ open, onOpenChange }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <DateField label="Data CPCV" value={cpcvDate} onChange={setCpcvDate} />
-            <div className="space-y-1.5">
-              <Label>% CPCV</Label>
-              <Input type="number" value={cpcvPct} onChange={e => setCpcvPct(e.target.value)} />
-            </div>
             <DateField label="Data Escritura" value={deedDate} onChange={setDeedDate} />
-            <div className="space-y-1.5">
-              <Label>% Escritura</Label>
-              <Input type="number" value={deedPct} onChange={e => setDeedPct(e.target.value)} />
-            </div>
           </div>
 
           <div className="space-y-1.5">
