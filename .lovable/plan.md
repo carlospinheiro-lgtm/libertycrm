@@ -1,46 +1,30 @@
 
 
-## Plano: Implementar Ficha de Detalhe do Processo
+## Plano: Sheet→Dialog + Tipologia multi-seleção
 
-### Análise do código existente
+### 1. Sheet → Dialog (centrado no ecrã)
 
-O `DealDetailsSheet.tsx` já tem a estrutura completa implementada:
-- Cabeçalho com Nº PV + badges de tipo e estado
-- Botão de mudança de estado no cabeçalho
-- 5 tabs (Resumo, CPCV, Financeiro, Pagamentos, Notas)
-- Botão "Guardar" em cada tab
+**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
 
-O `StatusChangeDialog.tsx` já implementa os 3 fluxos de mudança de estado com os campos corretos.
+**JSX wrapper** (linhas 273-275 e 688-689):
+- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
+- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
+- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
+- Fechar tags correspondentes
 
-### Problemas identificados
+### 2. Tipologia multi-seleção (tags)
 
-1. **Falta o campo `invoice_recipient`** no diálogo de emissão de fatura (status 0 → 1)
-2. **Falta o campo `received_month`** no diálogo de recebimento (status 1 → 2)
-3. O `changed_by` está a guardar o `user.id` (UUID) em vez do nome do utilizador
+**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
 
-### Alterações a implementar
+**UI** (linhas 377-390): Substituir o `<Select>` único por:
+- Lista de badges com `×` para remover (igual às zonas)
+- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
+- Ao selecionar, adiciona ao array se não existir
 
-**Ficheiro: `src/components/processos/StatusChangeDialog.tsx`**
+**handleSave** (linha 160): `typology: form.typology` (já é o array)
 
-1. Adicionar campo `invoice_recipient` (Destinatário) no formulário de emissão de fatura
-2. Adicionar campo `received_month` (Mês Recebimento) no formulário de recebimento
-3. Guardar nome do utilizador em vez do UUID no `changed_by`
+**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
 
-### Detalhes técnicos
-
-```text
-Estado 0 → 1 (Emitir Fatura):
-  Campos: Nº Fatura, Data Emissão, Valor Fatura, Destinatário
-  Extra fields: invoice_number, invoice_date, invoice_value, invoice_recipient
-  
-Estado 1 → 2 (Marcar Recebido):
-  Campos: Data Recebimento, Mês Recebimento (select YYYY-MM)
-  Extra fields: received_date, received_month
-  
-Estado 2 → 3 (Pagar Consultor):
-  Campos: Data Pagamento
-  Extra fields: consultant_paid_date
-```
-
-O hook `useChangeStatus` no `useDeals.ts` precisa usar o nome do utilizador (do `currentUser`) em vez do `user.id` para o campo `changed_by`.
+### Ficheiro editado
+- `src/components/kanban/BuyerDetailsSheet.tsx`
 
