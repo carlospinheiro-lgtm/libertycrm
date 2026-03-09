@@ -604,7 +604,7 @@ function parseConsultorRows(rawRows: Record<string, unknown>[]): ConsultorImport
       commission_pct: parseNum(get(row, 'Honorários %', 'honorarios_%', 'honorarios', 'commission_pct')),
       accumulated_12m: parseNum(get(row, 'Faturação Último Ano', 'faturacao_ultimo_ano', 'accumulated_12m', 'faturacao')),
     };
-  }).filter(r => r.name);
+  }).filter(r => r.name && r.nif);
 }
 
 function TabConsultores({ agencyId }: { agencyId: string }) {
