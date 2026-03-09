@@ -56,7 +56,7 @@ export default function Pagamentos() {
 
     const rows: ConsultantRow[] = [];
     map.forEach((consultantDeals, name) => {
-      const grossCommission = consultantDeals.reduce((s, d) => s + (d.consultant_commission || 0), 0);
+      const grossCommission = consultantDeals.reduce((s, d) => s + getCommission(d), 0);
       const expenseDiscount = consultantDeals.reduce((s, d) => s + (d.expense_discount || 0), 0);
       rows.push({
         name,
