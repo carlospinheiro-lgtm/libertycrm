@@ -53,6 +53,7 @@ const menuItems: MenuItem[] = [
 
 const adminMenuItems: MenuItem[] = [
   { icon: Tag, label: 'Origens', path: '/origens', permissions: ['origins.manage', 'marketing.manage'] },
+  { icon: Upload, label: 'Importação', path: '/importacao' },
 ];
 
 interface SidebarProps {
