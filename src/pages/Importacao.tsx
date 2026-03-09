@@ -601,7 +601,10 @@ function parseConsultorRows(rawRows: Record<string, unknown>[]): ConsultorImport
       tier: validTier,
       commission_system: validSys,
       has_company: hasCompany,
-      commission_pct: parseNum(get(row, 'Honorários %', 'honorarios_%', 'honorarios', 'commission_pct')),
+      commission_pct: (() => {
+        const raw = parseNum(get(row, 'Honorários %', 'honorarios_%', 'honorarios', 'commission_pct'));
+        return raw !== null && raw > 0 && raw <= 1 ? Math.round(raw * 10000) / 100 : raw;
+      })(),
       accumulated_12m: parseNum(get(row, 'Faturação Último Ano', 'faturacao_ultimo_ano', 'accumulated_12m', 'faturacao')),
     };
   }).filter(r => r.name && r.nif);
