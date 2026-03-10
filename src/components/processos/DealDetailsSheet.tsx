@@ -5,12 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Save, FileText, Receipt, CreditCard, StickyNote } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Deal, useUpdateDeal } from '@/hooks/useDeals';
 import { StatusChangeDialog } from './StatusChangeDialog';
@@ -35,6 +34,11 @@ const STATUS_ACTIONS: Record<number, { label: string; className: string }> = {
   2: { label: 'Confirmar Pagamento ao Consultor', className: 'bg-blue-600 text-white hover:bg-blue-700' },
 };
 
+function fmtCurrency(v: number | null | undefined): string {
+  if (v == null) return '—';
+  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(v);
+}
+
 interface Props {
   deal: Deal | null;
   open: boolean;
@@ -45,16 +49,12 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
   const updateDeal = useUpdateDeal();
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
-  // Tab: Resumo
   const [resumo, setResumo] = useState<Record<string, any>>({});
-  // Tab: CPCV
   const [cpcv, setCpcv] = useState<Record<string, any>>({});
-  // Tab: Financeiro
   const [fin, setFin] = useState<Record<string, any>>({});
-  // Tab: Pagamentos
   const [pag, setPag] = useState<Record<string, any>>({});
-  // Tab: Notas
   const [notas, setNotas] = useState<Record<string, any>>({});
+  const [hasReferral, setHasReferral] = useState(false);
 
   useEffect(() => {
     if (!deal) return;
@@ -68,6 +68,7 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
       process_manager: deal.process_manager || '',
       reported_month: deal.reported_month || '',
       partner_agency: deal.partner_agency || '',
+      side_fraction: deal.side_fraction != null ? String(deal.side_fraction) : '1',
     });
     setCpcv({
       cpcv_date: deal.cpcv_date || '',
@@ -79,6 +80,8 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
       signal_value: deal.signal_value ?? '',
       signal_returned: deal.signal_returned ?? '',
       docs_missing: deal.docs_missing || '',
+      buyer_name: deal.buyer_name || '',
+      buyer_nif: deal.buyer_nif || '',
     });
     setFin({
       consultant_commission: deal.consultant_commission ?? '',
@@ -88,12 +91,16 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
       discount_pct: deal.discount_pct ?? '',
       expense_discount: deal.expense_discount ?? '',
       primary_margin: deal.primary_margin ?? '',
+      agency_net: deal.agency_net ?? '',
+      referral_pct: deal.referral_pct ?? '',
+      referral_name: deal.referral_name || '',
       invoice_number: deal.invoice_number || '',
       invoice_date: deal.invoice_date || '',
       invoice_value: deal.invoice_value ?? '',
       invoice_total_vat: deal.invoice_total_vat ?? '',
       invoice_recipient: deal.invoice_recipient || '',
     });
+    setHasReferral(!!(deal.referral_pct && deal.referral_pct > 0));
     setPag({
       received_date: deal.received_date || '',
       received_month: deal.received_month || '',
@@ -126,6 +133,10 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
       toast.error(err.message || 'Erro ao guardar');
     }
   };
+
+  const consultantCommission = parseFloat(fin.consultant_commission) || 0;
+  const expenseDiscount = parseFloat(fin.expense_discount) || 0;
+  const liquidoConsultor = consultantCommission - expenseDiscount;
 
   return (
     <>
@@ -165,6 +176,17 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
                   <Field label="Valor Venda (€)" value={resumo.sale_value} onChange={v => setResumo(p => ({ ...p, sale_value: v }))} type="number" />
                   <Field label="% Comissão" value={resumo.commission_pct} onChange={v => setResumo(p => ({ ...p, commission_pct: v }))} type="number" />
                   <Field label="Comissão Loja (€)" value={resumo.commission_store} onChange={v => setResumo(p => ({ ...p, commission_store: v }))} type="number" />
+                  {/* Side Fraction Select */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Lado</Label>
+                    <Select value={resumo.side_fraction || '1'} onValueChange={v => setResumo(p => ({ ...p, side_fraction: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">100% Exclusivo</SelectItem>
+                        <SelectItem value="0.5">50% Partilhado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Field label="Morada" value={resumo.address} onChange={v => setResumo(p => ({ ...p, address: v }))} full />
                   <Field label="Município" value={resumo.municipality} onChange={v => setResumo(p => ({ ...p, municipality: v }))} />
                   <Field label="Gestor Processo" value={resumo.process_manager} onChange={v => setResumo(p => ({ ...p, process_manager: v }))} />
@@ -185,6 +207,8 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
                   <Field label="Condicionado" value={cpcv.conditional} onChange={v => setCpcv(p => ({ ...p, conditional: v }))} />
                   <Field label="Valor Sinal (€)" value={cpcv.signal_value} onChange={v => setCpcv(p => ({ ...p, signal_value: v }))} type="number" />
                   <Field label="Sinal Devolvido (€)" value={cpcv.signal_returned} onChange={v => setCpcv(p => ({ ...p, signal_returned: v }))} type="number" />
+                  <Field label="Nome Comprador" value={cpcv.buyer_name} onChange={v => setCpcv(p => ({ ...p, buyer_name: v }))} />
+                  <Field label="NIF Comprador" value={cpcv.buyer_nif} onChange={v => setCpcv(p => ({ ...p, buyer_nif: v }))} />
                   <Field label="Documentação em falta" value={cpcv.docs_missing} onChange={v => setCpcv(p => ({ ...p, docs_missing: v }))} full />
                 </FieldGrid>
                 <SaveButton loading={updateDeal.isPending} onClick={() => saveTab(cpcv)} />
@@ -192,19 +216,60 @@ export function DealDetailsSheet({ deal, open, onOpenChange }: Props) {
 
               {/* FINANCEIRO */}
               <TabsContent value="financeiro" className="space-y-4 mt-4">
+                {/* Read-only commission summary */}
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-1 text-sm">
+                  <h4 className="font-semibold text-foreground mb-2">Resumo de Comissões</h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <span className="text-muted-foreground">Comissão Loja:</span>
+                    <span className="text-right font-medium">{fmtCurrency(deal.commission_store)}</span>
+                    {deal.referral_amount != null && deal.referral_amount > 0 && (
+                      <>
+                        <span className="text-muted-foreground">Referência ({deal.referral_pct}%):</span>
+                        <span className="text-right font-medium text-destructive">-{fmtCurrency(deal.referral_amount)}</span>
+                      </>
+                    )}
+                    <span className="text-muted-foreground">Comissão Consultor:</span>
+                    <span className="text-right font-bold text-primary">{fmtCurrency(deal.consultant_commission)}</span>
+                    <span className="text-muted-foreground">Fica na Agência:</span>
+                    <span className="text-right font-medium">{fmtCurrency(deal.agency_net)}</span>
+                  </div>
+                </div>
+
+                {/* Referral section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Tem Referência</Label>
+                    <Switch
+                      checked={hasReferral}
+                      onCheckedChange={(v) => {
+                        setHasReferral(v);
+                        if (!v) {
+                          setFin(p => ({ ...p, referral_pct: '', referral_name: '' }));
+                        }
+                      }}
+                    />
+                  </div>
+                  {hasReferral && (
+                    <FieldGrid>
+                      <Field label="% Referência" value={fin.referral_pct} onChange={v => setFin(p => ({ ...p, referral_pct: v }))} type="number" />
+                      <Field label="Nome Referente" value={fin.referral_name} onChange={v => setFin(p => ({ ...p, referral_name: v }))} />
+                    </FieldGrid>
+                  )}
+                </div>
+
                 <FieldGrid>
                   <Field label="Comissão Consultor (€)" value={fin.consultant_commission} onChange={v => setFin(p => ({ ...p, consultant_commission: v }))} type="number" />
                   <Field label="Comissão Loja (€)" value={fin.commission_store} onChange={v => setFin(p => ({ ...p, commission_store: v }))} type="number" />
-                  <Field label="Comissão Remax (€)" value={fin.commission_remax} onChange={v => setFin(p => ({ ...p, commission_remax: v }))} type="number" />
-                  <Field label="Margem (€)" value={fin.margin} onChange={v => setFin(p => ({ ...p, margin: v }))} type="number" />
-                  <Field label="Desconto Despesas (%)" value={fin.discount_pct} onChange={v => {
-                    const pct = parseFloat(v) || 0;
-                    const commission = parseFloat(fin.consultant_commission) || 0;
-                    const calculatedDiscount = commission * (pct / 100);
-                    setFin(p => ({ ...p, discount_pct: v, expense_discount: pct === 0 ? '' : calculatedDiscount.toFixed(2) }));
-                  }} type="number" />
-                  <Field label="Valor Desconto (€)" value={fin.expense_discount} onChange={v => setFin(p => ({ ...p, expense_discount: v }))} type="number" />
+                  <Field label="Desconto Despesas (€)" value={fin.expense_discount} onChange={v => setFin(p => ({ ...p, expense_discount: v }))} type="number" />
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Líquido consultor (€)</Label>
+                    <Input type="number" value={liquidoConsultor.toFixed(2)} readOnly className="bg-muted" />
+                  </div>
+                  <Field label="Fica na Agência (€)" value={fin.agency_net} onChange={v => setFin(p => ({ ...p, agency_net: v }))} type="number" />
+                  <Field label="Comissão RE/MAX (€)" value={fin.commission_remax} onChange={v => setFin(p => ({ ...p, commission_remax: v }))} type="number" />
                   <Field label="Margem Comercial (€)" value={fin.primary_margin} onChange={v => setFin(p => ({ ...p, primary_margin: v }))} type="number" />
+                  <Field label="Margem (€)" value={fin.margin} onChange={v => setFin(p => ({ ...p, margin: v }))} type="number" />
+                  <Field label="Desconto (%)" value={fin.discount_pct} onChange={v => setFin(p => ({ ...p, discount_pct: v }))} type="number" />
                   <Field label="Nº Fatura" value={fin.invoice_number} onChange={v => setFin(p => ({ ...p, invoice_number: v }))} />
                   <Field label="Data Fatura" value={fin.invoice_date} onChange={v => setFin(p => ({ ...p, invoice_date: v }))} />
                   <Field label="Valor Fatura (€)" value={fin.invoice_value} onChange={v => setFin(p => ({ ...p, invoice_value: v }))} type="number" />
