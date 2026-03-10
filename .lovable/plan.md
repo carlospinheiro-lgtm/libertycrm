@@ -1,30 +1,61 @@
 
 
-## Plano: Sheet→Dialog + Tipologia multi-seleção
+## Plano: Melhorias em Consultores, DealDetailsSheet e AddDealSheet
 
-### 1. Sheet → Dialog (centrado no ecrã)
+### 1. Página Consultores (`src/pages/Consultores.tsx`)
 
-**Importações**: Substituir `Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription` por `Dialog, DialogContent` de `@/components/ui/dialog`.
+**Formulário (Sheet):**
+- Select "Sistema de Comissão" com 3 opções: RAPP, PURO, Trainee. Na abertura, mapear legacy values: `Alternativo` → `RAPP`, `Fixo` → `PURO`
+- Toggle "Tem Empresa" visível apenas quando sistema = PURO, com nota "72.8% com empresa · 70% sem empresa"
+- Toggle "Membro de Equipa" que guarda `is_team_member`. Quando ativado, force sistema para Trainee. Quando desativado, volta a RAPP
+- Campo "Acumulado 12M" visível apenas para RAPP/Trainee, com nota sobre Maxwork
+- Toggle "Confirmar valor" abaixo do acumulado, guarda `accumulated_12m_confirmed`. Auto-desativa quando o número muda. Mensagem verde "✓ Valor confirmado" ou âmbar "⚠ Confirmar valor manualmente"
+- Linha de escalão calculado abaixo do acumulado (ex: "RAPP → 48%", "Trainee → 35%")
+- Novos state vars: `isTeamMember`, `accumulated12mConfirmed`
+- `handleSave` inclui `is_team_member` e `accumulated_12m_confirmed`
 
-**JSX wrapper** (linhas 273-275 e 688-689):
-- `<Sheet open={open} onOpenChange={onOpenChange}>` → `<Dialog open={open} onOpenChange={onOpenChange}>`
-- `<SheetContent className="...">` → `<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">`
-- Header: `<SheetHeader>` → `<div>`, `<SheetTitle>` → `<h2 className="text-lg font-semibold">`, `<SheetDescription>` → `<div>`
-- Fechar tags correspondentes
+**Tabela:**
+- Coluna "Sistema" com Badge colorido: azul RAPP, roxo PURO, laranja Trainee (mapear legacy)
+- Coluna "Acumulado 12M" com ícone âmbar de aviso quando `accumulated_12m_confirmed !== true`
+- Badge no header da página com contagem de consultores com acumulado por confirmar (apenas RAPP/Trainee ativos)
 
-### 2. Tipologia multi-seleção (tags)
+**Imports adicionais:** `AlertTriangle` de lucide-react, funções de `commissionCalc.ts` para calcular escalão
 
-**Estado** (useEffect, linha 135): `typology: lead.typology ? (Array.isArray(lead.typology) ? lead.typology : [lead.typology]) : []`
+### 2. DealDetailsSheet (`src/components/processos/DealDetailsSheet.tsx`)
 
-**UI** (linhas 377-390): Substituir o `<Select>` único por:
-- Lista de badges com `×` para remover (igual às zonas)
-- `<Select>` com opções: T0, T1, T2, T3, T4+, Moradia, Terreno, Comercial
-- Ao selecionar, adiciona ao array se não existir
+**Tab Financeiro — bloco de resumo read-only no topo:**
+- Comissão Loja, Referência (se existir, com dedução), Comissão Consultor, Fica na Agência — usando valores já gravados no deal
 
-**handleSave** (linha 160): `typology: form.typology` (já é o array)
+**Tab Financeiro — secção Referência:**
+- Toggle "Tem Referência". Quando ativo, dois campos: `referral_pct` e `referral_name`, inicializados do deal
+- Estado `fin` expandido com `referral_pct`, `referral_name`
 
-**Funções helper**: `addTypology(value)` e `removeTypology(idx)` — idênticas a `addZone`/`removeZone`.
+**Tab Financeiro — novos campos:**
+- "Desconto Despesas (€)" editável → `expense_discount`
+- "Líquido consultor" read-only = `consultant_commission - expense_discount`
+- "Fica na Agência (€)" → `agency_net`
+- "Comissão RE/MAX (€)" → `commission_remax`
+- "Margem Comercial (€)" → `primary_margin`
 
-### Ficheiro editado
-- `src/components/kanban/BuyerDetailsSheet.tsx`
+**Tab CPCV:**
+- Adicionar campos "Nome Comprador" (`buyer_name`) e "NIF Comprador" (`buyer_nif`)
+- Expandir estado `cpcv` com estes campos, inicializados do deal
+
+**Tab Resumo:**
+- Campo "Lado" como Select com "100% Exclusivo" (value=1) e "50% Partilhado" (value=0.5), guardando em `side_fraction`
+- Expandir estado `resumo` com `side_fraction`, inicializado do deal
+
+**Imports adicionais:** `Switch` de `@/components/ui/switch`, `Select/SelectContent/SelectItem/SelectTrigger/SelectValue` de `@/components/ui/select`
+
+### 3. AddDealSheet (`src/components/processos/AddDealSheet.tsx`)
+
+**Secção campos opcionais:**
+- Novo campo "Desconto Despesas (€)" que guarda `expense_discount`
+- Nota pequena: "Este valor é deduzido da comissão do consultor nos Pagamentos"
+- Novo state `expenseDiscount`, incluído no payload de save
+
+### Ficheiros a editar
+- `src/pages/Consultores.tsx`
+- `src/components/processos/DealDetailsSheet.tsx`
+- `src/components/processos/AddDealSheet.tsx`
 
