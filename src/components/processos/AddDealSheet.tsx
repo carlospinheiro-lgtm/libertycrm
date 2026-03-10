@@ -154,6 +154,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       side_fraction: sf,
       referral_pct: rp,
       referral_name: hasReferral ? (referralName.trim() || null) : null,
+      expense_discount: expenseDiscount ? parseFloat(expenseDiscount) : null,
     };
 
     if (commissionPreview) {
