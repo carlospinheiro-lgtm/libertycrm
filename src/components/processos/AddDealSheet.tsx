@@ -116,6 +116,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
     setPartnerAgency(''); setProcessManager(''); setReportedMonth(format(new Date(), 'yy-MM'));
     setBuyerName(''); setBuyerNif(''); setCpcvDate(undefined); setDeedDate(undefined);
     setNotes(''); setSideFraction('1'); setHasReferral(false); setReferralPct('25'); setReferralName('');
+    setExpenseDiscount('');
   };
 
   const handleSave = async () => {
