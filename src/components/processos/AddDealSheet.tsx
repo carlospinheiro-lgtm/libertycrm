@@ -349,6 +349,12 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label>Desconto Despesas (€)</Label>
+            <Input type="number" value={expenseDiscount} onChange={e => setExpenseDiscount(e.target.value)} placeholder="0" />
+            <p className="text-xs text-muted-foreground">Este valor é deduzido da comissão do consultor nos Pagamentos.</p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <DateField label="Data CPCV" value={cpcvDate} onChange={setCpcvDate} />
             <DateField label="Data Escritura" value={deedDate} onChange={setDeedDate} />
