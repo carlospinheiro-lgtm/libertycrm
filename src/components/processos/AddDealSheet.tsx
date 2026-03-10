@@ -54,6 +54,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
   const [hasReferral, setHasReferral] = useState(false);
   const [referralPct, setReferralPct] = useState('25');
   const [referralName, setReferralName] = useState('');
+  const [expenseDiscount, setExpenseDiscount] = useState('');
 
   useEffect(() => {
     if (deal) {
@@ -72,6 +73,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       setCpcvDate(deal.cpcv_date ? new Date(deal.cpcv_date) : undefined);
       setDeedDate(deal.deed_date ? new Date(deal.deed_date) : undefined);
       setNotes(deal.notes || '');
+      setExpenseDiscount(deal.expense_discount != null ? String(deal.expense_discount) : '');
       setSideFraction(deal.side_fraction != null ? String(deal.side_fraction) : '1');
       if (deal.referral_pct && deal.referral_pct > 0) {
         setHasReferral(true);
@@ -115,6 +117,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
     setPartnerAgency(''); setProcessManager(''); setReportedMonth(format(new Date(), 'yy-MM'));
     setBuyerName(''); setBuyerNif(''); setCpcvDate(undefined); setDeedDate(undefined);
     setNotes(''); setSideFraction('1'); setHasReferral(false); setReferralPct('25'); setReferralName('');
+    setExpenseDiscount('');
   };
 
   const handleSave = async () => {
@@ -152,6 +155,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       side_fraction: sf,
       referral_pct: rp,
       referral_name: hasReferral ? (referralName.trim() || null) : null,
+      expense_discount: expenseDiscount ? parseFloat(expenseDiscount) : null,
     };
 
     if (commissionPreview) {
@@ -344,6 +348,12 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
               <Label>NIF Comprador</Label>
               <Input value={buyerNif} onChange={e => setBuyerNif(e.target.value)} />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Desconto Despesas (€)</Label>
+            <Input type="number" value={expenseDiscount} onChange={e => setExpenseDiscount(e.target.value)} placeholder="0" />
+            <p className="text-xs text-muted-foreground">Este valor é deduzido da comissão do consultor nos Pagamentos.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
