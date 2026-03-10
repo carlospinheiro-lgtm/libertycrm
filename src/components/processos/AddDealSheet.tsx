@@ -73,6 +73,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
       setCpcvDate(deal.cpcv_date ? new Date(deal.cpcv_date) : undefined);
       setDeedDate(deal.deed_date ? new Date(deal.deed_date) : undefined);
       setNotes(deal.notes || '');
+      setExpenseDiscount(deal.expense_discount != null ? String(deal.expense_discount) : '');
       setSideFraction(deal.side_fraction != null ? String(deal.side_fraction) : '1');
       if (deal.referral_pct && deal.referral_pct > 0) {
         setHasReferral(true);
