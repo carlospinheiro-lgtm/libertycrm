@@ -54,6 +54,7 @@ export function AddDealSheet({ open, onOpenChange, deal }: Props) {
   const [hasReferral, setHasReferral] = useState(false);
   const [referralPct, setReferralPct] = useState('25');
   const [referralName, setReferralName] = useState('');
+  const [expenseDiscount, setExpenseDiscount] = useState('');
 
   useEffect(() => {
     if (deal) {
